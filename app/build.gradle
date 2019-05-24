@@ -5,7 +5,7 @@
 
 apply plugin: 'com.android.application'
 
-apply from: '../signing.gradle'
+//apply from: '../signing.gradle'
 
 android {
     compileSdkVersion 28
@@ -25,12 +25,12 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
     buildTypes {
-        release {
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
-        }
+//        release {
+//            minifyEnabled true
+//            shrinkResources true
+//            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+//            signingConfig signingConfigs.release
+//        }
     }
     externalNativeBuild {
         cmake {
@@ -57,7 +57,7 @@ repositories {
     }
 }
 dependencies {
-    releaseImplementation 'com.github.mypplication:stetho-noop:1.1'
+    //releaseImplementation 'com.github.mypplication:stetho-noop:1.1'
 }
 
 dependencies {
