@@ -14,6 +14,7 @@ import java8.nio.file.FileStore;
 import java8.nio.file.LinkOption;
 import java8.nio.file.Path;
 import java8.nio.file.attribute.BasicFileAttributes;
+import java8.nio.file.attribute.FileAttribute;
 import java8.nio.file.spi.FileSystemProvider;
 
 public class RemoteFileSystemProviderInterface extends IRemoteFileSystemProvider.Stub {
@@ -44,8 +45,60 @@ public class RemoteFileSystemProviderInterface extends IRemoteFileSystemProvider
     }
 
     @Override
+    public void createDirectory(@NonNull ParcelableObject parcelableDirectory,
+                                @NonNull ParcelableFileAttributes parcelableAttributes,
+                                @NonNull ParcelableIoException ioException) {
+        Path directory = parcelableDirectory.get();
+        FileAttribute<?>[] attributes = parcelableAttributes.get();
+        try {
+            mProvider.createDirectory(directory, attributes);
+        } catch (IOException e) {
+            ioException.set(e);
+        }
+    }
+
+    @Override
+    public void createSymbolicLink(@NonNull ParcelableObject parcelableLink,
+                                   @NonNull ParcelableObject parcelableTarget,
+                                   @NonNull ParcelableFileAttributes parcelableAttributes,
+                                   @NonNull ParcelableIoException ioException) {
+        Path link = parcelableLink.get();
+        Path target = parcelableTarget.get();
+        FileAttribute<?>[] attributes = parcelableAttributes.get();
+        try {
+            mProvider.createSymbolicLink(link, target, attributes);
+        } catch (IOException e) {
+            ioException.set(e);
+        }
+    }
+
+    @Override
+    public void createLink(@NonNull ParcelableObject parcelableLink,
+                           @NonNull ParcelableObject parcelableExisting,
+                           @NonNull ParcelableIoException ioException) {
+        Path link = parcelableLink.get();
+        Path existing = parcelableExisting.get();
+        try {
+            mProvider.createLink(link, existing);
+        } catch (IOException e) {
+            ioException.set(e);
+        }
+    }
+
+    @Override
+    public void delete(@NonNull ParcelableObject parcelablePath,
+                       @NonNull ParcelableIoException ioException) {
+        Path path = parcelablePath.get();
+        try {
+            mProvider.delete(path);
+        } catch (IOException e) {
+            ioException.set(e);
+        }
+    }
+
+    @Override
     public ParcelableObject readSymbolicLink(@NonNull ParcelableObject parcelableLink,
-                                           @NonNull ParcelableIoException ioException) {
+                                             @NonNull ParcelableIoException ioException) {
         Path link = parcelableLink.get();
         Path target;
         try {
@@ -100,7 +153,7 @@ public class RemoteFileSystemProviderInterface extends IRemoteFileSystemProvider
 
     @Override
     public void checkAccess(@NonNull ParcelableObject parcelablePath,
-                            @NonNull ParcelableAccessModes parcelableModes,
+                            @NonNull ParcelableSerializable parcelableModes,
                             @NonNull ParcelableIoException ioException) {
         Path path = parcelablePath.get();
         AccessMode[] modes = parcelableModes.get();
@@ -114,11 +167,11 @@ public class RemoteFileSystemProviderInterface extends IRemoteFileSystemProvider
     @NonNull
     @Override
     public ParcelableObject readAttributes(@NonNull ParcelableObject parcelablePath,
-                                           @NonNull SerializableObject serializableType,
-                                           @NonNull ParcelableLinkOptions parcelableOptions,
+                                           @NonNull ParcelableSerializable parcelableType,
+                                           @NonNull ParcelableSerializable parcelableOptions,
                                            @NonNull ParcelableIoException ioException) {
         Path path = parcelablePath.get();
-        Class<? extends BasicFileAttributes> type = serializableType.get();
+        Class<? extends BasicFileAttributes> type = parcelableType.get();
         LinkOption[] options = parcelableOptions.get();
         BasicFileAttributes attributes;
         try {
