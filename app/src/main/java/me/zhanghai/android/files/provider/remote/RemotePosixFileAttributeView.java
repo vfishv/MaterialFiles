@@ -13,6 +13,7 @@ import java.util.Set;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import java8.nio.file.attribute.FileTime;
+import me.zhanghai.android.files.provider.common.ByteString;
 import me.zhanghai.android.files.provider.common.ParcelableFileTime;
 import me.zhanghai.android.files.provider.common.ParcelablePosixFileMode;
 import me.zhanghai.android.files.provider.common.PosixFileAttributeView;
@@ -35,15 +36,15 @@ public abstract class RemotePosixFileAttributeView<FA extends PosixFileAttribute
     @NonNull
     @Override
     public FA readAttributes() throws IOException {
-        ParcelableIoException ioException = new ParcelableIoException();
+        ParcelableException exception = new ParcelableException();
         IRemotePosixFileAttributeView remoteInterface = mRemoteInterface.get();
         ParcelableObject parcelableAttributes;
         try {
-            parcelableAttributes = remoteInterface.readAttributes(ioException);
+            parcelableAttributes = remoteInterface.readAttributes(exception);
         } catch (RemoteException e) {
             throw new RemoteFileSystemException(e);
         }
-        ioException.throwIfNotNull();
+        exception.throwIfNotNull();
         return parcelableAttributes.get();
     }
 
@@ -53,72 +54,73 @@ public abstract class RemotePosixFileAttributeView<FA extends PosixFileAttribute
         ParcelableFileTime parcelableLastModifiedTime = new ParcelableFileTime(lastModifiedTime);
         ParcelableFileTime parcelableLastAccessTime = new ParcelableFileTime(lastAccessTime);
         ParcelableFileTime parcelableCreateTime = new ParcelableFileTime(createTime);
-        ParcelableIoException ioException = new ParcelableIoException();
+        ParcelableException exception = new ParcelableException();
         IRemotePosixFileAttributeView remoteInterface = mRemoteInterface.get();
         try {
             remoteInterface.setTimes(parcelableLastModifiedTime, parcelableLastAccessTime,
-                    parcelableCreateTime, ioException);
+                    parcelableCreateTime, exception);
         } catch (RemoteException e) {
             throw new RemoteFileSystemException(e);
         }
-        ioException.throwIfNotNull();
+        exception.throwIfNotNull();
     }
 
     @Override
     public void setOwner(@NonNull PosixUser owner) throws IOException {
-        ParcelableIoException ioException = new ParcelableIoException();
+        ParcelableException exception = new ParcelableException();
         IRemotePosixFileAttributeView remoteInterface = mRemoteInterface.get();
         try {
-            remoteInterface.setOwner(owner, ioException);
+            remoteInterface.setOwner(owner, exception);
         } catch (RemoteException e) {
             throw new RemoteFileSystemException(e);
         }
-        ioException.throwIfNotNull();
+        exception.throwIfNotNull();
     }
 
     @Override
     public void setGroup(@NonNull PosixGroup group) throws IOException {
-        ParcelableIoException ioException = new ParcelableIoException();
+        ParcelableException exception = new ParcelableException();
         IRemotePosixFileAttributeView remoteInterface = mRemoteInterface.get();
         try {
-            remoteInterface.setGroup(group, ioException);
+            remoteInterface.setGroup(group, exception);
         } catch (RemoteException e) {
             throw new RemoteFileSystemException(e);
         }
-        ioException.throwIfNotNull();
+        exception.throwIfNotNull();
     }
 
     public void setMode(@NonNull Set<PosixFileModeBit> mode) throws IOException {
         ParcelablePosixFileMode parcelableMode = new ParcelablePosixFileMode(mode);
-        ParcelableIoException ioException = new ParcelableIoException();
+        ParcelableException exception = new ParcelableException();
         IRemotePosixFileAttributeView remoteInterface = mRemoteInterface.get();
         try {
-            remoteInterface.setMode(parcelableMode, ioException);
+            remoteInterface.setMode(parcelableMode, exception);
         } catch (RemoteException e) {
             throw new RemoteFileSystemException(e);
         }
-        ioException.throwIfNotNull();
+        exception.throwIfNotNull();
     }
 
-    public void setSeLinuxContext(@NonNull String context) throws IOException {
-        ParcelableIoException ioException = new ParcelableIoException();
+    public void setSeLinuxContext(@NonNull ByteString context) throws IOException {
+        ParcelableObject parcelableContext = new ParcelableObject(context);
+        ParcelableException exception = new ParcelableException();
         IRemotePosixFileAttributeView remoteInterface = mRemoteInterface.get();
         try {
-            remoteInterface.setSeLinuxContext(context, ioException);
+            remoteInterface.setSeLinuxContext(parcelableContext, exception);
         } catch (RemoteException e) {
             throw new RemoteFileSystemException(e);
         }
-        ioException.throwIfNotNull();
+        exception.throwIfNotNull();
     }
 
     public void restoreSeLinuxContext() throws IOException {
-        ParcelableIoException ioException = new ParcelableIoException();
+        ParcelableException exception = new ParcelableException();
         IRemotePosixFileAttributeView remoteInterface = mRemoteInterface.get();
         try {
-            remoteInterface.restoreSeLinuxContext(ioException);
+            remoteInterface.restoreSeLinuxContext(exception);
         } catch (RemoteException e) {
             throw new RemoteFileSystemException(e);
         }
-        ioException.throwIfNotNull();
+        exception.throwIfNotNull();
     }
 }

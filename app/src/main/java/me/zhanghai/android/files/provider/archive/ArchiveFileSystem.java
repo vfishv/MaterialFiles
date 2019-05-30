@@ -16,12 +16,13 @@ import java.util.List;
 
 import androidx.annotation.NonNull;
 import java8.nio.file.Path;
+import me.zhanghai.android.files.provider.common.ByteString;
 import me.zhanghai.android.files.provider.remote.RemoteFileSystemException;
 import me.zhanghai.android.files.provider.root.RootableFileSystem;
 
 class ArchiveFileSystem extends RootableFileSystem implements Parcelable {
 
-    static final char SEPARATOR = LocalArchiveFileSystem.SEPARATOR;
+    static final byte SEPARATOR = LocalArchiveFileSystem.SEPARATOR;
 
     @NonNull
     private final Path mArchiveFile;
@@ -48,12 +49,12 @@ class ArchiveFileSystem extends RootableFileSystem implements Parcelable {
     }
 
     @NonNull
-    Path getRootDirectory() {
+    ArchivePath getRootDirectory() {
         return getLocalFileSystem().getRootDirectory();
     }
 
     @NonNull
-    Path getDefaultDirectory() {
+    ArchivePath getDefaultDirectory() {
         return getLocalFileSystem().getDefaultDirectory();
     }
 
@@ -89,6 +90,11 @@ class ArchiveFileSystem extends RootableFileSystem implements Parcelable {
 
     void doRefreshIfNeededAsRoot() throws RemoteFileSystemException {
         getRootFileSystem().doRefreshIfNeeded();
+    }
+
+    @NonNull
+    Path getPath(@NonNull ByteString path) {
+        return getLocalFileSystem().getPath(path);
     }
 
 

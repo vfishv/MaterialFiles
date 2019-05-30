@@ -11,8 +11,12 @@ import android.os.RemoteException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
+import java.io.Serializable;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import androidx.annotation.NonNull;
 import java8.nio.channels.FileChannel;
@@ -28,6 +32,8 @@ import java8.nio.file.Path;
 import java8.nio.file.attribute.BasicFileAttributes;
 import java8.nio.file.attribute.FileAttribute;
 import java8.nio.file.spi.FileSystemProvider;
+import me.zhanghai.android.files.promise.Promise;
+import me.zhanghai.android.files.util.RemoteCallback;
 
 public abstract class RemoteFileSystemProvider extends FileSystemProvider {
 
@@ -42,7 +48,19 @@ public abstract class RemoteFileSystemProvider extends FileSystemProvider {
     @Override
     public InputStream newInputStream(@NonNull Path file, @NonNull OpenOption... options)
             throws IOException {
-        throw new UnsupportedOperationException();
+        ParcelableObject parcelableFile = new ParcelableObject(file);
+        ParcelableSerializable parcelableOptions = new ParcelableSerializable(options);
+        ParcelableException exception = new ParcelableException();
+        IRemoteFileSystemProvider remoteInterface = mRemoteInterface.get();
+        RemoteInputStream remoteInputStream;
+        try {
+            remoteInputStream = remoteInterface.newInputStream(parcelableFile, parcelableOptions,
+                    exception);
+        } catch (RemoteException e) {
+            throw new RemoteFileSystemException(e);
+        }
+        exception.throwIfNotNull();
+        return remoteInputStream;
     }
 
     @NonNull
@@ -59,7 +77,22 @@ public abstract class RemoteFileSystemProvider extends FileSystemProvider {
                                               @NonNull Set<? extends OpenOption> options,
                                               @NonNull FileAttribute<?>... attributes)
             throws IOException {
-        throw new UnsupportedOperationException();
+        ParcelableObject parcelableFile = new ParcelableObject(file);
+        Serializable serializableOptions = options instanceof Serializable ? (Serializable) options
+                : new HashSet<>(options);
+        ParcelableSerializable parcelableOptions = new ParcelableSerializable(serializableOptions);
+        ParcelableFileAttributes parcelableAttributes = new ParcelableFileAttributes(attributes);
+        ParcelableException exception = new ParcelableException();
+        IRemoteFileSystemProvider remoteInterface = mRemoteInterface.get();
+        RemoteSeekableByteChannel remoteChannel;
+        try {
+            remoteChannel = remoteInterface.newByteChannel(parcelableFile, parcelableOptions,
+                    parcelableAttributes, exception);
+        } catch (RemoteException e) {
+            throw new RemoteFileSystemException(e);
+        }
+        exception.throwIfNotNull();
+        return remoteChannel;
     }
 
     @NonNull
@@ -77,16 +110,16 @@ public abstract class RemoteFileSystemProvider extends FileSystemProvider {
             }
         }
         ParcelableObject parcelableFilter = new ParcelableObject(filter);
-        ParcelableIoException ioException = new ParcelableIoException();
+        ParcelableException exception = new ParcelableException();
         IRemoteFileSystemProvider remoteInterface = mRemoteInterface.get();
         ParcelableDirectoryStream parcelableDirectoryStream;
         try {
             parcelableDirectoryStream = remoteInterface.newDirectoryStream(parcelableDirectory,
-                    parcelableFilter, ioException);
+                    parcelableFilter, exception);
         } catch (RemoteException e) {
             throw new RemoteFileSystemException(e);
         }
-        ioException.throwIfNotNull();
+        exception.throwIfNotNull();
         return parcelableDirectoryStream.get();
     }
 
@@ -95,14 +128,14 @@ public abstract class RemoteFileSystemProvider extends FileSystemProvider {
             throws IOException {
         ParcelableObject parcelableDirectory = new ParcelableObject(directory);
         ParcelableFileAttributes parcelableAttributes = new ParcelableFileAttributes(attributes);
-        ParcelableIoException ioException = new ParcelableIoException();
+        ParcelableException exception = new ParcelableException();
         IRemoteFileSystemProvider remoteInterface = mRemoteInterface.get();
         try {
-            remoteInterface.createDirectory(parcelableDirectory, parcelableAttributes, ioException);
+            remoteInterface.createDirectory(parcelableDirectory, parcelableAttributes, exception);
         } catch (RemoteException e) {
             throw new RemoteFileSystemException(e);
         }
-        ioException.throwIfNotNull();
+        exception.throwIfNotNull();
     }
 
     @Override
@@ -111,100 +144,162 @@ public abstract class RemoteFileSystemProvider extends FileSystemProvider {
         ParcelableObject parcelableLink = new ParcelableObject(link);
         ParcelableObject parcelableTarget = new ParcelableObject(target);
         ParcelableFileAttributes parcelableAttributes = new ParcelableFileAttributes(attributes);
-        ParcelableIoException ioException = new ParcelableIoException();
+        ParcelableException exception = new ParcelableException();
         IRemoteFileSystemProvider remoteInterface = mRemoteInterface.get();
         try {
             remoteInterface.createSymbolicLink(parcelableLink, parcelableTarget,
-                    parcelableAttributes, ioException);
+                    parcelableAttributes, exception);
         } catch (RemoteException e) {
             throw new RemoteFileSystemException(e);
         }
-        ioException.throwIfNotNull();
+        exception.throwIfNotNull();
     }
 
     @Override
     public void createLink(@NonNull Path link, @NonNull Path existing) throws IOException {
         ParcelableObject parcelableLink = new ParcelableObject(link);
         ParcelableObject parcelableExisting = new ParcelableObject(existing);
-        ParcelableIoException ioException = new ParcelableIoException();
+        ParcelableException exception = new ParcelableException();
         IRemoteFileSystemProvider remoteInterface = mRemoteInterface.get();
         try {
-            remoteInterface.createLink(parcelableLink, parcelableExisting, ioException);
+            remoteInterface.createLink(parcelableLink, parcelableExisting, exception);
         } catch (RemoteException e) {
             throw new RemoteFileSystemException(e);
         }
-        ioException.throwIfNotNull();
+        exception.throwIfNotNull();
     }
 
     @Override
     public void delete(@NonNull Path path) throws IOException {
         ParcelableObject parcelablePath = new ParcelableObject(path);
-        ParcelableIoException ioException = new ParcelableIoException();
+        ParcelableException exception = new ParcelableException();
         IRemoteFileSystemProvider remoteInterface = mRemoteInterface.get();
         try {
-            remoteInterface.delete(parcelablePath, ioException);
+            remoteInterface.delete(parcelablePath, exception);
         } catch (RemoteException e) {
             throw new RemoteFileSystemException(e);
         }
-        ioException.throwIfNotNull();
+        exception.throwIfNotNull();
     }
 
     @NonNull
     @Override
     public Path readSymbolicLink(@NonNull Path link) throws IOException {
         ParcelableObject parcelableLink = new ParcelableObject(link);
-        ParcelableIoException ioException = new ParcelableIoException();
+        ParcelableException exception = new ParcelableException();
         IRemoteFileSystemProvider remoteInterface = mRemoteInterface.get();
         ParcelableObject parcelableTarget;
         try {
-            parcelableTarget = remoteInterface.readSymbolicLink(parcelableLink, ioException);
+            parcelableTarget = remoteInterface.readSymbolicLink(parcelableLink, exception);
         } catch (RemoteException e) {
             throw new RemoteFileSystemException(e);
         }
-        ioException.throwIfNotNull();
+        exception.throwIfNotNull();
         return parcelableTarget.get();
     }
 
     @Override
     public void copy(@NonNull Path source, @NonNull Path target, @NonNull CopyOption... options)
             throws IOException {
-        throw new UnsupportedOperationException();
+        ParcelableObject parcelableSource = new ParcelableObject(source);
+        ParcelableObject parcelableTarget = new ParcelableObject(target);
+        ParcelableCopyOptions parcelableOptions = new ParcelableCopyOptions(options);
+        IRemoteFileSystemProvider remoteInterface = mRemoteInterface.get();
+        RemoteCallback[] interruptible = new RemoteCallback[1];
+        Promise<Void> promise = new Promise<>(settler -> {
+            RemoteCallback callback = new RemoteCallback(result -> {
+                if (result == null) {
+                    settler.resolve(null);
+                } else {
+                    IOException exception = (IOException) result.getSerializable(
+                            RemoteFileSystemProviderInterface.KEY_IO_EXCEPTION);
+                    settler.reject(exception);
+                }
+            });
+            try {
+                interruptible[0] = remoteInterface.copy(parcelableSource, parcelableTarget,
+                        parcelableOptions, callback);
+            } catch (RemoteException e) {
+                throw new RemoteFileSystemException(e);
+            }
+        });
+        try {
+            promise.await();
+        } catch (ExecutionException e) {
+            throw (IOException) e.getCause();
+        } catch (InterruptedException e) {
+            interruptible[0].sendResult(null);
+            InterruptedIOException exception = new InterruptedIOException();
+            exception.initCause(e);
+            throw exception;
+        }
     }
 
     @Override
     public void move(@NonNull Path source, @NonNull Path target, @NonNull CopyOption... options)
             throws IOException  {
-        throw new UnsupportedOperationException();
+        ParcelableObject parcelableSource = new ParcelableObject(source);
+        ParcelableObject parcelableTarget = new ParcelableObject(target);
+        ParcelableCopyOptions parcelableOptions = new ParcelableCopyOptions(options);
+        IRemoteFileSystemProvider remoteInterface = mRemoteInterface.get();
+        RemoteCallback[] interruptible = new RemoteCallback[1];
+        Promise<Void> promise = new Promise<>(settler -> {
+            RemoteCallback callback = new RemoteCallback(result -> {
+                if (result == null) {
+                    settler.resolve(null);
+                } else {
+                    IOException exception = (IOException) result.getSerializable(
+                            RemoteFileSystemProviderInterface.KEY_IO_EXCEPTION);
+                    settler.reject(exception);
+                }
+            });
+            try {
+                interruptible[0] = remoteInterface.move(parcelableSource, parcelableTarget,
+                        parcelableOptions, callback);
+            } catch (RemoteException e) {
+                throw new RemoteFileSystemException(e);
+            }
+        });
+        try {
+            promise.await();
+        } catch (ExecutionException e) {
+            throw (IOException) e.getCause();
+        } catch (InterruptedException e) {
+            interruptible[0].sendResult(null);
+            InterruptedIOException exception = new InterruptedIOException();
+            exception.initCause(e);
+            throw exception;
+        }
     }
 
     @Override
     public boolean isSameFile(@NonNull Path path, @NonNull Path path2) throws IOException {
         ParcelableObject parcelablePath = new ParcelableObject(path);
         ParcelableObject parcelablePath2 = new ParcelableObject(path2);
-        ParcelableIoException ioException = new ParcelableIoException();
+        ParcelableException exception = new ParcelableException();
         IRemoteFileSystemProvider remoteInterface = mRemoteInterface.get();
         boolean isSameFile;
         try {
-            isSameFile = remoteInterface.isSameFile(parcelablePath, parcelablePath2, ioException);
+            isSameFile = remoteInterface.isSameFile(parcelablePath, parcelablePath2, exception);
         } catch (RemoteException e) {
             throw new RemoteFileSystemException(e);
         }
-        ioException.throwIfNotNull();
+        exception.throwIfNotNull();
         return isSameFile;
     }
 
     @Override
     public boolean isHidden(@NonNull Path path) throws IOException {
         ParcelableObject parcelablePath = new ParcelableObject(path);
-        ParcelableIoException ioException = new ParcelableIoException();
+        ParcelableException exception = new ParcelableException();
         IRemoteFileSystemProvider remoteInterface = mRemoteInterface.get();
         boolean isHidden;
         try {
-            isHidden = remoteInterface.isHidden(parcelablePath, ioException);
+            isHidden = remoteInterface.isHidden(parcelablePath, exception);
         } catch (RemoteException e) {
             throw new RemoteFileSystemException(e);
         }
-        ioException.throwIfNotNull();
+        exception.throwIfNotNull();
         return isHidden;
     }
 
@@ -212,15 +307,15 @@ public abstract class RemoteFileSystemProvider extends FileSystemProvider {
     @Override
     public FileStore getFileStore(@NonNull Path path) throws IOException {
         ParcelableObject parcelablePath = new ParcelableObject(path);
-        ParcelableIoException ioException = new ParcelableIoException();
+        ParcelableException exception = new ParcelableException();
         IRemoteFileSystemProvider remoteInterface = mRemoteInterface.get();
         ParcelableObject parcelableFileStore;
         try {
-            parcelableFileStore = remoteInterface.getFileStore(parcelablePath, ioException);
+            parcelableFileStore = remoteInterface.getFileStore(parcelablePath, exception);
         } catch (RemoteException e) {
             throw new RemoteFileSystemException(e);
         }
-        ioException.throwIfNotNull();
+        exception.throwIfNotNull();
         return parcelableFileStore.get();
     }
 
@@ -228,14 +323,14 @@ public abstract class RemoteFileSystemProvider extends FileSystemProvider {
     public void checkAccess(@NonNull Path path, @NonNull AccessMode... modes) throws IOException {
         ParcelableObject parcelablePath = new ParcelableObject(path);
         ParcelableSerializable parcelableModes = new ParcelableSerializable(modes);
-        ParcelableIoException ioException = new ParcelableIoException();
+        ParcelableException exception = new ParcelableException();
         IRemoteFileSystemProvider remoteInterface = mRemoteInterface.get();
         try {
-            remoteInterface.checkAccess(parcelablePath, parcelableModes, ioException);
+            remoteInterface.checkAccess(parcelablePath, parcelableModes, exception);
         } catch (RemoteException e) {
             throw new RemoteFileSystemException(e);
         }
-        ioException.throwIfNotNull();
+        exception.throwIfNotNull();
     }
 
     @NonNull
@@ -247,16 +342,16 @@ public abstract class RemoteFileSystemProvider extends FileSystemProvider {
         ParcelableObject parcelablePath = new ParcelableObject(path);
         ParcelableSerializable parcelableType = new ParcelableSerializable(type);
         ParcelableSerializable parcelableOptions = new ParcelableSerializable(options);
-        ParcelableIoException ioException = new ParcelableIoException();
+        ParcelableException exception = new ParcelableException();
         IRemoteFileSystemProvider remoteInterface = mRemoteInterface.get();
         ParcelableObject parcelableAttributes;
         try {
             parcelableAttributes = remoteInterface.readAttributes(parcelablePath, parcelableType,
-                    parcelableOptions, ioException);
+                    parcelableOptions, exception);
         } catch (RemoteException e) {
             throw new RemoteFileSystemException(e);
         }
-        ioException.throwIfNotNull();
+        exception.throwIfNotNull();
         return parcelableAttributes.get();
     }
 
