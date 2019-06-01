@@ -15,8 +15,8 @@ import java.util.Objects;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import java8.nio.file.FileSystem;
 import java8.nio.file.LinkOption;
+import java8.nio.file.ProviderMismatchException;
 import java8.nio.file.WatchEvent;
 import java8.nio.file.WatchKey;
 import java8.nio.file.WatchService;
@@ -84,7 +84,7 @@ class LinuxPath extends ByteStringListPath implements RootablePath {
 
     @NonNull
     @Override
-    public FileSystem getFileSystem() {
+    public LinuxFileSystem getFileSystem() {
         return mFileSystem;
     }
 
@@ -118,8 +118,11 @@ class LinuxPath extends ByteStringListPath implements RootablePath {
         Objects.requireNonNull(watcher);
         Objects.requireNonNull(events);
         Objects.requireNonNull(modifiers);
-        // TODO
-        throw new UnsupportedOperationException();
+        if (!(watcher instanceof LocalLinuxWatchService)) {
+            throw new ProviderMismatchException(toString());
+        }
+        LocalLinuxWatchService watchService = (LocalLinuxWatchService) watcher;
+        return watchService.register(this, events, modifiers);
     }
 
     @Override
