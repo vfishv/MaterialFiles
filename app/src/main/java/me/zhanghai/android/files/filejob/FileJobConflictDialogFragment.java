@@ -40,6 +40,7 @@ import butterknife.ButterKnife;
 import java8.nio.file.Path;
 import java8.nio.file.attribute.BasicFileAttributes;
 import me.zhanghai.android.files.R;
+import me.zhanghai.android.files.compat.StringCompat;
 import me.zhanghai.android.files.file.FormatUtils;
 import me.zhanghai.android.files.file.MimeTypes;
 import me.zhanghai.android.files.filelist.FileItem;
@@ -50,7 +51,6 @@ import me.zhanghai.android.files.provider.linux.LinuxFileSystemProvider;
 import me.zhanghai.android.files.util.BundleBuilder;
 import me.zhanghai.android.files.util.ImeUtils;
 import me.zhanghai.android.files.util.RemoteCallback;
-import me.zhanghai.android.files.util.StringCompat;
 import me.zhanghai.android.files.util.ViewUtils;
 
 public class FileJobConflictDialogFragment extends DialogFragment {
@@ -151,13 +151,16 @@ public class FileJobConflictDialogFragment extends DialogFragment {
         boolean targetIsDirectory = mTargetFile.getAttributesNoFollowLinks().isDirectory();
         int titleRes;
         int messageRes;
+        int positiveButtonRes;
         if (sourceIsDirectory && targetIsDirectory) {
             titleRes = R.string.file_job_merge_title_format;
             messageRes = mCopy ? R.string.file_job_merge_copy_message_format
                     : R.string.file_job_merge_move_message_format;
+            positiveButtonRes = R.string.file_job_action_merge;
         } else {
             titleRes = R.string.file_job_replace_title_format;
             messageRes = R.string.file_job_replace_message_format;
+            positiveButtonRes = R.string.file_job_action_replace;
         }
         String targetFileName = mTargetFile.getPath().getFileName().toString();
         String title = context.getString(titleRes, targetFileName);
@@ -197,7 +200,7 @@ public class FileJobConflictDialogFragment extends DialogFragment {
                 }
                 Button positiveButton = requireDialog().findViewById(android.R.id.button1);
                 positiveButton.setText(hasNewName ? R.string.file_job_action_rename
-                        : R.string.file_job_action_replace);
+                        : positiveButtonRes);
             }
         });
         mResetNameButton.setOnClickListener(view -> {
@@ -211,7 +214,7 @@ public class FileJobConflictDialogFragment extends DialogFragment {
         AlertDialog dialog = new AlertDialog.Builder(context, theme)
                 .setTitle(title)
                 .setMessage(message)
-                .setPositiveButton(R.string.file_job_action_replace, this::onDialogButtonClick)
+                .setPositiveButton(positiveButtonRes, this::onDialogButtonClick)
                 .setNegativeButton(R.string.file_job_action_skip, this::onDialogButtonClick)
                 .setNeutralButton(android.R.string.cancel, this::onDialogButtonClick)
                 .create();
@@ -274,7 +277,7 @@ public class FileJobConflictDialogFragment extends DialogFragment {
                     name = mNameEdit.getText().toString();
                     all = false;
                 } else {
-                    action = Action.REPLACE_OR_MERGE;
+                    action = Action.MERGE_OR_REPLACE;
                     name = null;
                     all = mAllCheck.isChecked();
                 }
@@ -339,7 +342,7 @@ public class FileJobConflictDialogFragment extends DialogFragment {
     }
 
     public enum Action {
-        REPLACE_OR_MERGE,
+        MERGE_OR_REPLACE,
         RENAME,
         SKIP,
         CANCEL,

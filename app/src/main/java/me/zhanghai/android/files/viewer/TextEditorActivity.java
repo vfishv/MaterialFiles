@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2018 Hai Zhang <dreaming.in.code.zh@gmail.com>
+ * Copyright (c) 2019 Hai Zhang <dreaming.in.code.zh@gmail.com>
  * All Rights Reserved.
  */
 
-package me.zhanghai.android.files.main;
+package me.zhanghai.android.files.viewer;
 
 import android.content.Context;
 import android.content.Intent;
@@ -16,19 +16,13 @@ import java8.nio.file.Path;
 import me.zhanghai.android.files.util.FragmentUtils;
 import me.zhanghai.android.files.util.IntentPathUtils;
 
-public class MainActivity extends AppCompatActivity {
+public class TextEditorActivity extends AppCompatActivity {
 
-    @NonNull
-    private MainFragment mMainFragment;
+    private TextEditorFragment mTextEditorFragment;
 
     @NonNull
     public static Intent makeIntent(@NonNull Context context) {
-        return new Intent(context, MainActivity.class);
-    }
-
-    @NonNull
-    public static Intent makeIntent(@NonNull Path path, @NonNull Context context) {
-        return IntentPathUtils.putExtraPath(makeIntent(context), path);
+        return new Intent(context, TextEditorActivity.class);
     }
 
     @Override
@@ -40,16 +34,21 @@ public class MainActivity extends AppCompatActivity {
 
         if (savedInstanceState == null) {
             Path path = IntentPathUtils.getExtraPath(getIntent());
-            mMainFragment = MainFragment.newInstance(path);
-            FragmentUtils.add(mMainFragment, this, android.R.id.content);
+            if (path == null) {
+                // TODO: Show a toast.
+                finish();
+                return;
+            }
+            mTextEditorFragment = TextEditorFragment.newInstance(path);
+            FragmentUtils.add(mTextEditorFragment, this, android.R.id.content);
         } else {
-            mMainFragment = FragmentUtils.findById(this, android.R.id.content);
+            mTextEditorFragment = FragmentUtils.findById(this, android.R.id.content);
         }
     }
 
     @Override
     public void onBackPressed() {
-        if (mMainFragment.onBackPressed()) {
+        if (mTextEditorFragment.onBackPressed()) {
             return;
         }
         super.onBackPressed();

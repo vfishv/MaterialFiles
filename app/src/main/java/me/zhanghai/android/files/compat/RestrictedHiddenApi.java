@@ -3,7 +3,7 @@
  * All Rights Reserved.
  */
 
-package me.zhanghai.android.files.reflected;
+package me.zhanghai.android.files.compat;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

@@ -3,7 +3,7 @@
  * All Rights Reserved.
  */
 
-package me.zhanghai.android.files.util;
+package me.zhanghai.android.files.compat;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -15,7 +15,7 @@ import java.io.File;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
-import me.zhanghai.android.files.reflected.ReflectedMethod;
+import me.zhanghai.java.reflected.ReflectedMethod;
 
 /**
  * @see StorageVolume
@@ -28,19 +28,19 @@ public class StorageVolumeCompat {
 
     @NonNull
     @SuppressLint("NewApi")
-    private static final ReflectedMethod sGetPathMethod = new ReflectedMethod(StorageVolume.class,
-            "getPath");
+    private static final ReflectedMethod<StorageVolume> sGetPathMethod = new ReflectedMethod<>(
+            StorageVolume.class, "getPath");
 
     @NonNull
     @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     @SuppressLint("NewApi")
-    private static final ReflectedMethod sGetPathFileMethod = new ReflectedMethod(
+    private static final ReflectedMethod<StorageVolume> sGetPathFileMethod = new ReflectedMethod<>(
             StorageVolume.class, "getPathFile");
 
     @NonNull
     @SuppressLint("NewApi")
-    private static final ReflectedMethod sGetDescriptionMethod = new ReflectedMethod(
-            StorageVolume.class, "getDescription");
+    private static final ReflectedMethod<StorageVolume> sGetDescriptionMethod =
+            new ReflectedMethod<>(StorageVolume.class, "getDescription");
 
     private StorageVolumeCompat() {}
 

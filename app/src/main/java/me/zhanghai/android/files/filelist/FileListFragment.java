@@ -63,6 +63,7 @@ import me.zhanghai.android.files.ui.ToolbarActionMode;
 import me.zhanghai.android.files.util.AppUtils;
 import me.zhanghai.android.files.util.ClipboardUtils;
 import me.zhanghai.android.files.util.FragmentUtils;
+import me.zhanghai.android.files.util.IntentPathUtils;
 import me.zhanghai.android.files.util.IntentUtils;
 import me.zhanghai.android.files.util.ViewUtils;
 import pub.devrel.easypermissions.AfterPermissionGranted;
@@ -98,10 +99,10 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     ViewGroup mContentLayout;
     @BindView(R.id.progress)
     ProgressBar mProgress;
-    @BindView(R.id.empty)
-    View mEmptyView;
     @BindView(R.id.error)
     TextView mErrorView;
+    @BindView(R.id.empty)
+    View mEmptyView;
     @BindView(R.id.swipe_refresh)
     SwipeRefreshLayout mSwipeRefreshLayout;
     @BindView(R.id.recycler)
@@ -738,15 +739,16 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     @Override
     public void openFileAs(@NonNull FileItem file, @NonNull String mimeType) {
         Path path = file.getPath();
-        if (LinuxFileSystemProvider.isLinuxPath(path)) {
-            Uri uri = FileProvider.getUriForPath(path.toFile().getPath());
-            Intent intent = IntentUtils.makeView(uri, mimeType)
-                    .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            MainActivity.putPathExtra(intent, path);
-            AppUtils.startActivity(intent, this);
-        } else {
-            // TODO
+        Uri uri = FileProvider.getUriForPath(path);
+        Intent intent = IntentUtils.makeView(uri, mimeType)
+                .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        IntentPathUtils.putExtraPath(intent, path);
+        // TODO: Archive provider only supports newInputStream() but not newByteChannel(), which
+        //  makes it unable to be exposed by our FileProvider.
+        if (!LinuxFileSystemProvider.isLinuxPath(path)) {
+            intent.setPackage(requireContext().getPackageName());
         }
+        AppUtils.startActivity(intent, this);
     }
 
     @Override
@@ -791,7 +793,7 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
 
     private void sendFile(@NonNull Path path, @NonNull String mimeType) {
         if (LinuxFileSystemProvider.isLinuxPath(path)) {
-            Uri uri = FileProvider.getUriForPath(path.toFile().getPath());
+            Uri uri = FileProvider.getUriForPath(path);
             Intent intent = IntentUtils.makeSendStream(uri, mimeType);
             AppUtils.startActivityWithChooser(intent, this);
         } else {

@@ -19,9 +19,8 @@ import java.io.InterruptedIOException;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.Size;
+import me.zhanghai.android.files.compat.SELinuxCompat;
 import me.zhanghai.android.files.provider.common.ByteString;
-import me.zhanghai.android.files.reflected.ReflectedAccessor;
-import me.zhanghai.android.files.util.SELinuxCompat;
 import me.zhanghai.android.libselinux.SeLinux;
 
 public class Syscalls {
@@ -172,7 +171,9 @@ public class Syscalls {
     }
 
     private static int Os_poll(@NonNull StructPollfd[] fds, int timeout) throws ErrnoException {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M && timeout >= 0) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M || timeout < 0) {
+            return Os.poll(fds, timeout);
+        } else {
             long timeoutTime = System.currentTimeMillis() + timeout;
             while (true) {
                 try {
@@ -189,8 +190,6 @@ public class Syscalls {
                     throw e;
                 }
             }
-        } else {
-            return Os.poll(fds, timeout);
         }
     }
 
@@ -228,10 +227,6 @@ public class Syscalls {
         } catch (ErrnoException e) {
             throw new SyscallException(e);
         }
-    }
-
-    static {
-        ReflectedAccessor.allowRestrictedHiddenApiAccess();
     }
 
     public static void selinux_android_restorecon(@NonNull ByteString path, int flags)

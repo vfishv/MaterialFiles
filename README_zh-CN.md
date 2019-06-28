@@ -2,7 +2,7 @@
 
 一个开源的 Material Design 文件管理器，适用于 Android 5.0+。
 
-下载：[Google Play Beta](https://play.google.com/store/apps/details?id=me.zhanghai.android.files)、[APK](https://github.com/zhanghai/MaterialFiles/releases/download/v1.0.0-beta.1/app-release.apk)
+下载：[Google Play](https://play.google.com/store/apps/details?id=me.zhanghai.android.files)、[酷安](https://www.coolapk.com/apk/me.zhanghai.android.files)、[APK](https://github.com/zhanghai/MaterialFiles/releases/download/v1.0.0-beta.3/app-release.apk)
 
 ## 预览
 
@@ -14,6 +14,7 @@
 - 开源：轻量、简洁并且安全。
 - Material Design：仿照 [Cabinet](https://github.com/aminb/cabinet)，并且注重细节。
 - 面包屑导航栏：点击导航栏所显示路径中的任一文件夹即可快速访问。
+- Root 支持：使用 root 权限查看和管理文件。
 - Linux 友好：类似 [Nautilus](https://wiki.gnome.org/action/show/Apps/Files)，支持符号链接、文件权限和 SELinux 上下文。
 - 健壮性：使用 Linux 系统调用实现，而不是另一个 [`ls` 解析器](https://news.ycombinator.com/item?id=7994720)。
 - 实现良好：使用正确的方式打造，包括 [Java NIO2 文件 API](https://docs.oracle.com/javase/8/docs/api/java/nio/file/package-summary.html) 和 [LiveData](https://developer.android.com/topic/libraries/architecture/livedata)。
@@ -56,11 +57,10 @@
 
 所以，是时候再制作一个 Android 文件管理器了。
 
-## Beta 1 中尚未实现的功能…
+## Beta 3 中尚未实现的功能…
 
 - 搜索文件。
 - 提取压缩文件。
-- Root 文件操作。
 - [Issues](https://github.com/zhanghai/MaterialFiles/issues) 中的更多。
 
 ## 许可证

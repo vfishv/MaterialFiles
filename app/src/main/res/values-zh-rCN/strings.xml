@@ -79,6 +79,7 @@
     <string name="file_job_delete_error_message_format">在删除“%1$s”时发生错误。\n%2$s</string>
     <string name="file_job_get_information_error_message_format">在获取“%1$s”的信息时发生错误。</string>
     <string name="file_job_action_all">应用此操作到所有文件</string>
+    <string name="file_job_action_merge">合并</string>
     <string name="file_job_action_rename">重命名</string>
     <string name="file_job_action_replace">替换</string>
     <string name="file_job_action_retry">重试</string>
@@ -197,6 +198,8 @@
     <string name="navigation_settings">@string/settings_title</string>
     <string name="navigation_about">@string/about_title</string>
 
+    <string name="text_editor_title">文本编辑器</string>
+
     <string name="settings_title">设置</string>
     <string name="settings_interface_title">界面</string>
     <string name="settings_file_list_animation_title">文件列表动画</string>
@@ -261,4 +264,5 @@
     <string name="about_author_name_title">张海</string>
     <string name="about_author_github_title">在 GitHub 上关注</string>
     <string name="about_author_google_plus_title">添加到 Google+ 圈子</string>
+    <string name="about_author_twitter_title">在 Twitter 上关注</string>
 </resources>

@@ -16,10 +16,10 @@ import java.util.Set;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import me.zhanghai.android.files.compat.MapCompat;
 import me.zhanghai.android.files.provider.common.PosixFileType;
 import me.zhanghai.android.files.util.FileNameUtils;
 import me.zhanghai.android.files.util.MapBuilder;
-import me.zhanghai.android.files.util.MapCompat;
 import me.zhanghai.android.files.util.SetBuilder;
 
 public class MimeTypes {
@@ -136,6 +136,8 @@ public class MimeTypes {
                     .put("application/javascript", "text/javascript")
                     .put("application/json", "text/json")
                     .put("application/typescript", "text/typescript")
+                    .put("application/x-sh", "text/x-shellscript")
+                    .put("application/x-shellscript", "text/x-shellscript")
                     // Allows matching generic
                     .put("application/octet-stream", "*/*")
                     .build();

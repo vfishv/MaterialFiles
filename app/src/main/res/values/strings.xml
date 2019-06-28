@@ -86,6 +86,7 @@
     <string name="file_job_delete_error_message_format">There was an error deleting “%1$s”.\n%2$s</string>
     <string name="file_job_get_information_error_message_format">There was an error getting information about “%1$s”.</string>
     <string name="file_job_action_all">Apply this action to all files</string>
+    <string name="file_job_action_merge">Merge</string>
     <string name="file_job_action_rename">Rename</string>
     <string name="file_job_action_replace">Replace</string>
     <string name="file_job_action_retry">Retry</string>
@@ -206,6 +207,8 @@
     <string name="navigation_settings">@string/settings_title</string>
     <string name="navigation_about">@string/about_title</string>
 
+    <string name="text_editor_title">Text editor</string>
+
     <string name="settings_title">Settings</string>
     <string name="settings_interface_title">Interface</string>
     <string name="settings_file_list_animation_title">File list animation</string>
@@ -270,4 +273,5 @@
     <string name="about_author_name_title">Hai Zhang</string>
     <string name="about_author_github_title">Follow on GitHub</string>
     <string name="about_author_google_plus_title">Add to Google+ circles</string>
+    <string name="about_author_twitter_title">Follow on Twitter</string>
 </resources>

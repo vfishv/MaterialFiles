@@ -4,7 +4,7 @@
 
 An open source Material Design file manager, for Android 5.0+.
 
-Download: [Google Play Beta](https://play.google.com/store/apps/details?id=me.zhanghai.android.files), [APK](https://github.com/zhanghai/MaterialFiles/releases/download/v1.0.0-beta.1/app-release.apk)
+Download: [Google Play](https://play.google.com/store/apps/details?id=me.zhanghai.android.files), [Coolapk](https://www.coolapk.com/apk/me.zhanghai.android.files), [APK](https://github.com/zhanghai/MaterialFiles/releases/download/v1.0.0-beta.3/app-release.apk)
 
 ## Preview
 
@@ -16,6 +16,7 @@ Download: [Google Play Beta](https://play.google.com/store/apps/details?id=me.zh
 - Open source: Lightweight, clean and secure.
 - Material Design: Like the good old [Cabinet](https://github.com/aminb/cabinet), with attention into details.
 - Breadcrumbs: Navigate in the filesystem with ease.
+- Root support: View and manage files with root access.
 - Linux-aware: Like [Nautilus](https://wiki.gnome.org/action/show/Apps/Files), knows symbolic links, file permissions and SELinux context.
 - Robust: Uses Linux system calls under the hood, not yet another [`ls` parser](https://news.ycombinator.com/item?id=7994720).
 - Well-implemented: Built upon the right things, including [Java NIO2 File API](https://docs.oracle.com/javase/8/docs/api/java/nio/file/package-summary.html) and [LiveData](https://developer.android.com/topic/libraries/architecture/livedata).
@@ -58,11 +59,10 @@ Because I know people can do it right.
 
 So, it's time for yet another Android file manager.
 
-## Things not yet in Beta 1…
+## Things not yet in Beta 3…
 
 - Search files.
 - Extracting archives.
-- File operations with root.
 - More in [Issues](https://github.com/zhanghai/MaterialFiles/issues).
 
 ## License
