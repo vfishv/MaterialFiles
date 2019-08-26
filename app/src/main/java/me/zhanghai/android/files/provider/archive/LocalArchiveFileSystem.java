@@ -28,19 +28,17 @@ import java8.nio.file.PathMatcher;
 import java8.nio.file.WatchService;
 import java8.nio.file.attribute.UserPrincipalLookupService;
 import java8.nio.file.spi.FileSystemProvider;
-import me.zhanghai.android.files.provider.archive.reader.ArchiveReader;
+import me.zhanghai.android.files.provider.archive.archiver.ArchiveReader;
 import me.zhanghai.android.files.provider.common.ByteString;
 import me.zhanghai.android.files.provider.common.ByteStringBuilder;
+import me.zhanghai.android.files.provider.common.ByteStringListPathFactory;
 
-class LocalArchiveFileSystem extends FileSystem {
+class LocalArchiveFileSystem extends FileSystem implements ByteStringListPathFactory {
 
     static final byte SEPARATOR = '/';
 
     private static final ByteString SEPARATOR_BYTE_STRING = ByteString.ofByte(SEPARATOR);
     private static final String SEPARATOR_STRING = Character.toString((char) SEPARATOR);
-
-    @NonNull
-    private final ArchivePath mRootDirectory;
 
     @NonNull
     private final ArchiveFileSystem mFileSystem;
@@ -50,6 +48,9 @@ class LocalArchiveFileSystem extends FileSystem {
 
     @NonNull
     private final Path mArchiveFile;
+
+    @NonNull
+    private final ArchivePath mRootDirectory;
 
     @NonNull
     private final Object mLock = new Object();
@@ -222,7 +223,7 @@ class LocalArchiveFileSystem extends FileSystem {
 
     @NonNull
     @Override
-    public Path getPath(@NonNull String first, @NonNull String... more) {
+    public ArchivePath getPath(@NonNull String first, @NonNull String... more) {
         Objects.requireNonNull(first);
         Objects.requireNonNull(more);
         ByteStringBuilder pathBuilder = new ByteStringBuilder(ByteString.fromString(first));
@@ -237,7 +238,8 @@ class LocalArchiveFileSystem extends FileSystem {
     }
 
     @NonNull
-    Path getPath(@NonNull ByteString first, @NonNull ByteString... more) {
+    @Override
+    public ArchivePath getPath(@NonNull ByteString first, @NonNull ByteString... more) {
         Objects.requireNonNull(first);
         Objects.requireNonNull(more);
         ByteStringBuilder pathBuilder = new ByteStringBuilder(first);
@@ -267,6 +269,7 @@ class LocalArchiveFileSystem extends FileSystem {
     @NonNull
     @Override
     public WatchService newWatchService() throws IOException {
+        // TODO
         throw new UnsupportedOperationException();
     }
 

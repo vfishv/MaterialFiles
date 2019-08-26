@@ -7,10 +7,12 @@ package me.zhanghai.android.files.filelist;
 
 import android.app.Dialog;
 import android.os.Bundle;
-import android.text.TextUtils;
+
+import java.util.Objects;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.fragment.app.Fragment;
 import me.zhanghai.android.files.R;
 import me.zhanghai.android.files.util.FileNameUtils;
@@ -73,13 +75,14 @@ public class RenameFileDialogFragment extends FileNameDialogFragment {
     }
 
     @Override
+    @StringRes
     protected int getTitleRes() {
-        return R.string.file_rename_title;
+        return R.string.rename;
     }
 
     @Override
     protected boolean isNameUnchanged(@NonNull String name) {
-        return TextUtils.equals(name, FileUtils.getName(mExtraFile));
+        return Objects.equals(name, FileUtils.getName(mExtraFile));
     }
 
     @Override
@@ -90,7 +93,7 @@ public class RenameFileDialogFragment extends FileNameDialogFragment {
     @NonNull
     @Override
     protected Listener getListener() {
-        return (Listener) getParentFragment();
+        return (Listener) requireParentFragment();
     }
 
     public interface Listener extends FileNameDialogFragment.Listener {

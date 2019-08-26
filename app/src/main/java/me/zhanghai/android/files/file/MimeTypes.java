@@ -12,6 +12,7 @@ import android.webkit.MimeTypeMap;
 
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import androidx.annotation.NonNull;
@@ -22,9 +23,13 @@ import me.zhanghai.android.files.util.FileNameUtils;
 import me.zhanghai.android.files.util.MapBuilder;
 import me.zhanghai.android.files.util.SetBuilder;
 
+// TODO: Use Debian mime.types, as in
+//  https://android.googlesource.com/platform/libcore/+/master/luni/src/main/java/libcore/net/mime.types
 public class MimeTypes {
 
     public static final String DIRECTORY_MIME_TYPE = DocumentsContract.Document.MIME_TYPE_DIR;
+
+    public static final String GENERIC_MIME_TYPE = "application/octet-stream";
 
     // See also https://android.googlesource.com/platform/libcore/+/lollipop-release/luni/src/main/java/libcore/net/MimeUtils.java
     // See also https://android.googlesource.com/platform/libcore/+/master/luni/src/main/java/libcore/net/MimeUtils.java
@@ -58,17 +63,19 @@ public class MimeTypes {
                     .put("arw", "image/x-sony-arw")
                     .put("ogv", "video/ogg")
                     // Fixes
-                    .put("application/x-gzip", "tgz") // Was "application/x-gtar"
-                    .put("application/x-compress", "taz") // Was "application/x-gtar"
+                    .put("tgz", "application/x-gtar-compressed") // Was "application/x-gtar"
+                    .put("taz", "application/x-gtar-compressed") // Was "application/x-gtar"
                     .put("csv", "text/csv") // Was "text/comma-separated-values"
                     // Addition
                     .put("gz", "application/gzip")
+                    .put("cab", "application/vnd.ms-cab-compressed")
                     .put("7z", "application/x-7z-compressed")
                     .put("bz", "application/x-bzip")
                     .put("bz2", "application/x-bzip2")
                     .put("z", "application/x-compress")
                     .put("jar", "application/x-java-archive")
-                    .put("cab", "application/vnd.ms-cab-compressed")
+                    .put("lzma", "application/x-lzma")
+                    .put("xz", "application/x-xz")
                     .put("m3u", "audio/x-mpegurl")
                     .put("m3u8", "audio/x-mpegurl")
                     .put("p7b", "application/x-pkcs7-certificates")
@@ -139,22 +146,28 @@ public class MimeTypes {
                     .put("application/x-sh", "text/x-shellscript")
                     .put("application/x-shellscript", "text/x-shellscript")
                     // Allows matching generic
-                    .put("application/octet-stream", "*/*")
+                    .put(GENERIC_MIME_TYPE, "*/*")
                     .build();
 
     private static final Set<String> sSupportedArchiveMimeTypes = SetBuilder.<String>newHashSet()
-            .add("application/vnd.android.package-archive")
             .add("application/gzip")
             .add("application/java-archive")
-            .add("application/zip")
+            .add("application/vnd.android.package-archive")
             .add("application/vnd.debian.binary-package")
+            // Requires O and handled in isSupportedArchive.
+            //.add("application/x-7z-compressed")
             .add("application/x-bzip2")
             .add("application/x-compress")
+            .add("application/x-cpio")
             .add("application/x-deb")
             .add("application/x-debian-package")
             .add("application/x-gtar")
+            .add("application/x-gtar-compressed")
             .add("application/x-java-archive")
+            .add("application/x-lzma")
             .add("application/x-tar")
+            .add("application/x-xz")
+            .add("application/zip")
             .buildUnmodifiable();
 
     @NonNull
@@ -169,7 +182,7 @@ public class MimeTypes {
         if (!TextUtils.isEmpty(mimeType)) {
             return mimeType;
         }
-        return "application/octet-stream";
+        return GENERIC_MIME_TYPE;
     }
 
     @Nullable
@@ -187,18 +200,18 @@ public class MimeTypes {
     }
 
     public static boolean supportsThumbnail(@NonNull String mimeType) {
-        return isImage(mimeType) || isMedia(mimeType) || TextUtils.equals(mimeType,
+        return isImage(mimeType) || isMedia(mimeType) || Objects.equals(mimeType,
                 "application/vnd.android.package-archive");
     }
 
     public static boolean isApk(@NonNull String mimeType) {
-        return TextUtils.equals(mimeType, "application/vnd.android.package-archive");
+        return Objects.equals(mimeType, "application/vnd.android.package-archive");
     }
 
     public static boolean isSupportedArchive(@NonNull String mimeType) {
         return sSupportedArchiveMimeTypes.contains(mimeType)
                 || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
-                        && TextUtils.equals(mimeType, "application/x-7z-compressed"));
+                        && Objects.equals(mimeType, "application/x-7z-compressed"));
     }
 
     public static boolean isImage(@NonNull String mimeType) {
@@ -208,5 +221,29 @@ public class MimeTypes {
     public static boolean isMedia(@NonNull String mimeType) {
         int icon = getIconRes(mimeType);
         return icon == MimeTypeIcons.Icons.AUDIO || icon == MimeTypeIcons.Icons.VIDEO;
+    }
+
+    public static boolean matches(@NonNull String mimeTypeSpec, @NonNull String mimeType) {
+        MimeTypeInfo mimeTypeSpecInfo = MimeTypeInfo.parse(mimeTypeSpec);
+        if (mimeTypeSpecInfo == null) {
+            return false;
+        }
+        MimeTypeInfo mimeTypeInfo = MimeTypeInfo.parse(mimeType);
+        if (mimeTypeInfo == null) {
+            return false;
+        }
+        if (!(Objects.equals(mimeTypeSpecInfo.type, "*")
+                || Objects.equals(mimeTypeInfo.type, mimeTypeSpecInfo.type))) {
+            return false;
+        }
+        if (!(Objects.equals(mimeTypeSpecInfo.subtype, "*")
+                || Objects.equals(mimeTypeInfo.subtype, mimeTypeSpecInfo.subtype))) {
+            return false;
+        }
+        if (!(mimeTypeSpecInfo.parameters == null
+                || Objects.equals(mimeTypeInfo.parameters, mimeTypeSpecInfo.parameters))) {
+            return false;
+        }
+        return true;
     }
 }

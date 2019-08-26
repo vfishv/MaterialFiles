@@ -19,6 +19,7 @@ import java8.nio.file.LinkOption;
 import java8.nio.file.Path;
 import java8.nio.file.attribute.BasicFileAttributes;
 import me.zhanghai.android.files.provider.common.AndroidFileTypeDetector;
+import me.zhanghai.android.files.provider.common.MoreFiles;
 
 public class FileItem implements Parcelable {
 
@@ -46,6 +47,11 @@ public class FileItem implements Parcelable {
         mMimeType = mimeType;
     }
 
+    protected FileItem(@NonNull FileItem fileItem) {
+        this(fileItem.mPath, fileItem.mAttributes, fileItem.mSymbolicLinkTarget,
+                fileItem.mSymbolicLinkTargetAttributes, fileItem.mHidden, fileItem.mMimeType);
+    }
+
     @NonNull
     @WorkerThread
     public static FileItem load(@NonNull Path path) throws IOException {
@@ -56,7 +62,7 @@ public class FileItem implements Parcelable {
             String mimeType = AndroidFileTypeDetector.getMimeType(path, attributes);
             return new FileItem(path, attributes, null, null, hidden, mimeType);
         }
-        String symbolicLinkTarget = Files.readSymbolicLink(path).toString();
+        String symbolicLinkTarget = MoreFiles.readSymbolicLink(path).toString();
         BasicFileAttributes symbolicLinkTargetAttributes;
         try {
             symbolicLinkTargetAttributes = Files.readAttributes(path, BasicFileAttributes.class);

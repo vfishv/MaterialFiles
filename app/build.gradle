@@ -5,7 +5,7 @@
 
 apply plugin: 'com.android.application'
 
-//apply from: '../signing.gradle'
+apply from: '../signing.gradle'
 
 android {
     compileSdkVersion 28
@@ -14,8 +14,8 @@ android {
         applicationId 'me.zhanghai.android.files'
         minSdkVersion 21
         targetSdkVersion 28
-        versionCode 4
-        versionName '1.0.0-beta.3'
+        versionCode 8
+        versionName '1.0.0-beta.7'
         resValue 'string', 'app_version', versionName + ' (' + versionCode + ')'
         buildConfigField 'String', 'FILE_PROVIDIER_AUTHORITY', 'APPLICATION_ID + ".file_provider"'
         resValue 'string', 'file_provider_authority', applicationId + '.file_provider'
@@ -24,18 +24,21 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-    buildTypes {
-//        release {
-//            minifyEnabled true
-//            shrinkResources true
-//            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-//            signingConfig signingConfigs.release
-//        }
-    }
     externalNativeBuild {
         cmake {
             path 'CMakeLists.txt'
         }
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+    }
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
     }
 }
 
@@ -46,7 +49,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'io.fabric.tools:gradle:1.29.0'
+        classpath 'io.fabric.tools:gradle:1.31.0'
     }
 }
 apply plugin: 'io.fabric'
@@ -57,23 +60,29 @@ repositories {
     }
 }
 dependencies {
-    //releaseImplementation 'com.github.mypplication:stetho-noop:1.1'
+    implementation 'com.github.chrisbanes:PhotoView:2.3.0'
+    releaseImplementation 'com.github.mypplication:stetho-noop:1.1'
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0-alpha01'
-    implementation 'androidx.lifecycle:lifecycle-common-java8:2.2.0-alpha01'
-    implementation 'androidx.appcompat:appcompat:1.1.0-alpha05'
+    implementation 'androidx.appcompat:appcompat:1.1.0-rc01'
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0-alpha03'
+    implementation 'androidx.lifecycle:lifecycle-common-java8:2.2.0-alpha03'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0-alpha02'
+    implementation 'com.caverock:androidsvg-aar:1.4'
     implementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
     implementation 'com.crashlytics.sdk.android:crashlytics-ndk:2.1.0'
-    implementation 'com.google.android.material:material:1.1.0-alpha07'
-    implementation 'com.google.firebase:firebase-core:16.0.9'
+    implementation 'com.davemorrissey.labs:subsampling-scale-image-view:3.10.0'
     debugImplementation 'com.facebook.stetho:stetho:1.5.1'
     // If added along with okhttp3, remove the related dontwarn from proguard-rules.pro.
     //debugImplementation 'com.facebook.stetho:stetho-okhttp3:1.5.0'
     implementation 'com.github.bumptech.glide:glide:4.9.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.9.0'
+    implementation 'com.google.android.material:material:1.1.0-alpha09'
+    implementation 'com.google.firebase:firebase-core:17.1.0'
+    implementation 'com.h6ah4i.android.materialshadowninepatch:materialshadowninepatch:1.0.0'
+    implementation 'com.h6ah4i.android.widget.advrecyclerview:advrecyclerview:1.0.0'
     implementation 'com.jakewharton:butterknife:10.1.0'
     annotationProcessor 'com.jakewharton:butterknife-compiler:10.1.0'
     implementation 'com.jakewharton.threetenabp:threetenabp:1.2.1'
@@ -81,19 +90,26 @@ dependencies {
     // If https://github.com/timusus/RecyclerView-FastScroll/pull/96 is merged and released, remove
     // the related dontwarn from proguard-rules.pro.
     implementation 'com.simplecityapps:recyclerview-fastscroll:1.0.18'
-    implementation 'com.takisoft.preferencex:preferencex:1.0.0'
-    implementation 'com.takisoft.preferencex:preferencex-simplemenu:1.0.0'
-    implementation 'de.psdev.licensesdialog:licensesdialog:2.0.0'
+    implementation 'com.takisoft.preferencex:preferencex:1.1.0-alpha05'
+    implementation 'androidx.preference:preference:1.1.0-rc01'
+    implementation 'com.takisoft.preferencex:preferencex-simplemenu:1.1.0-alpha05'
+    implementation 'de.psdev.licensesdialog:licensesdialog:2.1.0'
     implementation 'eu.chainfire:librootjava:1.2.0'
     implementation 'eu.chainfire:libsuperuser:1.0.0.201704021214'
     implementation 'me.zhanghai.android.effortlesspermissions:library:1.1.0'
     implementation 'me.zhanghai.android.libselinux:library:2.0.0'
     implementation 'me.zhanghai.android.materialedittext:library:1.0.5'
     implementation 'me.zhanghai.android.retrofile:library:1.1.0'
+    implementation 'me.zhanghai.android.systemuihelper:library:1.0.0'
+    implementation 'me.zhanghai.java.functional:android:1.0.0'
+    implementation 'me.zhanghai.java.promise:library:1.0.0'
     implementation 'me.zhanghai.java.reflected:library:1.0.1'
+    implementation 'net.sourceforge.streamsupport:android-retrostreams:1.7.1'
     implementation 'org.apache.commons:commons-compress:1.18'
     // Optional dependency of Commons Compress for 7Z LZMA.
     implementation 'org.tukaani:xz:1.8'
+    implementation 'org.apache.ftpserver:ftpserver-core:1.1.1'
+    implementation 'org.slf4j:slf4j-android:1.7.28'
     implementation 'org.greenrobot:eventbus:3.1.1'
 }
 

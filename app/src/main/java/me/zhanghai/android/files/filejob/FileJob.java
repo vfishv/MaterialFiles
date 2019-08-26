@@ -5,6 +5,8 @@
 
 package me.zhanghai.android.files.filejob;
 
+import android.app.Notification;
+
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.Random;
@@ -36,8 +38,9 @@ public abstract class FileJob {
             e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
-            AppUtils.runOnUiThread(() -> ToastUtils.show(e.getMessage(), service));
+            AppUtils.runOnUiThread(() -> ToastUtils.show(e.toString(), service));
         } finally {
+            cancelNotification();
             mService = null;
         }
     }
@@ -46,6 +49,14 @@ public abstract class FileJob {
 
     protected FileJobService getService() {
         return mService;
+    }
+
+    protected void postNotification(@NonNull Notification notification) {
+        getService().getNotificationManager().notify(getId(), notification);
+    }
+
+    protected void cancelNotification() {
+        mService.getNotificationManager().cancel(getId());
     }
 
     public void setFuture(@NonNull Future<?> future) {

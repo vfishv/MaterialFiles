@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import java.util.List;
+import java.util.Objects;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -27,9 +28,13 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import java8.nio.file.Path;
 import me.zhanghai.android.files.R;
-import me.zhanghai.android.files.filesystem.Documents;
+import me.zhanghai.android.files.navigation.file.DocumentTree;
+import me.zhanghai.android.files.provider.document.DocumentFileSystemProvider;
+import me.zhanghai.android.files.util.AppUtils;
 
-public class NavigationFragment extends Fragment implements NavigationItem.Listener {
+public class NavigationFragment extends Fragment implements NavigationItem.Listener,
+        ConfirmRemoveDocumentTreeDialogFragment.Listener,
+        EditBookmarkDirectoryDialogFragment.Listener {
 
     private static final int REQUEST_CODE_OPEN_DOCUMENT_TREE = 1;
 
@@ -40,9 +45,7 @@ public class NavigationFragment extends Fragment implements NavigationItem.Liste
     private NavigationListAdapter mAdapter;
 
     @NonNull
-    private MainListener mMainListener;
-    @NonNull
-    private FileListListener mFileListListener;
+    private Listener mListener;
 
     @NonNull
     public static NavigationFragment newInstance() {
@@ -55,10 +58,8 @@ public class NavigationFragment extends Fragment implements NavigationItem.Liste
      */
     public NavigationFragment() {}
 
-    public void setListeners(@NonNull MainListener mainListener,
-                             @NonNull FileListListener fileListListener) {
-        mMainListener = mainListener;
-        mFileListListener = fileListListener;
+    public void setListeners(@NonNull Listener listener) {
+        mListener = listener;
     }
 
     @Nullable
@@ -88,14 +89,14 @@ public class NavigationFragment extends Fragment implements NavigationItem.Liste
         mRecyclerView.setAdapter(mAdapter);
 
         NavigationItemListLiveData.getInstance().observe(this, this::onNavigationItemsChanged);
-        mFileListListener.observeCurrentPath(this, this::onCurrentPathChanged);
+        mListener.observeCurrentPath(this, this::onCurrentPathChanged);
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         switch (requestCode) {
             case REQUEST_CODE_OPEN_DOCUMENT_TREE:
-                if (resultCode == Activity.RESULT_OK) {
+                if (resultCode == Activity.RESULT_OK && data != null) {
                     Uri uri = data.getData();
                     if (uri != null) {
                         addDocumentTree(uri);
@@ -118,40 +119,65 @@ public class NavigationFragment extends Fragment implements NavigationItem.Liste
     @NonNull
     @Override
     public Path getCurrentPath() {
-        return mFileListListener.getCurrentPath();
+        return mListener.getCurrentPath();
     }
 
     @Override
     public void navigateTo(@NonNull Path path) {
-        mFileListListener.navigateTo(path);
+        mListener.navigateTo(path);
     }
 
     @Override
     public void navigateToRoot(@NonNull Path path) {
-        mFileListListener.navigateToRoot(path);
+        mListener.navigateToRoot(path);
     }
 
     @Override
     public void onAddDocumentTree() {
-        startActivityForResult(Documents.makeOpenTreeIntent(), REQUEST_CODE_OPEN_DOCUMENT_TREE);
+        AppUtils.startActivityForResult(DocumentTree.makeOpenIntent(),
+                REQUEST_CODE_OPEN_DOCUMENT_TREE, this);
     }
 
-    private void addDocumentTree(@NonNull Uri uri) {
-        // TODO: Support DocumentsProvider and add to navigation roots.
-        //Documents.takePersistableTreePermission(uri, requireContext());
+    private void addDocumentTree(@NonNull Uri treeUri) {
+        DocumentTree.takePersistablePermission(treeUri, requireContext());
+    }
+
+    @Override
+    public void onRemoveDocumentTree(@NonNull Uri treeUri) {
+        ConfirmRemoveDocumentTreeDialogFragment.show(treeUri, this);
+    }
+
+    @Override
+    public void removeDocumentTree(@NonNull Uri treeUri) {
+        DocumentTree.releasePersistablePermission(treeUri, requireContext());
+        Path currentPath = mListener.getCurrentPath();
+        if (DocumentFileSystemProvider.isDocumentPath(currentPath)
+                && Objects.equals(DocumentFileSystemProvider.getTreeUri(currentPath), treeUri)) {
+            mListener.navigateToDefaultRoot();
+        }
+    }
+
+    @Override
+    public void onEditBookmarkDirectory(@NonNull BookmarkDirectory bookmarkDirectory) {
+        EditBookmarkDirectoryDialogFragment.show(bookmarkDirectory, this);
+    }
+
+    @Override
+    public void replaceBookmarkDirectory(@NonNull BookmarkDirectory bookmarkDirectory) {
+        BookmarkDirectories.replace(bookmarkDirectory);
+    }
+
+    @Override
+    public void removeBookmarkDirectory(@NonNull BookmarkDirectory bookmarkDirectory) {
+        BookmarkDirectories.remove(bookmarkDirectory);
     }
 
     @Override
     public void closeNavigationDrawer() {
-        mMainListener.closeNavigationDrawer();
+        mListener.closeNavigationDrawer();
     }
 
-    public interface MainListener {
-
-        void closeNavigationDrawer();
-    }
-
-    public interface FileListListener {
+    public interface Listener {
 
         @NonNull
         Path getCurrentPath();
@@ -160,6 +186,10 @@ public class NavigationFragment extends Fragment implements NavigationItem.Liste
 
         void navigateToRoot(@NonNull Path path);
 
+        void navigateToDefaultRoot();
+
         void observeCurrentPath(@NonNull LifecycleOwner owner, @NonNull Observer<Path> observer);
+
+        void closeNavigationDrawer();
     }
 }

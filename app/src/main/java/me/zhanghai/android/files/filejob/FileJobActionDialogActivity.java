@@ -11,22 +11,22 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
+import me.zhanghai.android.files.AppActivity;
 import me.zhanghai.android.files.util.FragmentUtils;
 
-public class FileJobActionDialogActivity extends AppCompatActivity {
+public class FileJobActionDialogActivity extends AppActivity {
 
     private static final String FRAGMENT_TAG = FileJobActionDialogFragment.class.getName();
 
     private FileJobActionDialogFragment mFragment;
 
     @NonNull
-    public static Intent makeIntent(@NonNull CharSequence title, @NonNull CharSequence message,
-                                    boolean showAll, @Nullable CharSequence positiveButtonText,
-                                    @Nullable CharSequence negativeButtonText,
-                                    @Nullable CharSequence neutralButtonText,
-                                    @NonNull FileJobActionDialogFragment.Listener listener,
-                                    @NonNull Context context) {
+    public static Intent newIntent(@NonNull CharSequence title, @NonNull CharSequence message,
+                                   boolean showAll, @Nullable CharSequence positiveButtonText,
+                                   @Nullable CharSequence negativeButtonText,
+                                   @Nullable CharSequence neutralButtonText,
+                                   @NonNull FileJobActionDialogFragment.Listener listener,
+                                   @NonNull Context context) {
         Intent intent = new Intent(context, FileJobActionDialogActivity.class);
         FileJobActionDialogFragment.putArguments(intent, title, message, showAll,
                 positiveButtonText, negativeButtonText, neutralButtonText, listener);

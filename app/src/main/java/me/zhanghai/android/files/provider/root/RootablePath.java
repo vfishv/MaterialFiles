@@ -5,11 +5,24 @@
 
 package me.zhanghai.android.files.provider.root;
 
+import androidx.annotation.NonNull;
+import me.zhanghai.android.files.settings.Settings;
+
 public interface RootablePath {
 
-    boolean canUseRoot();
+    boolean shouldPreferRoot();
 
-    boolean shouldUseRoot();
+    void setPreferRoot();
 
-    void setUseRoot();
+    @NonNull
+    default RootStrategy getRootStrategy() {
+        if (RootUtils.isRunningAsRoot()) {
+            return RootStrategy.NEVER;
+        }
+        RootStrategy strategy = Settings.ROOT_STRATEGY.getValue();
+        if (strategy == RootStrategy.PREFER_NO && shouldPreferRoot()) {
+            return RootStrategy.PREFER_YES;
+        }
+        return strategy;
+    }
 }

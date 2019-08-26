@@ -8,6 +8,7 @@ package me.zhanghai.android.files.navigation;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Environment;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
@@ -33,12 +34,14 @@ import me.zhanghai.android.files.about.AboutActivity;
 import me.zhanghai.android.files.compat.StorageManagerCompat;
 import me.zhanghai.android.files.compat.StorageVolumeCompat;
 import me.zhanghai.android.files.file.FormatUtils;
-import me.zhanghai.android.files.filesystem.JavaFile;
-import me.zhanghai.android.files.functional.Functional;
+import me.zhanghai.android.files.ftpserver.FtpServerActivity;
+import me.zhanghai.android.files.navigation.file.DocumentTree;
+import me.zhanghai.android.files.navigation.file.JavaFile;
+import me.zhanghai.android.files.provider.document.DocumentFileSystemProvider;
+import me.zhanghai.android.files.settings.Settings;
 import me.zhanghai.android.files.settings.SettingsActivity;
-import me.zhanghai.android.files.settings.SettingsLiveDatas;
-import me.zhanghai.android.files.settings.StandardDirectorySettings;
 import me.zhanghai.android.files.util.ListBuilder;
+import me.zhanghai.java.functional.Functional;
 
 public class NavigationItems {
 
@@ -78,6 +81,9 @@ public class NavigationItems {
                     .add(new StandardDirectory(R.drawable.qq_icon_white_24dp,
                             R.string.navigation_standard_directory_qq, "tencent/QQfile_recv",
                             false))
+                    .add(new StandardDirectory(R.drawable.tim_icon_white_24dp,
+                            R.string.navigation_standard_directory_tim, "tencent/TIMfile_recv",
+                            false))
                     .add(new StandardDirectory(R.drawable.wechat_icon_white_24dp,
                             R.string.navigation_standard_directory_wechat,
                             "tencent/MicroMsg/Download", false))
@@ -91,6 +97,11 @@ public class NavigationItems {
         if (!standardDirectoryItems.isEmpty()) {
             items.add(null);
             items.addAll(standardDirectoryItems);
+        }
+        List<NavigationItem> bookmarkDirectoryItems = getBookmarkDirectoryItems();
+        if (!bookmarkDirectoryItems.isEmpty()) {
+            items.add(null);
+            items.addAll(bookmarkDirectoryItems);
         }
         items.add(null);
         items.addAll(getMenuItems());
@@ -106,6 +117,8 @@ public class NavigationItems {
                 StorageManager.class);
         List<StorageVolume> storageVolumes = StorageManagerCompat.getStorageVolumes(storageManager);
         Functional.map(storageVolumes, StorageVolumeRootItem::new, rootItems);
+        List<Uri> treeUris = DocumentTreesLiveData.getInstance().getValue();
+        Functional.map(treeUris, DocumentTreeRootItem::new, rootItems);
         rootItems.add(new AddDocumentTreeItem());
         return rootItems;
     }
@@ -120,23 +133,18 @@ public class NavigationItems {
 
     @NonNull
     public static List<StandardDirectory> getStandardDirectories() {
-        List<StandardDirectory> standardDirectories = new ArrayList<>();
-        Map<String, StandardDirectory> defaultStandardDirectories = new LinkedHashMap<>();
-        for (StandardDirectory standardDirectory : getDefaultStandardDirectories()) {
-            defaultStandardDirectories.put(standardDirectory.getId(), standardDirectory);
+        Map<String, StandardDirectorySettings> settingsMap = new LinkedHashMap<>();
+        for (StandardDirectorySettings settings : Settings.STANDARD_DIRECTORY_SETTINGS.getValue()) {
+            settingsMap.put(settings.getId(), settings);
         }
-        List<StandardDirectorySettings> settingsList =
-                SettingsLiveDatas.STANDARD_DIRECTORY_SETTINGS.getValue();
-        if (settingsList != null) {
-            for (StandardDirectorySettings settings : settingsList) {
-                StandardDirectory standardDirectory = defaultStandardDirectories.remove(
-                        settings.getId());
-                if (standardDirectory != null) {
-                    standardDirectories.add(standardDirectory.withSettings(settings));
-                }
+        List<StandardDirectory> standardDirectories = getDefaultStandardDirectories();
+        standardDirectories = Functional.map(standardDirectories, standardDirectory -> {
+            StandardDirectorySettings settings = settingsMap.get(standardDirectory.getId());
+            if (settings != null) {
+                standardDirectory = standardDirectory.withSettings(settings);
             }
-        }
-        standardDirectories.addAll(defaultStandardDirectories.values());
+            return standardDirectory;
+        });
         return standardDirectories;
     }
 
@@ -146,6 +154,7 @@ public class NavigationItems {
         return Functional.map(DEFAULT_STANDARD_DIRECTORIES, standardDirectory -> {
             switch (standardDirectory.getIconRes()) {
                 case R.drawable.qq_icon_white_24dp:
+                case R.drawable.tim_icon_white_24dp:
                 case R.drawable.wechat_icon_white_24dp: {
                     String path = getExternalStorageDirectory(standardDirectory.getRelativePath());
                     if (JavaFile.isDirectory(path)) {
@@ -165,10 +174,18 @@ public class NavigationItems {
     }
 
     @NonNull
+    @Size(min = 0)
+    private static List<NavigationItem> getBookmarkDirectoryItems() {
+        return Functional.map(Settings.BOOKMARK_DIRECTORIES.getValue(), BookmarkDirectoryItem::new);
+    }
+
+    @NonNull
     @Size(2)
     private static List<NavigationItem> getMenuItems() {
         Context context = AppApplication.getInstance();
         return Arrays.asList(
+                new ActivityMenuItem(R.drawable.shared_directory_icon_white_24dp,
+                        R.string.navigation_ftp_server, FtpServerActivity.class, context),
                 new ActivityMenuItem(R.drawable.settings_icon_white_24dp,
                         R.string.navigation_settings, SettingsActivity.class, context),
                 new ActivityMenuItem(R.drawable.about_icon_white_24dp, R.string.navigation_about,
@@ -301,7 +318,45 @@ public class NavigationItems {
 
         @Override
         public int getTitleRes() {
-            throw new UnsupportedOperationException();
+            throw new AssertionError();
+        }
+    }
+
+    private static class DocumentTreeRootItem extends RootItem {
+
+        @NonNull
+        private final Uri mTreeUri;
+        @NonNull
+        private final String mTitle;
+
+        public DocumentTreeRootItem(@NonNull Uri treeUri) {
+            super(DocumentFileSystemProvider.getRootPathForTreeUri(treeUri));
+
+            mTreeUri = treeUri;
+            mTitle = DocumentTree.getDisplayName(mTreeUri, AppApplication.getInstance());
+        }
+
+        @DrawableRes
+        @Override
+        public int getIconRes() {
+            return R.drawable.directory_icon_white_24dp;
+        }
+
+        @NonNull
+        @Override
+        public String getTitle(@NonNull Context context) {
+            return mTitle;
+        }
+
+        @Override
+        protected int getTitleRes() {
+            throw new AssertionError();
+        }
+
+        @Override
+        public boolean onLongClick(@NonNull Listener listener) {
+            listener.onRemoveDocumentTree(mTreeUri);
+            return true;
         }
     }
 
@@ -358,7 +413,41 @@ public class NavigationItems {
 
         @Override
         protected int getTitleRes() {
-            throw new UnsupportedOperationException();
+            throw new AssertionError();
+        }
+    }
+
+    private static class BookmarkDirectoryItem extends FileItem {
+
+        private final BookmarkDirectory mBookmarkDirectory;
+
+        public BookmarkDirectoryItem(@NonNull BookmarkDirectory bookmarkDirectory) {
+            super(bookmarkDirectory.getPath());
+
+            mBookmarkDirectory = bookmarkDirectory;
+        }
+
+        @DrawableRes
+        @Override
+        public int getIconRes() {
+            return R.drawable.directory_icon_white_24dp;
+        }
+
+        @NonNull
+        @Override
+        public String getTitle(@NonNull Context context) {
+            return mBookmarkDirectory.getName();
+        }
+
+        @Override
+        protected int getTitleRes() {
+            throw new AssertionError();
+        }
+
+        @Override
+        public boolean onLongClick(@NonNull Listener listener) {
+            listener.onEditBookmarkDirectory(mBookmarkDirectory);
+            return true;
         }
     }
 

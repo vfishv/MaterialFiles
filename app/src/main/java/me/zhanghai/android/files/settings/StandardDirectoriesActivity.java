@@ -11,13 +11,13 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
+import me.zhanghai.android.files.AppActivity;
 import me.zhanghai.android.files.util.FragmentUtils;
 
-public class StandardDirectoriesActivity extends AppCompatActivity {
+public class StandardDirectoriesActivity extends AppActivity {
 
     @NonNull
-    public static Intent makeIntent(@NonNull Context context) {
+    public static Intent newIntent(@NonNull Context context) {
         return new Intent(context, StandardDirectoriesActivity.class);
     }
 
@@ -29,7 +29,7 @@ public class StandardDirectoriesActivity extends AppCompatActivity {
         findViewById(android.R.id.content);
 
         if (savedInstanceState == null) {
-            FragmentUtils.add(StandardDirectoriesActivityFragment.newInstance(), this,
+            FragmentUtils.add(StandardDirectoriesFragment.newInstance(), this,
                     android.R.id.content);
         }
     }

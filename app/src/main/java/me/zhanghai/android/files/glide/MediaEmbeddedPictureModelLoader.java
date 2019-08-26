@@ -6,17 +6,16 @@
 package me.zhanghai.android.files.glide;
 
 import android.media.MediaMetadataRetriever;
-import android.text.TextUtils;
 
 import com.bumptech.glide.Priority;
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.Options;
+import com.bumptech.glide.load.data.DataFetcher;
 import com.bumptech.glide.load.model.ModelLoader;
 import com.bumptech.glide.load.model.ModelLoaderFactory;
 import com.bumptech.glide.load.model.MultiModelLoaderFactory;
 import com.bumptech.glide.signature.ObjectKey;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 
 import androidx.annotation.NonNull;
@@ -25,64 +24,50 @@ import java8.nio.file.Path;
 import me.zhanghai.android.files.file.MimeTypes;
 import me.zhanghai.android.files.provider.linux.LinuxFileSystemProvider;
 
-public class MediaEmbeddedPictureModelLoader<Model> implements ModelLoader<Model, ByteBuffer> {
+public class MediaEmbeddedPictureModelLoader implements ModelLoader<Path, ByteBuffer> {
 
     @Override
-    public boolean handles(@NonNull Model model) {
-        String path = getPath(model);
-        if (TextUtils.isEmpty(path)) {
+    public boolean handles(@NonNull Path model) {
+        if (!LinuxFileSystemProvider.isLinuxPath(model)) {
             return false;
         }
-        String mimeType = MimeTypes.getMimeType(path);
+        String mimeType = MimeTypes.getMimeType(model.toFile().toString());
         return MimeTypes.isMedia(mimeType);
     }
 
     @Nullable
     @Override
-    public LoadData<ByteBuffer> buildLoadData(@NonNull Model model, int width, int height,
+    public LoadData<ByteBuffer> buildLoadData(@NonNull Path model, int width, int height,
                                               @NonNull Options options) {
-        return new LoadData<>(new ObjectKey(model), new DataFetcher(getPath(model)));
+        return new LoadData<>(new ObjectKey(model), new Fetcher(model.toFile().toString()));
     }
 
-    @NonNull
-    private String getPath(@NonNull Model model) {
-        if (model instanceof String) {
-            return (String) model;
-        } else if (model instanceof File) {
-            File file = (File) model;
-            return file.getPath();
-        } else if (model instanceof Path) {
-            Path path = (Path) model;
-            if (LinuxFileSystemProvider.isLinuxPath(path)) {
-                return path.toFile().getPath();
-            }
-        }
-        throw new IllegalArgumentException("Unable to get path from model: " + model);
-    }
-
-    private static class DataFetcher
-            implements com.bumptech.glide.load.data.DataFetcher<ByteBuffer> {
+    private static class Fetcher implements DataFetcher<ByteBuffer> {
 
         @NonNull
         private final String path;
 
-        public DataFetcher(@NonNull String path) {
+        public Fetcher(@NonNull String path) {
             this.path = path;
         }
 
         @Override
         public void loadData(@NonNull Priority priority,
                              @NonNull DataCallback<? super ByteBuffer> callback) {
-            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+            ByteBuffer picture;
             try {
-                retriever.setDataSource(path);
-                ByteBuffer picture = ByteBuffer.wrap(retriever.getEmbeddedPicture());
-                callback.onDataReady(picture);
+                MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                try {
+                    retriever.setDataSource(path);
+                    picture = ByteBuffer.wrap(retriever.getEmbeddedPicture());
+                } finally {
+                    retriever.release();
+                }
             } catch (Exception e) {
                 callback.onLoadFailed(e);
-            } finally {
-                retriever.release();
+                return;
             }
+            callback.onDataReady(picture);
         }
 
         @Override
@@ -104,12 +89,12 @@ public class MediaEmbeddedPictureModelLoader<Model> implements ModelLoader<Model
         }
     }
 
-    public static class Factory<Model> implements ModelLoaderFactory<Model, ByteBuffer> {
+    public static class Factory implements ModelLoaderFactory<Path, ByteBuffer> {
 
         @NonNull
         @Override
-        public ModelLoader<Model, ByteBuffer> build(@NonNull MultiModelLoaderFactory multiFactory) {
-            return new MediaEmbeddedPictureModelLoader<>();
+        public ModelLoader<Path, ByteBuffer> build(@NonNull MultiModelLoaderFactory multiFactory) {
+            return new MediaEmbeddedPictureModelLoader();
         }
 
         @Override

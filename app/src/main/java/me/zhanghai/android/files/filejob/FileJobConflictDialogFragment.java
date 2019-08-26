@@ -12,7 +12,6 @@ import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.Editable;
-import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,13 +26,14 @@ import android.widget.TextView;
 import com.bumptech.glide.signature.ObjectKey;
 
 import java.util.List;
+import java.util.Objects;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatDialogFragment;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.core.widget.NestedScrollView;
-import androidx.fragment.app.DialogFragment;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -47,19 +47,18 @@ import me.zhanghai.android.files.filelist.FileItem;
 import me.zhanghai.android.files.filelist.FileListAdapter;
 import me.zhanghai.android.files.glide.GlideApp;
 import me.zhanghai.android.files.glide.IgnoreErrorDrawableImageViewTarget;
-import me.zhanghai.android.files.provider.linux.LinuxFileSystemProvider;
 import me.zhanghai.android.files.util.BundleBuilder;
 import me.zhanghai.android.files.util.ImeUtils;
 import me.zhanghai.android.files.util.RemoteCallback;
 import me.zhanghai.android.files.util.ViewUtils;
 
-public class FileJobConflictDialogFragment extends DialogFragment {
+public class FileJobConflictDialogFragment extends AppCompatDialogFragment {
 
     private static final String KEY_PREFIX = FileJobConflictDialogFragment.class.getName() + '.';
 
     private static final String EXTRA_SOURCE_FILE = KEY_PREFIX + "SOURCE_FILE";
     private static final String EXTRA_TARGET_FILE = KEY_PREFIX + "TARGET_FILE";
-    private static final String EXTRA_COPY = KEY_PREFIX + "COPY";
+    private static final String EXTRA_TYPE = KEY_PREFIX + "TYPE";
     private static final String EXTRA_LISTENER = KEY_PREFIX + "LISTENER";
 
     private static final String STATE_ALL_CHECKED = KEY_PREFIX + "ALL_CHECKED";
@@ -68,7 +67,7 @@ public class FileJobConflictDialogFragment extends DialogFragment {
     private FileItem mSourceFile;
     @NonNull
     private FileItem mTargetFile;
-    private boolean mCopy;
+    private FileJobs.Base.CopyMoveType mType;
     @Nullable
     private RemoteCallback mListener;
 
@@ -101,12 +100,13 @@ public class FileJobConflictDialogFragment extends DialogFragment {
     CheckBox mAllCheck;
 
     public static void putArguments(@NonNull Intent intent, @NonNull FileItem sourceFile,
-                                    @NonNull FileItem targetFile, boolean copy,
+                                    @NonNull FileItem targetFile,
+                                    @NonNull FileJobs.Base.CopyMoveType type,
                                     @NonNull Listener listener) {
         intent
                 .putExtra(EXTRA_SOURCE_FILE, sourceFile)
                 .putExtra(EXTRA_TARGET_FILE, targetFile)
-                .putExtra(EXTRA_COPY, copy)
+                .putExtra(EXTRA_TYPE, type)
                 .putExtra(EXTRA_LISTENER, new RemoteCallback(new ListenerAdapter(listener)));
     }
 
@@ -130,7 +130,7 @@ public class FileJobConflictDialogFragment extends DialogFragment {
         Bundle arguments = getArguments();
         mSourceFile = arguments.getParcelable(EXTRA_SOURCE_FILE);
         mTargetFile = arguments.getParcelable(EXTRA_TARGET_FILE);
-        mCopy = arguments.getBoolean(EXTRA_COPY);
+        mType = (FileJobs.Base.CopyMoveType) arguments.getSerializable(EXTRA_TYPE);
         mListener = arguments.getParcelable(EXTRA_LISTENER);
     }
 
@@ -147,25 +147,10 @@ public class FileJobConflictDialogFragment extends DialogFragment {
 
         Context context = requireContext();
         int theme = getTheme();
-        boolean sourceIsDirectory = mSourceFile.getAttributesNoFollowLinks().isDirectory();
-        boolean targetIsDirectory = mTargetFile.getAttributesNoFollowLinks().isDirectory();
-        int titleRes;
-        int messageRes;
-        int positiveButtonRes;
-        if (sourceIsDirectory && targetIsDirectory) {
-            titleRes = R.string.file_job_merge_title_format;
-            messageRes = mCopy ? R.string.file_job_merge_copy_message_format
-                    : R.string.file_job_merge_move_message_format;
-            positiveButtonRes = R.string.file_job_action_merge;
-        } else {
-            titleRes = R.string.file_job_replace_title_format;
-            messageRes = R.string.file_job_replace_message_format;
-            positiveButtonRes = R.string.file_job_action_replace;
-        }
-        String targetFileName = mTargetFile.getPath().getFileName().toString();
-        String title = context.getString(titleRes, targetFileName);
-        String message = context.getString(messageRes,
-                mTargetFile.getPath().getParent().getFileName());
+        String title = getTitle(mSourceFile, mTargetFile, context);
+        String message = getMessage(mSourceFile, mTargetFile, mType, context);
+        int positiveButtonRes = isMerge(mSourceFile, mTargetFile) ? R.string.merge
+                : R.string.replace;
 
         mView = ViewUtils.inflateWithTheme(R.layout.file_job_conflict_dialog_view, context, theme);
         ButterKnife.bind(this, mView);
@@ -184,6 +169,7 @@ public class FileJobConflictDialogFragment extends DialogFragment {
                 ImeUtils.showIme(mNameEdit);
             }
         });
+        String targetFileName = mTargetFile.getPath().getFileName().toString();
         mNameEdit.setText(targetFileName);
         mNameEdit.setSelection(0, targetFileName.length());
         mNameEdit.addTextChangedListener(new TextWatcher() {
@@ -199,8 +185,7 @@ public class FileJobConflictDialogFragment extends DialogFragment {
                     mAllCheck.setChecked(false);
                 }
                 Button positiveButton = requireDialog().findViewById(android.R.id.button1);
-                positiveButton.setText(hasNewName ? R.string.file_job_action_rename
-                        : positiveButtonRes);
+                positiveButton.setText(hasNewName ? R.string.rename : positiveButtonRes);
             }
         });
         mResetNameButton.setOnClickListener(view -> {
@@ -215,11 +200,37 @@ public class FileJobConflictDialogFragment extends DialogFragment {
                 .setTitle(title)
                 .setMessage(message)
                 .setPositiveButton(positiveButtonRes, this::onDialogButtonClick)
-                .setNegativeButton(R.string.file_job_action_skip, this::onDialogButtonClick)
+                .setNegativeButton(R.string.skip, this::onDialogButtonClick)
                 .setNeutralButton(android.R.string.cancel, this::onDialogButtonClick)
                 .create();
         dialog.setCanceledOnTouchOutside(false);
         return dialog;
+    }
+
+    @NonNull
+    public static String getTitle(@NonNull FileItem sourceFile, @NonNull FileItem targetFile,
+                                  @NonNull Context context) {
+        int titleRes = isMerge(sourceFile, targetFile) ? R.string.file_job_merge_title_format
+                : R.string.file_job_replace_title_format;
+        return context.getString(titleRes, targetFile.getPath().getFileName());
+    }
+
+    @NonNull
+    public static String getMessage(@NonNull FileItem sourceFile, @NonNull FileItem targetFile,
+                                    @NonNull FileJobs.Base.CopyMoveType type,
+                                    @NonNull Context context) {
+        int messageRes = isMerge(sourceFile, targetFile) ? type.getResource(
+                R.string.file_job_merge_copy_message_format,
+                R.string.file_job_merge_extract_message_format,
+                R.string.file_job_merge_move_message_format)
+                : R.string.file_job_replace_message_format;
+        return context.getString(messageRes, targetFile.getPath().getParent().getFileName());
+    }
+
+    private static boolean isMerge(@NonNull FileItem sourceFile, @NonNull FileItem targetFile) {
+        boolean sourceIsDirectory = sourceFile.getAttributesNoFollowLinks().isDirectory();
+        boolean targetIsDirectory = targetFile.getAttributesNoFollowLinks().isDirectory();
+        return sourceIsDirectory && targetIsDirectory;
     }
 
     /**
@@ -233,9 +244,9 @@ public class FileJobConflictDialogFragment extends DialogFragment {
                 mimeType));
         BasicFileAttributes attributes = file.getAttributes();
         Path path = file.getPath();
-        if (LinuxFileSystemProvider.isLinuxPath(path) && MimeTypes.supportsThumbnail(mimeType)) {
+        if (FileListAdapter.supportsThumbnail(file)) {
             GlideApp.with(this)
-                    .load(path.toFile())
+                    .load(path)
                     .signature(new ObjectKey(attributes.lastModifiedTime()))
                     .placeholder(icon)
                     .into(new IgnoreErrorDrawableImageViewTarget(iconImage));
@@ -305,7 +316,7 @@ public class FileJobConflictDialogFragment extends DialogFragment {
             return false;
         }
         String fileName = mTargetFile.getPath().getFileName().toString();
-        return !TextUtils.equals(name, fileName);
+        return !Objects.equals(name, fileName);
     }
 
     @Override

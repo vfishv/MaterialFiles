@@ -45,8 +45,8 @@ import androidx.core.view.ViewCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.interpolator.view.animation.FastOutLinearInInterpolator;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
+import java9.util.function.BooleanSupplier;
 import me.zhanghai.android.files.R;
-import me.zhanghai.android.files.functional.compat.BooleanSupplier;
 import me.zhanghai.android.files.ui.ClickableMovementMethod;
 import me.zhanghai.android.files.ui.LinkArrowKeyMovementMethod;
 
@@ -150,7 +150,7 @@ public class ViewUtils {
     }
 
     public static void crossfade(@NonNull View fromView, @NonNull View toView) {
-        crossfade(fromView, toView, false);
+        crossfade(fromView, toView, true);
     }
 
     public static void fadeOutThenFadeIn(@NonNull View fromView, @NonNull View toView, int duration,
@@ -164,7 +164,7 @@ public class ViewUtils {
     }
 
     public static void fadeOutThenFadeIn(@NonNull View fromView, @NonNull View toView) {
-        fadeOutThenFadeIn(fromView, toView, false);
+        fadeOutThenFadeIn(fromView, toView, true);
     }
 
     @Dimension

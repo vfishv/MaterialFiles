@@ -11,13 +11,13 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
+import me.zhanghai.android.files.AppActivity;
 import me.zhanghai.android.files.util.FragmentUtils;
 
-public class AboutActivity extends AppCompatActivity {
+public class AboutActivity extends AppActivity {
 
     @NonNull
-    public static Intent makeIntent(@NonNull Context context) {
+    public static Intent newIntent(@NonNull Context context) {
         return new Intent(context, AboutActivity.class);
     }
 

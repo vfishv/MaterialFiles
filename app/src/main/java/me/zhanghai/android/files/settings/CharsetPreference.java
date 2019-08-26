@@ -14,8 +14,8 @@ import java.util.Map;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.preference.ListPreference;
-import me.zhanghai.android.files.functional.Functional;
-import me.zhanghai.android.files.functional.compat.Function;
+import java9.util.function.Function;
+import me.zhanghai.java.functional.Functional;
 
 public class CharsetPreference extends ListPreference {
 

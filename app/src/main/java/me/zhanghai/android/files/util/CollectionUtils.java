@@ -6,8 +6,11 @@
 package me.zhanghai.android.files.util;
 
 import java.util.AbstractList;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.RandomAccess;
 import java.util.Set;
@@ -15,8 +18,8 @@ import java.util.Set;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.util.ObjectsCompat;
-import me.zhanghai.android.files.functional.Functional;
-import me.zhanghai.android.files.functional.FunctionalIterator;
+import me.zhanghai.java.functional.Functional;
+import me.zhanghai.java.functional.FunctionalIterator;
 
 public class CollectionUtils {
 
@@ -59,8 +62,8 @@ public class CollectionUtils {
         return lastOrNull(list);
     }
 
-    public static <E> void push(@NonNull List<? super E> list, E item) {
-        list.add(item);
+    public static <E> void push(@NonNull List<? super E> list, E element) {
+        list.add(element);
     }
 
     public static <E> E pop(@NonNull List<? extends E> list) {
@@ -95,6 +98,33 @@ public class CollectionUtils {
     }
 
     @NonNull
+    public static <E> LinkedHashSet<E> singletonLinkedSet(@Nullable E element) {
+        LinkedHashSet<E> set = new LinkedHashSet<>(1, 1);
+        set.add(element);
+        return set;
+    }
+
+    @Nullable
+    public static <E> Set<E> singletonOrNull(@Nullable E element) {
+        return element != null ? Collections.singleton(element) : null;
+    }
+
+    @Nullable
+    public static <E> List<E> singletonListOrNull(@Nullable E element) {
+        return element != null ? Collections.singletonList(element) : null;
+    }
+
+    @NonNull
+    public static <E> Set<E> singletonOrEmpty(@Nullable E element) {
+        return element != null ? Collections.singleton(element) : Collections.emptySet();
+    }
+
+    @NonNull
+    public static <E> List<E> singletonListOrEmpty(@Nullable E element) {
+        return element != null ? Collections.singletonList(element) : Collections.emptyList();
+    }
+
+    @NonNull
     public static <E> Set<E> difference(@NonNull Set<? extends E> set1,
                                         @NonNull Set<? extends E> set2) {
         Set<E> result = new HashSet<>();
@@ -121,23 +151,23 @@ public class CollectionUtils {
     }
 
     @NonNull
-    public static <E> List<E> union(@NonNull List<? extends E> list1,
-                                    @NonNull List<? extends E> list2) {
+    public static <E> List<E> join(@NonNull List<? extends E> list1,
+                                   @NonNull List<? extends E> list2) {
         if (list1 instanceof RandomAccess && list2 instanceof RandomAccess) {
-            return new RandomAccessUnionList<>(list1, list2);
+            return new RandomAccessJoinedList<>(list1, list2);
         } else {
-            return new UnionList<>(list1, list2);
+            return new JoinedList<>(list1, list2);
         }
     }
 
-    private static class UnionList<E> extends AbstractList<E> {
+    private static class JoinedList<E> extends AbstractList<E> {
 
         @NonNull
         private final List<? extends E> mList1;
         @NonNull
         private final List<? extends E> mList2;
 
-        public UnionList(@NonNull List<? extends E> list1, @NonNull List<? extends E> list2) {
+        public JoinedList(@NonNull List<? extends E> list1, @NonNull List<? extends E> list2) {
             mList1 = list1;
             mList2 = list2;
         }
@@ -155,11 +185,20 @@ public class CollectionUtils {
         }
     }
 
-    private static class RandomAccessUnionList<E> extends UnionList<E> implements RandomAccess {
+    private static class RandomAccessJoinedList<E> extends JoinedList<E> implements RandomAccess {
 
-        public RandomAccessUnionList(@NonNull List<? extends E> list1,
-                                     @NonNull List<? extends E> list2) {
+        public RandomAccessJoinedList(@NonNull List<? extends E> list1,
+                                      @NonNull List<? extends E> list2) {
             super(list1, list2);
         }
+    }
+
+    @NonNull
+    public static <E> ArrayList<E> toArrayList(@NonNull List<E> list) {
+        return list instanceof ArrayList ? (ArrayList<E>) list : new ArrayList<>(list);
+    }
+
+    public static <E> ArrayList<E> toArrayListOrNull(@Nullable List<E> list) {
+        return list != null ? toArrayList(list) : null;
     }
 }

@@ -10,9 +10,12 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="me.zhanghai.android.files">
 
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
@@ -23,13 +26,15 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/launcher_icon"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme"
+        android:theme="@style/Theme.MaterialFiles"
         tools:ignore="GoogleAppIndexingWarning">
 
         <activity
-            android:name="me.zhanghai.android.files.main.MainActivity"
-            android:label="@string/main_title"
-            android:theme="@style/AppTheme.TransparentStatusBar">
+            android:name="me.zhanghai.android.files.filelist.FileListActivity"
+            android:label="@string/file_list_title"
+            android:theme="@style/Theme.MaterialFiles.TransparentStatusBar"
+            android:visibleToInstantApps="true"
+            tools:ignore="UnusedAttribute">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -37,31 +42,109 @@
             <intent-filter tools:ignore="AppLinkUrlError">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="vnd.android.document/directory" />
                 <data android:mimeType="inode/directory" />
                 <data android:mimeType="resource/folder" />
+                <data android:mimeType="vnd.android.document/directory" />
             </intent-filter>
+            <!-- @see me.zhanghai.android.files.file.MimeTypes#isSupportedArchive(String) -->
+            <intent-filter tools:ignore="AppLinkUrlError">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/gzip" />
+                <data android:mimeType="application/java-archive" />
+                <data android:mimeType="application/vnd.android.package-archive" />
+                <data android:mimeType="application/vnd.debian.binary-package" />
+                <data android:mimeType="application/x-7z-compressed" />
+                <data android:mimeType="application/x-bzip2" />
+                <data android:mimeType="application/x-compress" />
+                <data android:mimeType="application/x-cpio" />
+                <data android:mimeType="application/x-deb" />
+                <data android:mimeType="application/x-debian-package" />
+                <data android:mimeType="application/x-gtar" />
+                <data android:mimeType="application/x-gtar-compressed" />
+                <data android:mimeType="application/x-java-archive" />
+                <data android:mimeType="application/x-lzma" />
+                <data android:mimeType="application/x-tar" />
+                <data android:mimeType="application/x-xz" />
+                <data android:mimeType="application/zip" />
+            </intent-filter>
+            <!-- @see https://android.googlesource.com/platform/packages/apps/DocumentsUI/+/master/AndroidManifest.xml -->
+            <intent-filter>
+                <action android:name="android.intent.action.OPEN_DOCUMENT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.OPENABLE" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <!--
+              ~ Unusable until we implement DocumentsProvider.
+            <intent-filter>
+                <action android:name="android.intent.action.CREATE_DOCUMENT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.OPENABLE" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.GET_CONTENT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.OPENABLE" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <!--
+              ~ Unusable until we implement DocumentsProvider.
+            <intent-filter>
+                <action android:name="android.intent.action.OPEN_DOCUMENT_TREE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            -->
+        </activity>
+
+        <activity
+            android:name="me.zhanghai.android.files.filelist.OpenFileAsDialogActivity"
+            android:autoRemoveFromRecents="true"
+            android:icon="@drawable/open_as_icon"
+            android:label="@string/file_open_as_title"
+            android:theme="@style/Theme.MaterialFiles.Translucent" />
+
+        <activity
+            android:name="me.zhanghai.android.files.ftpserver.FtpServerActivity"
+            android:label="@string/ftp_server_title"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.MaterialFiles">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="me.zhanghai.android.files.filelist.FileListActivity" />
         </activity>
 
         <activity
             android:name="me.zhanghai.android.files.settings.SettingsActivity"
             android:label="@string/settings_title"
             android:launchMode="singleTop"
-            android:theme="@style/AppTheme">
+            android:theme="@style/Theme.MaterialFiles">
             <intent-filter>
                 <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="me.zhanghai.android.files.main.MainActivity" />
+                android:value="me.zhanghai.android.files.filelist.FileListActivity" />
         </activity>
 
         <activity
             android:name="me.zhanghai.android.files.settings.StandardDirectoriesActivity"
             android:label="@string/settings_standard_directories_title"
             android:launchMode="singleTop"
-            android:theme="@style/AppTheme">
+            android:theme="@style/Theme.MaterialFiles">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="me.zhanghai.android.files.settings.SettingsActivity" />
+        </activity>
+
+        <activity
+            android:name="me.zhanghai.android.files.settings.BookmarkDirectoriesActivity"
+            android:label="@string/settings_bookmark_directories_title"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.MaterialFiles">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="me.zhanghai.android.files.settings.SettingsActivity" />
@@ -71,24 +154,26 @@
             android:name="me.zhanghai.android.files.about.AboutActivity"
             android:label="@string/about_title"
             android:launchMode="singleTop"
-            android:theme="@style/AppTheme">
+            android:theme="@style/Theme.MaterialFiles">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="me.zhanghai.android.files.main.MainActivity" />
+                android:value="me.zhanghai.android.files.filelist.FileListActivity" />
         </activity>
 
         <activity
             android:name="me.zhanghai.android.files.filejob.FileJobActionDialogActivity"
-            android:theme="@style/AppTheme.Translucent" />
+            android:autoRemoveFromRecents="true"
+            android:theme="@style/Theme.MaterialFiles.Translucent" />
 
         <activity
             android:name="me.zhanghai.android.files.filejob.FileJobConflictDialogActivity"
-            android:theme="@style/AppTheme.Translucent" />
+            android:autoRemoveFromRecents="true"
+            android:theme="@style/Theme.MaterialFiles.Translucent" />
 
         <activity
-            android:name="me.zhanghai.android.files.viewer.TextEditorActivity"
+            android:name="me.zhanghai.android.files.viewer.text.TextEditorActivity"
             android:label="@string/text_editor_title"
-            android:theme="@style/AppTheme">
+            android:theme="@style/Theme.MaterialFiles">
             <!-- TODO: Support viewing content URIs. -->
             <intent-filter tools:ignore="AppLinkUrlError">
                 <action android:name="android.intent.action.VIEW" />
@@ -104,7 +189,21 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name="me.zhanghai.android.files.viewer.image.ImageViewerActivity"
+            android:label="@string/image_viewer_title"
+            android:theme="@style/Theme.MaterialFiles.Immersive">
+            <!-- TODO: Support viewing content URIs. -->
+            <intent-filter tools:ignore="AppLinkUrlError">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity>
+
         <service android:name="me.zhanghai.android.files.filejob.FileJobService" />
+
+        <service android:name="me.zhanghai.android.files.ftpserver.FtpServerService" />
 
         <provider
             android:name="me.zhanghai.android.files.file.FileProvider"
@@ -113,6 +212,8 @@
             android:grantUriPermissions="true" />
 
         <receiver android:name="me.zhanghai.android.files.filejob.FileJobReceiver" />
+
+        <receiver android:name="me.zhanghai.android.files.ftpserver.FtpServerReceiver" />
 
         <meta-data
             android:name="firebase_crashlytics_collection_enabled"

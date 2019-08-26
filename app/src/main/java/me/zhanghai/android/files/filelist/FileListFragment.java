@@ -6,11 +6,15 @@
 package me.zhanghai.android.files.filelist;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.ClipData;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.Parcelable;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -25,15 +29,20 @@ import android.widget.TextView;
 import com.google.android.material.appbar.AppBarLayout;
 import com.leinardi.android.speeddial.SpeedDialView;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.Observer;
@@ -44,7 +53,6 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import java8.nio.file.Path;
-import java8.nio.file.Paths;
 import me.zhanghai.android.effortlesspermissions.AfterPermissionDenied;
 import me.zhanghai.android.effortlesspermissions.EffortlessPermissions;
 import me.zhanghai.android.effortlesspermissions.OpenAppDetailsDialogFragment;
@@ -53,30 +61,40 @@ import me.zhanghai.android.files.file.FileProvider;
 import me.zhanghai.android.files.file.MimeTypes;
 import me.zhanghai.android.files.filejob.FileJobService;
 import me.zhanghai.android.files.fileproperties.FilePropertiesDialogFragment;
-import me.zhanghai.android.files.functional.Functional;
-import me.zhanghai.android.files.main.MainActivity;
+import me.zhanghai.android.files.navigation.BookmarkDirectory;
 import me.zhanghai.android.files.navigation.NavigationFragment;
+import me.zhanghai.android.files.navigation.NavigationRoot;
+import me.zhanghai.android.files.navigation.NavigationRootMapLiveData;
+import me.zhanghai.android.files.provider.archive.ArchiveFileSystemProvider;
+import me.zhanghai.android.files.provider.document.DocumentFileSystemProvider;
 import me.zhanghai.android.files.provider.linux.LinuxFileSystemProvider;
-import me.zhanghai.android.files.settings.SettingsLiveDatas;
+import me.zhanghai.android.files.navigation.BookmarkDirectories;
+import me.zhanghai.android.files.settings.Settings;
 import me.zhanghai.android.files.terminal.Terminal;
+import me.zhanghai.android.files.ui.FixQueryChangeSearchView;
+import me.zhanghai.android.files.ui.OverlayToolbarActionMode;
+import me.zhanghai.android.files.ui.PersistentBarLayout;
+import me.zhanghai.android.files.ui.PersistentBarLayoutToolbarActionMode;
+import me.zhanghai.android.files.ui.PersistentDrawerLayout;
 import me.zhanghai.android.files.ui.ToolbarActionMode;
 import me.zhanghai.android.files.util.AppUtils;
 import me.zhanghai.android.files.util.ClipboardUtils;
+import me.zhanghai.android.files.util.CollectionUtils;
+import me.zhanghai.android.files.util.DebouncedRunnable;
 import me.zhanghai.android.files.util.FragmentUtils;
 import me.zhanghai.android.files.util.IntentPathUtils;
 import me.zhanghai.android.files.util.IntentUtils;
+import me.zhanghai.android.files.util.ToastUtils;
 import me.zhanghai.android.files.util.ViewUtils;
+import me.zhanghai.android.files.viewer.image.ImageViewerActivity;
+import me.zhanghai.java.functional.Functional;
 import pub.devrel.easypermissions.AfterPermissionGranted;
 
 public class FileListFragment extends Fragment implements BreadcrumbLayout.Listener,
-        FileListAdapter.Listener, ToolbarActionMode.Callback, OpenApkDialogFragment.Listener,
-        OpenFileAsDialogFragment.Listener, ConfirmDeleteFilesDialogFragment.Listener,
+        FileListAdapter.Listener, OpenApkDialogFragment.Listener,
+        ConfirmDeleteFilesDialogFragment.Listener, CreateArchiveDialogFragment.Listener,
         RenameFileDialogFragment.Listener, CreateFileDialogFragment.Listener,
-        CreateDirectoryDialogFragment.Listener, NavigationFragment.FileListListener {
-
-    private static final String KEY_PREFIX = FileListFragment.class.getName() + '.';
-
-    private static final String EXTRA_PATH = KEY_PREFIX + "PATH";
+        CreateDirectoryDialogFragment.Listener, NavigationFragment.Listener {
 
     private static final int REQUEST_CODE_STORAGE_PERMISSIONS = 1;
 
@@ -84,15 +102,28 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
             Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
 
+    private Intent mIntent;
     @Nullable
     private Path mExtraPath;
 
+    private NavigationFragment mNavigationFragment;
+
+    @BindView(R.id.drawer)
+    @Nullable
+    DrawerLayout mDrawerLayout;
+    @BindView(R.id.persistent_drawer)
+    @Nullable
+    PersistentDrawerLayout mPersistentDrawerLayout;
+    @BindView(R.id.bar_layout)
+    PersistentBarLayout mPersistentBarLayout;
+    @BindView(R.id.bottom_toolbar)
+    Toolbar mBottomToolbar;
     @BindView(R.id.app_bar)
     AppBarLayout mAppBarLayout;
     @BindView(R.id.toolbar)
     Toolbar mToolbar;
-    @BindView(R.id.action_mode_toolbar)
-    Toolbar mActionModeToolbar;
+    @BindView(R.id.overlay_toolbar)
+    Toolbar mOverlayToolbar;
     @BindView(R.id.breadcrumb)
     BreadcrumbLayout mBreadcrumbLayout;
     @BindView(R.id.content)
@@ -111,6 +142,10 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     SpeedDialView mSpeedDialView;
 
     @Nullable
+    private MenuItem mSearchMenuItem;
+    @Nullable
+    private MenuItem mSortMenuItem;
+    @Nullable
     private MenuItem mSortByNameMenuItem;
     @Nullable
     private MenuItem mSortByTypeMenuItem;
@@ -123,10 +158,16 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     @Nullable
     private MenuItem mSortDirectoriesFirstMenuItem;
     @Nullable
+    private MenuItem mSortPathSpecificMenuItem;
+    @Nullable
+    private MenuItem mSelectAllMenuItem;
+    @Nullable
     private MenuItem mShowHiddenFilesMenuItem;
 
     @NonNull
-    private ToolbarActionMode mToolbarActionMode;
+    private ToolbarActionMode mOverlayActionMode;
+    @NonNull
+    private ToolbarActionMode mBottomActionMode;
 
     @NonNull
     private FileListAdapter mAdapter;
@@ -135,19 +176,32 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     private FileListViewModel mViewModel;
 
     @Nullable
-    private Path mLastFile;
+    private Path mLastLoadingPath;
+    private boolean mLastLoadingSearching;
 
     @NonNull
-    public static FileListFragment newInstance(@Nullable Path path) {
+    private final DebouncedRunnable mDebouncedSearchRunnable = new DebouncedRunnable(() -> {
+        if (!isResumed() || !mViewModel.isSearchViewExpanded()) {
+            return;
+        }
+        String query = mViewModel.getSearchViewQuery();
+        if (query.isEmpty()) {
+            return;
+        }
+        mViewModel.search(query);
+    }, 1000, new Handler(Looper.getMainLooper()));
+
+    @NonNull
+    public static FileListFragment newInstance(@NonNull Intent intent) {
         //noinspection deprecation
         FileListFragment fragment = new FileListFragment();
         FragmentUtils.getArgumentsBuilder(fragment)
-                .putParcelable(EXTRA_PATH, (Parcelable) path);
+                .putParcelable(Intent.EXTRA_INTENT, intent);
         return fragment;
     }
 
     /**
-     * @deprecated Use {@link #newInstance(Path)} instead.
+     * @deprecated Use {@link #newInstance(Intent)} instead.
      */
     public FileListFragment() {}
 
@@ -155,7 +209,8 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mExtraPath = getArguments().getParcelable(EXTRA_PATH);
+        mIntent = getArguments().getParcelable(Intent.EXTRA_INTENT);
+        mExtraPath = IntentPathUtils.getExtraPath(mIntent);
 
         setHasOptionsMenu(true);
     }
@@ -178,13 +233,20 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
+        if (savedInstanceState == null) {
+            mNavigationFragment = NavigationFragment.newInstance();
+            FragmentUtils.add(mNavigationFragment, this, R.id.navigation_fragment);
+        } else {
+            mNavigationFragment = FragmentUtils.findById(this, R.id.navigation_fragment);
+        }
+        mNavigationFragment.setListeners(this);
+
         AppCompatActivity activity = (AppCompatActivity) requireActivity();
         activity.setSupportActionBar(mToolbar);
 
-        mToolbarActionMode = new ToolbarActionMode(mActionModeToolbar);
-        if (savedInstanceState != null) {
-            mToolbarActionMode.restoreInstanceState(savedInstanceState, this);
-        }
+        mOverlayActionMode = new OverlayToolbarActionMode(mOverlayToolbar);
+        mBottomActionMode = new PersistentBarLayoutToolbarActionMode(mBottomToolbar,
+                mPersistentBarLayout);
 
         int contentLayoutInitialPaddingBottom = mContentLayout.getPaddingBottom();
         mAppBarLayout.addOnOffsetChangedListener((appBarLayout, verticalOffset) ->
@@ -213,21 +275,66 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
 
         mViewModel = ViewModelProviders.of(this).get(FileListViewModel.class);
         if (!mViewModel.hasTrail()) {
-            Path path;
-            if (mExtraPath != null) {
-                path = mExtraPath;
-            } else {
-                // TODO: Allow configuration.
-                path = Paths.get(Environment.getExternalStorageDirectory().getAbsolutePath());
+            Path path = mExtraPath;
+            PickOptions pickOptions = null;
+            String action = mIntent.getAction();
+            if (action == null) {
+                action = Intent.ACTION_VIEW;
+            }
+            switch (action) {
+                case Intent.ACTION_GET_CONTENT:
+                case Intent.ACTION_OPEN_DOCUMENT:
+                case Intent.ACTION_CREATE_DOCUMENT: {
+                    boolean readOnly = Objects.equals(action, Intent.ACTION_GET_CONTENT);
+                    List<String> mimeTypes = Collections.singletonList(mIntent.getType());
+                    String[] extraMimeTypes = mIntent.getStringArrayExtra(Intent.EXTRA_MIME_TYPES);
+                    if (extraMimeTypes != null) {
+                        mimeTypes = Arrays.asList(extraMimeTypes);
+                    }
+                    boolean localOnly = mIntent.getBooleanExtra(Intent.EXTRA_LOCAL_ONLY, false);
+                    boolean allowMultiple = mIntent.getBooleanExtra(Intent.EXTRA_ALLOW_MULTIPLE,
+                            false);
+                    // TODO: Actually support ACTION_CREATE_DOCUMENT.
+                    pickOptions = new PickOptions(readOnly, false, mimeTypes, localOnly,
+                            allowMultiple);
+                    break;
+                }
+                case Intent.ACTION_OPEN_DOCUMENT_TREE:
+                    boolean localOnly = mIntent.getBooleanExtra(Intent.EXTRA_LOCAL_ONLY, false);
+                    pickOptions = new PickOptions(false, true, Collections.emptyList(), localOnly,
+                            false);
+                    break;
+                case Intent.ACTION_VIEW:
+                default:
+                    if (path != null) {
+                        String mimeType = mIntent.getType();
+                        if (mimeType != null && FileUtils.isArchiveFile(path, mimeType)) {
+                            path = ArchiveFileSystemProvider.getRootPathForArchiveFile(path);
+                        }
+                    }
+            }
+            if (path == null) {
+                path = Settings.FILE_LIST_DEFAULT_DIRECTORY.getValue();
             }
             mViewModel.resetTo(path);
+            if (pickOptions != null) {
+                mViewModel.setPickOptions(pickOptions);
+            }
         }
+        if (mPersistentDrawerLayout != null) {
+            Settings.FILE_LIST_PERSISTENT_DRAWER_OPEN.observe(this,
+                    this::onPersistentDrawerOpenChanged);
+        }
+        mViewModel.getCurrentPathLiveData().observe(this, this::onCurrentPathChanged);
+        mViewModel.getSearchViewExpandedLiveData().observe(this, this::onSearchViewExpandedChanged);
         mViewModel.getBreadcrumbLiveData().observe(this, mBreadcrumbLayout::setData);
-        FileSortOptionsLiveData.getInstance().observe(this, this::onSortOptionsChanged);
+        mViewModel.getSortOptionsLiveData().observe(this, this::onSortOptionsChanged);
+        mViewModel.getSortPathSpecificLiveData().observe(this, this::onSortPathSpecificChanged);
+        mViewModel.getPickOptionsLiveData().observe(this, this::onPickOptionsChanged);
         mViewModel.getSelectedFilesLiveData().observe(this, this::onSelectedFilesChanged);
-        mViewModel.getPasteModeLiveData().observe(this, this::onPasteModeChanged);
+        mViewModel.getPasteStateLiveData().observe(this, this::onPasteStateChanged);
         mViewModel.getFileListLiveData().observe(this, this::onFileListChanged);
-        SettingsLiveDatas.FILE_LIST_SHOW_HIDDEN_FILES.observe(this, this::onShowHiddenFilesChanged);
+        Settings.FILE_LIST_SHOW_HIDDEN_FILES.observe(this, this::onShowHiddenFilesChanged);
 
         if (!EffortlessPermissions.hasPermissions(this, STORAGE_PERMISSIONS)) {
             EffortlessPermissions.requestPermissions(this,
@@ -261,58 +368,121 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     }
 
     @Override
-    public void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
-
-        mToolbarActionMode.saveInstanceState(outState);
-    }
-
-    @Override
     public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
 
         inflater.inflate(R.menu.file_list, menu);
+        mSearchMenuItem = menu.findItem(R.id.action_search);
+        mSortMenuItem = menu.findItem(R.id.action_sort);
         mSortByNameMenuItem = menu.findItem(R.id.action_sort_by_name);
         mSortByTypeMenuItem = menu.findItem(R.id.action_sort_by_type);
         mSortBySizeMenuItem = menu.findItem(R.id.action_sort_by_size);
         mSortByLastModifiedMenuItem = menu.findItem(R.id.action_sort_by_last_modified);
         mSortOrderAscendingMenuItem = menu.findItem(R.id.action_sort_order_ascending);
         mSortDirectoriesFirstMenuItem = menu.findItem(R.id.action_sort_directories_first);
+        mSortPathSpecificMenuItem = menu.findItem(R.id.action_sort_path_specific);
+        mSelectAllMenuItem = menu.findItem(R.id.action_select_all);
         mShowHiddenFilesMenuItem = menu.findItem(R.id.action_show_hidden_files);
+
+        setUpSearchView();
+    }
+
+    private void setUpSearchView() {
+        FixQueryChangeSearchView searchView = (FixQueryChangeSearchView)
+                mSearchMenuItem.getActionView();
+        // MenuItem.OnActionExpandListener.onMenuItemActionExpand() is called before SearchView
+        // resets the query.
+        searchView.setOnSearchClickListener(view -> {
+            mViewModel.setSearchViewExpanded(true);
+            searchView.setQuery(mViewModel.getSearchViewQuery(), false);
+            mDebouncedSearchRunnable.run();
+        });
+        // SearchView.OnCloseListener.onClose() is not always called.
+        mSearchMenuItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
+            @Override
+            public boolean onMenuItemActionExpand(@NonNull MenuItem item) {
+                return true;
+            }
+            @Override
+            public boolean onMenuItemActionCollapse(@NonNull MenuItem item) {
+                mViewModel.setSearchViewExpanded(false);
+                mViewModel.stopSearching();
+                return true;
+            }
+        });
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(@NonNull String query) {
+                mDebouncedSearchRunnable.cancel();
+                mViewModel.search(query);
+                return true;
+            }
+            @Override
+            public boolean onQueryTextChange(@NonNull String query) {
+                if (searchView.shouldIgnoreQueryChange()) {
+                    return false;
+                }
+                mViewModel.setSearchViewQuery(query);
+                mDebouncedSearchRunnable.run();
+                return false;
+            }
+        });
+        if (mViewModel.isSearchViewExpanded()) {
+            mSearchMenuItem.expandActionView();
+        }
+    }
+
+    private void collapseSearchView() {
+        if (mSearchMenuItem != null && mSearchMenuItem.isActionViewExpanded()) {
+            mSearchMenuItem.collapseActionView();
+        }
     }
 
     @Override
     public void onPrepareOptionsMenu(@NonNull Menu menu) {
         super.onPrepareOptionsMenu(menu);
 
-        updateSortOptionsMenu();
-        updateShowHiddenFilesMenu();
+        updateSortMenuItems();
+        updateSelectAllMenuItem();
+        updateShowHiddenFilesMenuItem();
     }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
+            case android.R.id.home:
+                if (mDrawerLayout != null) {
+                    mDrawerLayout.openDrawer(GravityCompat.START);
+                }
+                if (mPersistentDrawerLayout != null) {
+                    Settings.FILE_LIST_PERSISTENT_DRAWER_OPEN.putValue(
+                            !Settings.FILE_LIST_PERSISTENT_DRAWER_OPEN.getValue());
+                }
+                return true;
             case R.id.action_search:
                 // TODO
                 return true;
             case R.id.action_sort_by_name:
-                setSortBy(FileSortOptions.By.NAME);
+                mViewModel.setSortBy(FileSortOptions.By.NAME);
                 return true;
             case R.id.action_sort_by_type:
-                setSortBy(FileSortOptions.By.TYPE);
+                mViewModel.setSortBy(FileSortOptions.By.TYPE);
                 return true;
             case R.id.action_sort_by_size:
-                setSortBy(FileSortOptions.By.SIZE);
+                mViewModel.setSortBy(FileSortOptions.By.SIZE);
                 return true;
             case R.id.action_sort_by_last_modified:
-                setSortBy(FileSortOptions.By.LAST_MODIFIED);
+                mViewModel.setSortBy(FileSortOptions.By.LAST_MODIFIED);
                 return true;
             case R.id.action_sort_order_ascending:
-                setSortOrder(!mSortOrderAscendingMenuItem.isChecked() ?
+                mViewModel.setSortOrder(!mSortOrderAscendingMenuItem.isChecked() ?
                         FileSortOptions.Order.ASCENDING : FileSortOptions.Order.DESCENDING);
                 return true;
             case R.id.action_sort_directories_first:
-                setSortDirectoriesFirst(!mSortDirectoriesFirstMenuItem.isChecked());
+                mViewModel.setSortDirectoriesFirst(!mSortDirectoriesFirstMenuItem.isChecked());
+                return true;
+            case R.id.action_sort_path_specific:
+                mViewModel.setSortPathSpecific(!mSortPathSpecificMenuItem.isChecked());
                 return true;
             case R.id.action_new_task:
                 newTask();
@@ -329,8 +499,8 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
             case R.id.action_show_hidden_files:
                 setShowHiddenFiles(!mShowHiddenFilesMenuItem.isChecked());
                 return true;
-            case R.id.action_send:
-                send();
+            case R.id.action_share:
+                share();
                 return true;
             case R.id.action_copy_path:
                 copyPath();
@@ -338,31 +508,72 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
             case R.id.action_open_in_terminal:
                 openInTerminal();
                 return true;
+            case R.id.action_add_bookmark:
+                addBookmark();
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
     public boolean onBackPressed() {
+        if (mDrawerLayout != null && mDrawerLayout.isDrawerOpen(GravityCompat.START)) {
+            mDrawerLayout.closeDrawer(GravityCompat.START);
+            return true;
+        }
         if (mSpeedDialView.isOpen()) {
             mSpeedDialView.close();
             return true;
         }
-        if (mToolbarActionMode.isActive()) {
-            mToolbarActionMode.finish();
+        if (mOverlayActionMode.isActive()) {
+            mOverlayActionMode.finish();
             return true;
         }
         return mViewModel.navigateUp(false);
     }
 
+    private void onPersistentDrawerOpenChanged(boolean open) {
+        if (mPersistentDrawerLayout != null) {
+            if (open) {
+                mPersistentDrawerLayout.openDrawer(GravityCompat.START);
+            } else {
+                mPersistentDrawerLayout.closeDrawer(GravityCompat.START);
+            }
+        }
+    }
+
+    private void onCurrentPathChanged(@NonNull Path path) {
+        updateOverlayToolbar();
+        updateBottomToolbar();
+    }
+
+    private void onSearchViewExpandedChanged(boolean expanded) {
+        updateSortMenuItems();
+    }
+
     private void onFileListChanged(@NonNull FileListData fileListData) {
         switch (fileListData.state) {
             case LOADING: {
-                Path path = fileListData.path;
-                boolean isReload = Objects.equals(path, mLastFile);
-                mLastFile = path;
-                if (!isReload) {
-                    mToolbar.setSubtitle(R.string.file_list_subtitle_loading);
+                Path path = mViewModel.getCurrentPath();
+                boolean searching = mViewModel.getSearchState().searching;
+                boolean isReload = Objects.equals(path, mLastLoadingPath)
+                        && searching == mLastLoadingSearching;
+                mLastLoadingPath = path;
+                mLastLoadingSearching = searching;
+                if (searching) {
+                    List<FileItem> fileList = fileListData.fileList;
+                    updateSubtitle(fileList);
+                    mSwipeRefreshLayout.setRefreshing(true);
+                    ViewUtils.fadeOut(mProgress);
+                    ViewUtils.fadeOut(mErrorView);
+                    // We are still searching so it's never empty.
+                    ViewUtils.fadeOut(mEmptyView);
+                    updateAdapterFileList();
+                } else if (isReload) {
+                    mSwipeRefreshLayout.setRefreshing(true);
+                } else {
+                    mToolbar.setSubtitle(R.string.loading);
+                    mSwipeRefreshLayout.setRefreshing(false);
                     ViewUtils.fadeIn(mProgress);
                     ViewUtils.fadeOut(mErrorView);
                     ViewUtils.fadeOut(mEmptyView);
@@ -372,7 +583,7 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
             }
             case ERROR:
                 fileListData.exception.printStackTrace();
-                mToolbar.setSubtitle(R.string.file_list_subtitle_error);
+                mToolbar.setSubtitle(R.string.error);
                 mSwipeRefreshLayout.setRefreshing(false);
                 ViewUtils.fadeOut(mProgress);
                 ViewUtils.fadeIn(mErrorView);
@@ -395,7 +606,7 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
                 break;
             }
             default:
-                throw new IllegalArgumentException();
+                throw new AssertionError();
         }
     }
 
@@ -418,36 +629,34 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
         } else if (!TextUtils.isEmpty(fileCountText)) {
             subtitle = fileCountText;
         } else {
-            subtitle = getString(R.string.file_list_subtitle_empty);
+            subtitle = getString(R.string.empty);
         }
         mToolbar.setSubtitle(subtitle);
     }
 
-    private void setSortBy(@NonNull FileSortOptions.By by) {
-        FileSortOptionsLiveData.getInstance().putBy(by);
-    }
-
-    private void setSortOrder(@NonNull FileSortOptions.Order order) {
-        FileSortOptionsLiveData.getInstance().putOrder(order);
-    }
-
-    private void setSortDirectoriesFirst(boolean directoriesFirst) {
-        FileSortOptionsLiveData.getInstance().putDirectoriesFirst(directoriesFirst);
-    }
-
     private void onSortOptionsChanged(@NonNull FileSortOptions sortOptions) {
         mAdapter.setComparator(sortOptions.makeComparator());
-        updateSortOptionsMenu();
+        updateSortMenuItems();
     }
 
-    private void updateSortOptionsMenu() {
-        if (mSortByNameMenuItem == null || mSortByTypeMenuItem == null
+    private void onSortPathSpecificChanged(boolean pathSpecific) {
+        updateSortMenuItems();
+    }
+
+    private void updateSortMenuItems() {
+        if (mSortMenuItem == null || mSortByNameMenuItem == null || mSortByTypeMenuItem == null
                 || mSortBySizeMenuItem == null || mSortByLastModifiedMenuItem == null
-                || mSortOrderAscendingMenuItem == null || mSortDirectoriesFirstMenuItem == null) {
+                || mSortOrderAscendingMenuItem == null || mSortDirectoriesFirstMenuItem == null
+                || mSortPathSpecificMenuItem == null) {
+            return;
+        }
+        boolean searchViewExpanded = mViewModel.isSearchViewExpanded();
+        mSortMenuItem.setVisible(!searchViewExpanded);
+        if (searchViewExpanded) {
             return;
         }
         MenuItem checkedSortByMenuItem;
-        FileSortOptions sortOptions = FileSortOptionsLiveData.getInstance().getValue();
+        FileSortOptions sortOptions = mViewModel.getSortOptions();
         switch (sortOptions.getBy()) {
             case NAME:
                 checkedSortByMenuItem = mSortByNameMenuItem;
@@ -468,9 +677,11 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
         mSortOrderAscendingMenuItem.setChecked(sortOptions.getOrder()
                 == FileSortOptions.Order.ASCENDING);
         mSortDirectoriesFirstMenuItem.setChecked(sortOptions.isDirectoriesFirst());
+        mSortPathSpecificMenuItem.setChecked(mViewModel.isSortPathSpecific());
     }
 
     private void navigateUp() {
+        collapseSearchView();
         mViewModel.navigateUp(true);
     }
 
@@ -479,17 +690,16 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     }
 
     private void refresh() {
-        mSwipeRefreshLayout.setRefreshing(true);
         mViewModel.reload();
     }
 
     private void setShowHiddenFiles(boolean showHiddenFiles) {
-        SettingsLiveDatas.FILE_LIST_SHOW_HIDDEN_FILES.putValue(showHiddenFiles);
+        Settings.FILE_LIST_SHOW_HIDDEN_FILES.putValue(showHiddenFiles);
     }
 
     private void onShowHiddenFilesChanged(boolean showHiddenFiles) {
         updateAdapterFileList();
-        updateShowHiddenFilesMenu();
+        updateShowHiddenFilesMenuItem();
     }
 
     private void updateAdapterFileList() {
@@ -498,22 +708,22 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
             return;
         }
         List<FileItem> files = fileListData.fileList;
-        if (!SettingsLiveDatas.FILE_LIST_SHOW_HIDDEN_FILES.getValue()) {
+        if (!Settings.FILE_LIST_SHOW_HIDDEN_FILES.getValue()) {
             files = Functional.filter(files, file -> !file.isHidden());
         }
-        mAdapter.replace(files);
+        mAdapter.replace2(files, mViewModel.getSearchState().searching);
     }
 
-    private void updateShowHiddenFilesMenu() {
+    private void updateShowHiddenFilesMenuItem() {
         if (mShowHiddenFilesMenuItem == null) {
             return;
         }
-        boolean showHiddenFiles = SettingsLiveDatas.FILE_LIST_SHOW_HIDDEN_FILES.getValue();
+        boolean showHiddenFiles = Settings.FILE_LIST_SHOW_HIDDEN_FILES.getValue();
         mShowHiddenFilesMenuItem.setChecked(showHiddenFiles);
     }
 
-    private void send() {
-        sendFile(getCurrentPath(), MimeTypes.DIRECTORY_MIME_TYPE);
+    private void share() {
+        shareFile(getCurrentPath(), MimeTypes.DIRECTORY_MIME_TYPE);
     }
 
     private void copyPath() {
@@ -529,83 +739,154 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
         }
     }
 
+    private void addBookmark() {
+        addBookmark(getCurrentPath());
+    }
+
     @Override
     public void navigateTo(@NonNull Path path) {
+        collapseSearchView();
         Parcelable state = mRecyclerView.getLayoutManager().onSaveInstanceState();
         mViewModel.navigateTo(state, path);
     }
 
     @Override
     public void copyPath(@NonNull Path path) {
-        String pathString;
-        if (LinuxFileSystemProvider.isLinuxPath(path)) {
-            pathString = path.toFile().getPath();
-        } else {
-            pathString = path.toUri().toString();
-        }
-        ClipboardUtils.copyText(pathString, requireContext());
+        ClipboardUtils.copyText(FileUtils.getPathString(path), requireContext());
     }
 
     @Override
     public void openInNewTask(@NonNull Path path) {
-        Intent intent = MainActivity.makeIntent(path, requireContext())
+        Intent intent = FileListActivity.newViewIntent(path, requireContext())
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT)
                 .addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
         startActivity(intent);
     }
 
-    @Override
-    public void selectFile(@NonNull FileItem file, boolean selected) {
-        mViewModel.selectFile(file, selected);
+    private void onPickOptionsChanged(@Nullable PickOptions pickOptions) {
+        String title;
+        if (pickOptions == null) {
+            title = getString(R.string.file_list_title);
+        } else {
+            int titleRes = pickOptions.pickDirectory ? R.plurals.file_list_title_pick_directory
+                    : R.plurals.file_list_title_pick_file;
+            int count = pickOptions.allowMultiple ? Integer.MAX_VALUE : 1;
+            title = getResources().getQuantityString(titleRes, count);
+        }
+        requireActivity().setTitle(title);
+        updateSelectAllMenuItem();
+        updateOverlayToolbar();
+        updateBottomToolbar();
+        mAdapter.setPickOptions(pickOptions);
     }
 
-    private void onSelectedFilesChanged(@NonNull Set<FileItem> files) {
+    private void updateSelectAllMenuItem() {
+        if (mSelectAllMenuItem == null) {
+            return;
+        }
+        PickOptions pickOptions = mViewModel.getPickOptions();
+        mSelectAllMenuItem.setVisible(pickOptions == null || pickOptions.allowMultiple);
+    }
+
+    private void pickFiles(@NonNull LinkedHashSet<FileItem> files) {
+        pickPaths(Functional.map(files, FileItem::getPath, new LinkedHashSet<>()));
+    }
+
+    private void pickPaths(@NonNull LinkedHashSet<Path> paths) {
+        Intent intent = new Intent();
+        PickOptions pickOptions = mViewModel.getPickOptions();
+        if (paths.size() == 1) {
+            Path path = CollectionUtils.first(paths);
+            Uri data = FileProvider.getUriForPath(path);
+            intent.setData(data);
+            IntentPathUtils.putExtraPath(intent, path);
+        } else {
+            String[] mimeTypes = pickOptions.mimeTypes.toArray(new String[0]);
+            List<ClipData.Item> items = Functional.map(paths, path -> new ClipData.Item(
+                    FileProvider.getUriForPath(path)));
+            ClipData clipData = new ClipData(null, mimeTypes, items.get(0));
+            for (int i = 1; i < items.size(); ++i) {
+                clipData.addItem(items.get(i));
+            }
+            intent.setClipData(clipData);
+            IntentPathUtils.putExtraPathList(intent, paths);
+        }
+        int flags = Intent.FLAG_GRANT_READ_URI_PERMISSION;
+        if (!pickOptions.readOnly) {
+            flags |= Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION;
+        }
+        if (pickOptions.pickDirectory) {
+            flags |= Intent.FLAG_GRANT_PREFIX_URI_PERMISSION;
+        }
+        intent.addFlags(flags);
+        Activity activity = requireActivity();
+        activity.setResult(Activity.RESULT_OK, intent);
+        activity.finish();
+    }
+
+    private void onSelectedFilesChanged(@NonNull LinkedHashSet<FileItem> files) {
+        updateOverlayToolbar();
         mAdapter.replaceSelectedFiles(files);
-        updateCab();
     }
 
-    private void updateCab() {
-        Set<FileItem> selectedFiles = mViewModel.getSelectedFiles();
-        if (selectedFiles.isEmpty()) {
-            if (mToolbarActionMode.isActive()) {
-                mToolbarActionMode.finish();
+    private void updateOverlayToolbar() {
+        LinkedHashSet<FileItem> files = mViewModel.getSelectedFiles();
+        if (files.isEmpty()) {
+            if (mOverlayActionMode.isActive()) {
+                mOverlayActionMode.finish();
             }
             return;
         }
-        FilePasteMode pasteMode = mViewModel.getPasteMode();
-        int titleRes;
-        int menuRes;
-        switch (pasteMode) {
-            case NONE:
-                titleRes = R.string.file_list_cab_select_title_format;
-                menuRes = R.menu.file_list_cab_select;
-                break;
-            case MOVE:
-                titleRes = R.string.file_list_cab_paste_move_title_format;
-                menuRes = R.menu.file_list_cab_paste;
-                break;
-            case COPY:
-                titleRes = R.string.file_list_cab_paste_copy_title_format;
-                menuRes = R.menu.file_list_cab_paste;
-                break;
-            default:
-                throw new IllegalStateException();
+        PickOptions pickOptions = mViewModel.getPickOptions();
+        if (pickOptions != null) {
+            mOverlayActionMode.setTitle(getString(R.string.file_list_select_title_format,
+                    files.size()));
+            mOverlayActionMode.setMenuResource(R.menu.file_list_pick);
+            Menu menu = mOverlayActionMode.getMenu();
+            menu.findItem(R.id.action_select_all).setVisible(pickOptions.allowMultiple);
+        } else {
+            mOverlayActionMode.setTitle(getString(R.string.file_list_select_title_format,
+                    files.size()));
+            mOverlayActionMode.setMenuResource(R.menu.file_list_select);
+            Menu menu = mOverlayActionMode.getMenu();
+            boolean hasReadOnly = Functional.some(files, file ->
+                    file.getPath().getFileSystem().isReadOnly());
+            menu.findItem(R.id.action_cut).setVisible(!hasReadOnly);
+            boolean isExtract = Functional.every(files, file ->
+                    ArchiveFileSystemProvider.isArchivePath(file.getPath()));
+            menu.findItem(R.id.action_copy)
+                    .setIcon(isExtract ? R.drawable.extract_icon_white_24dp
+                            : R.drawable.copy_icon_control_normal_24dp)
+                    .setTitle(isExtract ? R.string.file_list_select_action_extract : R.string.copy);
+            menu.findItem(R.id.action_delete).setVisible(!hasReadOnly);
         }
-        mToolbarActionMode.setTitle(getString(titleRes, selectedFiles.size()));
-        mToolbarActionMode.setMenuResource(menuRes);
-        if (!mToolbarActionMode.isActive()) {
+        if (!mOverlayActionMode.isActive()) {
             mAppBarLayout.setExpanded(true);
-            mToolbarActionMode.start(this);
+            mOverlayActionMode.start(new ToolbarActionMode.Callback() {
+                @Override
+                public void onToolbarActionModeStarted(
+                        @NonNull ToolbarActionMode toolbarActionMode) {}
+                @Override
+                public boolean onToolbarActionModeItemClicked(
+                        @NonNull ToolbarActionMode toolbarActionMode, @NonNull MenuItem item) {
+                    return onOverlayActionModeItemClicked(toolbarActionMode, item);
+                }
+                @Override
+                public void onToolbarActionModeFinished(
+                        @NonNull ToolbarActionMode toolbarActionMode) {
+                    onOverlayActionModeFinished(toolbarActionMode);
+                }
+            });
         }
     }
 
-    @Override
-    public void onToolbarActionModeStarted(@NonNull ToolbarActionMode toolbarActionMode) {}
-
-    @Override
-    public boolean onToolbarActionModeItemClicked(@NonNull ToolbarActionMode toolbarActionMode,
-                                                  @NonNull MenuItem item) {
+    private boolean onOverlayActionModeItemClicked(@NonNull ToolbarActionMode toolbarActionMode,
+                                                   @NonNull MenuItem item) {
         switch (item.getItemId()) {
+            case R.id.action_pick:
+                pickFiles(mViewModel.getSelectedFiles());
+                return true;
             case R.id.action_cut:
                 cutFiles(mViewModel.getSelectedFiles());
                 return true;
@@ -615,86 +896,188 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
             case R.id.action_delete:
                 confirmDeleteFiles(mViewModel.getSelectedFiles());
                 return true;
+            case R.id.action_archive:
+                showCreateArchiveDialog(mViewModel.getSelectedFiles());
+                return true;
             case R.id.action_select_all:
                 selectAllFiles();
-                return true;
-            case R.id.action_paste:
-                pasteFiles(mViewModel.getSelectedFiles(), getCurrentPath());
                 return true;
             default:
                 return false;
         }
     }
 
-    @Override
-    public void onToolbarActionModeFinished(@NonNull ToolbarActionMode toolbarActionMode) {
+    private void onOverlayActionModeFinished(@NonNull ToolbarActionMode toolbarActionMode) {
         mViewModel.clearSelectedFiles();
-        mViewModel.setPasteMode(FilePasteMode.NONE);
     }
 
-    private void cutFiles(@NonNull Set<FileItem> files) {
-        if (mViewModel.getPasteMode() == FilePasteMode.MOVE) {
-            mViewModel.selectFiles(files, true);
-        } else {
-            mViewModel.replaceSelectedFiles(files);
-            mViewModel.setPasteMode(FilePasteMode.MOVE);
-        }
+    private void cutFiles(@NonNull LinkedHashSet<FileItem> files) {
+        mViewModel.addToPasteState(false, files);
+        mViewModel.selectFiles(files, false);
     }
 
-    private void copyFiles(@NonNull Set<FileItem> files) {
-        if (mViewModel.getPasteMode() == FilePasteMode.COPY) {
-            mViewModel.selectFiles(files, true);
-        } else {
-            mViewModel.replaceSelectedFiles(files);
-            mViewModel.setPasteMode(FilePasteMode.COPY);
-        }
+    private void copyFiles(@NonNull LinkedHashSet<FileItem> files) {
+        mViewModel.addToPasteState(true, files);
+        mViewModel.selectFiles(files, false);
     }
 
-    private void onPasteModeChanged(@NonNull FilePasteMode pasteMode) {
-        mAdapter.setPasteMode(pasteMode);
-        updateCab();
-    }
-
-    private void pasteFiles(@NonNull Set<FileItem> sources, @NonNull Path targetDirectory) {
-        switch (mViewModel.getPasteMode()) {
-            case MOVE:
-                FileJobService.move(makePathListForJob(sources), targetDirectory, requireContext());
-                break;
-            case COPY:
-                FileJobService.copy(makePathListForJob(sources), targetDirectory, requireContext());
-                break;
-            default:
-                throw new IllegalStateException();
-        }
-        mViewModel.selectFiles(sources, false);
-        mViewModel.setPasteMode(FilePasteMode.NONE);
-    }
-
-    private void confirmDeleteFiles(@NonNull Set<FileItem> files) {
+    private void confirmDeleteFiles(@NonNull LinkedHashSet<FileItem> files) {
         ConfirmDeleteFilesDialogFragment.show(files, this);
     }
 
     @Override
-    public void deleteFiles(@NonNull Set<FileItem> files) {
-        mViewModel.selectFiles(files, false);
+    public void deleteFiles(@NonNull LinkedHashSet<FileItem> files) {
         FileJobService.delete(makePathListForJob(files), requireContext());
+        mViewModel.selectFiles(files, false);
+    }
+
+    private void showCreateArchiveDialog(@NonNull LinkedHashSet<FileItem> files) {
+        CreateArchiveDialogFragment.show(files, this);
+    }
+
+    @Override
+    public void archive(@NonNull LinkedHashSet<FileItem> files, @NonNull String name,
+                        @NonNull String archiveType, @Nullable String compressorType) {
+        Path archiveFile = mViewModel.getCurrentPath().resolve(name);
+        FileJobService.archive(makePathListForJob(files), archiveFile, archiveType, compressorType,
+                requireContext());
+        mViewModel.selectFiles(files, false);
+    }
+
+    private void selectAllFiles() {
+        mAdapter.selectAllFiles();
+    }
+
+    private void onPasteStateChanged(@NonNull PasteState pasteState) {
+        updateBottomToolbar();
+    }
+
+    private void updateBottomToolbar() {
+        PickOptions pickOptions = mViewModel.getPickOptions();
+        if (pickOptions != null) {
+            if (!pickOptions.pickDirectory) {
+                if (mBottomActionMode.isActive()) {
+                    mBottomActionMode.finish();
+                }
+                return;
+            }
+            mBottomActionMode.setNavigationIcon(R.drawable.check_icon_control_normal_24dp);
+            Path path = mViewModel.getCurrentPath();
+            NavigationRoot navigationRoot = NavigationRootMapLiveData.getInstance().getValue().get(
+                    path);
+            String name = navigationRoot != null ? navigationRoot.getName(requireContext())
+                    : FileUtils.getName(path);
+            mBottomActionMode.setTitle(getString(R.string.file_list_select_current_directory_format,
+                    name));
+        } else {
+            PasteState pasteState = mViewModel.getPasteState();
+            LinkedHashSet<FileItem> files = pasteState.files;
+            if (files.isEmpty()) {
+                if (mBottomActionMode.isActive()) {
+                    mBottomActionMode.finish();
+                }
+                return;
+            }
+            mBottomActionMode.setNavigationIcon(R.drawable.close_icon_control_normal_24dp);
+            boolean isExtract = Functional.every(files, file ->
+                    ArchiveFileSystemProvider.isArchivePath(file.getPath()));
+            mBottomActionMode.setTitle(getString(pasteState.copy ? isExtract ?
+                    R.string.file_list_paste_extract_title_format
+                    : R.string.file_list_paste_copy_title_format
+                    : R.string.file_list_paste_move_title_format, files.size()));
+            mBottomActionMode.setMenuResource(R.menu.file_list_paste);
+            boolean isReadOnly = mViewModel.getCurrentPath().getFileSystem().isReadOnly();
+            mBottomActionMode.getMenu().findItem(R.id.action_paste)
+                    .setTitle(isExtract ? R.string.file_list_paste_action_extract_here : R.string.paste)
+                    .setEnabled(!isReadOnly);
+        }
+        if (!mBottomActionMode.isActive()) {
+            mBottomActionMode.start(new ToolbarActionMode.Callback() {
+                @Override
+                public void onToolbarActionModeStarted(
+                        @NonNull ToolbarActionMode toolbarActionMode) {}
+                @Override
+                public boolean onToolbarActionModeItemClicked(
+                        @NonNull ToolbarActionMode toolbarActionMode, @NonNull MenuItem item) {
+                    return onBottomActionModeItemClicked(toolbarActionMode, item);
+                }
+                @Override
+                public void onToolbarActionModeFinished(
+                        @NonNull ToolbarActionMode toolbarActionMode) {
+                    onBottomActionModeFinished(toolbarActionMode);
+                }
+            });
+        }
+    }
+
+    private boolean onBottomActionModeItemClicked(@NonNull ToolbarActionMode toolbarActionMode,
+                                                  @NonNull MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_paste:
+                pasteFiles(getCurrentPath());
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private void onBottomActionModeFinished(@NonNull ToolbarActionMode toolbarActionMode) {
+        PickOptions pickOptions = mViewModel.getPickOptions();
+        if (pickOptions != null) {
+            if (pickOptions.pickDirectory) {
+                pickPaths(CollectionUtils.singletonLinkedSet(mViewModel.getCurrentPath()));
+            }
+        } else {
+            mViewModel.clearPasteState();
+        }
+    }
+
+    private void pasteFiles(@NonNull Path targetDirectory) {
+        PasteState pasteState = mViewModel.getPasteState();
+        if (mViewModel.getPasteState().copy) {
+            FileJobService.copy(makePathListForJob(pasteState.files), targetDirectory,
+                    requireContext());
+        } else {
+            FileJobService.move(makePathListForJob(pasteState.files), targetDirectory,
+                    requireContext());
+        }
+        mViewModel.clearPasteState();
     }
 
     @NonNull
-    private List<Path> makePathListForJob(@NonNull Set<FileItem> files) {
+    private List<Path> makePathListForJob(@NonNull LinkedHashSet<FileItem> files) {
         List<Path> pathList = Functional.map(files, FileItem::getPath);
         Collections.sort(pathList);
         return pathList;
     }
 
-    private void selectAllFiles() {
-        mViewModel.selectAllFiles();
+    @Override
+    public void clearSelectedFiles() {
+        mViewModel.clearSelectedFiles();
+    }
+
+    @Override
+    public void selectFile(@NonNull FileItem file, boolean selected) {
+        mViewModel.selectFile(file, selected);
+    }
+
+    @Override
+    public void selectFiles(@NonNull LinkedHashSet<FileItem> files, boolean selected) {
+        mViewModel.selectFiles(files, selected);
     }
 
     @Override
     public void openFile(@NonNull FileItem file) {
-        String mimeType = file.getMimeType();
-        if (MimeTypes.isApk(mimeType)) {
+        PickOptions pickOptions = mViewModel.getPickOptions();
+        if (pickOptions != null) {
+            if (file.getAttributes().isDirectory()) {
+                navigateTo(file.getPath());
+            } else if (!pickOptions.pickDirectory) {
+                pickFiles(CollectionUtils.singletonLinkedSet(file));
+            }
+            return;
+        }
+        if (MimeTypes.isApk(file.getMimeType())) {
             openApk(file);
             return;
         }
@@ -702,11 +1085,15 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
             navigateTo(FileUtils.toListablePath(file));
             return;
         }
-        openFileAs(file, mimeType);
+        openFileWithIntent(file, false);
     }
 
     private void openApk(@NonNull FileItem file) {
-        switch (SettingsLiveDatas.OPEN_APK_DEFAULT_ACTION.getValue()) {
+        if (!FileUtils.isListable(file)) {
+            installApk(file);
+            return;
+        }
+        switch (Settings.OPEN_APK_DEFAULT_ACTION.getValue()) {
             case INSTALL:
                 installApk(file);
                 break;
@@ -717,13 +1104,13 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
                 OpenApkDialogFragment.show(file, this);
                 break;
             default:
-                throw new IllegalArgumentException();
+                throw new AssertionError();
         }
     }
 
     @Override
     public void installApk(@NonNull FileItem file) {
-        openFileAs(file, file.getMimeType());
+        openFileWithIntent(file, false);
     }
 
     @Override
@@ -732,38 +1119,66 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     }
 
     @Override
-    public void showOpenFileAsDialog(@NonNull FileItem file) {
-        OpenFileAsDialogFragment.show(file, this);
+    public void openFileWith(@NonNull FileItem file) {
+        openFileWithIntent(file, true);
     }
 
-    @Override
-    public void openFileAs(@NonNull FileItem file, @NonNull String mimeType) {
+    private void openFileWithIntent(@NonNull FileItem file, boolean withChooser) {
         Path path = file.getPath();
-        Uri uri = FileProvider.getUriForPath(path);
-        Intent intent = IntentUtils.makeView(uri, mimeType)
-                .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-        IntentPathUtils.putExtraPath(intent, path);
-        // TODO: Archive provider only supports newInputStream() but not newByteChannel(), which
-        //  makes it unable to be exposed by our FileProvider.
-        if (!LinuxFileSystemProvider.isLinuxPath(path)) {
-            intent.setPackage(requireContext().getPackageName());
+        String mimeType = file.getMimeType();
+        Context context = requireContext();
+        if (LinuxFileSystemProvider.isLinuxPath(path)
+                || DocumentFileSystemProvider.isDocumentPath(path)) {
+            Uri uri = FileProvider.getUriForPath(path);
+            Intent intent = IntentUtils.makeView(uri, mimeType)
+                    .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            IntentPathUtils.putExtraPath(intent, path);
+            maybeAddImageViewerActivityExtras(intent, path, mimeType);
+            if (withChooser) {
+                intent = IntentUtils.withChooser(intent);
+                intent.putExtra(Intent.EXTRA_INITIAL_INTENTS,
+                        new Parcelable[] { OpenFileAsDialogActivity.newIntent(path, context) });
+            }
+            AppUtils.startActivity(intent, this);
+        } else {
+            FileJobService.open(path, mimeType, withChooser, context);
         }
-        AppUtils.startActivity(intent, this);
+    }
+
+    private void maybeAddImageViewerActivityExtras(@NonNull Intent intent, @NonNull Path path,
+                                                   @NonNull String mimeType) {
+        if (!MimeTypes.isImage(mimeType)) {
+            return;
+        }
+        List<Path> paths = new ArrayList<>();
+        // We need the ordered list from our adapter instead of the list from FileListLiveData.
+        for (int i = 0; i < mAdapter.getItemCount(); ++i) {
+            FileItem file = mAdapter.getItem(i);
+            Path filePath = file.getPath();
+            if (MimeTypes.isImage(file.getMimeType()) || Objects.equals(filePath, path)) {
+                paths.add(filePath);
+            }
+        }
+        int position = paths.indexOf(path);
+        if (position == -1) {
+            return;
+        }
+        ImageViewerActivity.putExtras(intent, paths, position);
     }
 
     @Override
     public void cutFile(@NonNull FileItem file) {
-        cutFiles(Collections.singleton(file));
+        cutFiles(CollectionUtils.singletonLinkedSet(file));
     }
 
     @Override
     public void copyFile(@NonNull FileItem file) {
-        copyFiles(Collections.singleton(file));
+        copyFiles(CollectionUtils.singletonLinkedSet(file));
     }
 
     @Override
     public void confirmDeleteFile(@NonNull FileItem file) {
-        confirmDeleteFiles(Collections.singleton(file));
+        confirmDeleteFiles(CollectionUtils.singletonLinkedSet(file));
     }
 
     @Override
@@ -773,12 +1188,12 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
 
     @Override
     public boolean hasFileWithName(@NonNull String name) {
-        FileListData fileListData = mViewModel.getFileListLiveData().getValue();
-        if (fileListData == null || fileListData.state != FileListData.State.SUCCESS) {
+        FileListData fileListData = mViewModel.getFileListData();
+        if (fileListData.state != FileListData.State.SUCCESS) {
             return false;
         }
-        return Functional.some(fileListData.fileList, path -> TextUtils.equals(
-                FileUtils.getName(path), name));
+        return Functional.some(fileListData.fileList, path -> Objects.equals(FileUtils.getName(
+                path), name));
     }
 
     @Override
@@ -787,12 +1202,24 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     }
 
     @Override
-    public void sendFile(@NonNull FileItem file) {
-        sendFile(file.getPath(), file.getMimeType());
+    public void extractFile(@NonNull FileItem file) {
+        file = FileUtils.createDummyFileItemForArchiveRoot(file);
+        copyFiles(CollectionUtils.singletonLinkedSet(file));
     }
 
-    private void sendFile(@NonNull Path path, @NonNull String mimeType) {
-        if (LinuxFileSystemProvider.isLinuxPath(path)) {
+    @Override
+    public void showCreateArchiveDialog(@NonNull FileItem file) {
+        showCreateArchiveDialog(CollectionUtils.singletonLinkedSet(file));
+    }
+
+    @Override
+    public void shareFile(@NonNull FileItem file) {
+        shareFile(file.getPath(), file.getMimeType());
+    }
+
+    private void shareFile(@NonNull Path path, @NonNull String mimeType) {
+        if (LinuxFileSystemProvider.isLinuxPath(path)
+                || DocumentFileSystemProvider.isDocumentPath(path)) {
             Uri uri = FileProvider.getUriForPath(path);
             Intent intent = IntentUtils.makeSendStream(uri, mimeType);
             AppUtils.startActivityWithChooser(intent, this);
@@ -804,6 +1231,16 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     @Override
     public void copyPath(@NonNull FileItem file) {
         copyPath(file.getPath());
+    }
+
+    @Override
+    public void addBookmark(@NonNull FileItem file) {
+        addBookmark(file.getPath());
+    }
+
+    private void addBookmark(@NonNull Path path) {
+        BookmarkDirectories.add(new BookmarkDirectory(null, path));
+        ToastUtils.show(R.string.file_add_bookmark_success, requireContext());
     }
 
     @Override
@@ -841,12 +1278,25 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
 
     @Override
     public void navigateToRoot(@NonNull Path path) {
+        collapseSearchView();
         mViewModel.resetTo(path);
+    }
+
+    @Override
+    public void navigateToDefaultRoot() {
+        navigateToRoot(Settings.FILE_LIST_DEFAULT_DIRECTORY.getValue());
     }
 
     @Override
     public void observeCurrentPath(@NonNull LifecycleOwner owner,
                                    @NonNull Observer<Path> observer) {
         mViewModel.getCurrentPathLiveData().observe(owner, observer);
+    }
+
+    @Override
+    public void closeNavigationDrawer() {
+        if (mDrawerLayout != null) {
+            mDrawerLayout.closeDrawer(GravityCompat.START);
+        }
     }
 }

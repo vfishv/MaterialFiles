@@ -22,6 +22,7 @@ import java8.nio.file.WatchKey;
 import java8.nio.file.WatchService;
 import me.zhanghai.android.files.provider.common.ByteString;
 import me.zhanghai.android.files.provider.common.ByteStringListPath;
+import me.zhanghai.android.files.provider.root.RootStrategy;
 import me.zhanghai.android.files.provider.root.RootablePath;
 
 class ArchivePath extends ByteStringListPath implements RootablePath {
@@ -115,33 +116,39 @@ class ArchivePath extends ByteStringListPath implements RootablePath {
         Objects.requireNonNull(watcher);
         Objects.requireNonNull(events);
         Objects.requireNonNull(modifiers);
+        // TODO
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean canUseRoot() {
-        Path archiveFile = mFileSystem.getArchiveFile();
-        return archiveFile instanceof RootablePath;
-    }
-
-    @Override
-    public boolean shouldUseRoot() {
+    public boolean shouldPreferRoot() {
         Path archiveFile = mFileSystem.getArchiveFile();
         if (!(archiveFile instanceof RootablePath)) {
             return false;
         }
         RootablePath rootablePath = (RootablePath) archiveFile;
-        return rootablePath.shouldUseRoot();
+        return rootablePath.shouldPreferRoot();
     }
 
     @Override
-    public void setUseRoot() {
+    public void setPreferRoot() {
         Path archiveFile = mFileSystem.getArchiveFile();
         if (!(archiveFile instanceof RootablePath)) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException(archiveFile.toString());
         }
         RootablePath rootablePath = (RootablePath) archiveFile;
-        rootablePath.setUseRoot();
+        rootablePath.setPreferRoot();
+    }
+
+    @NonNull
+    @Override
+    public RootStrategy getRootStrategy() {
+        Path archiveFile = mFileSystem.getArchiveFile();
+        if (!(archiveFile instanceof RootablePath)) {
+            return RootStrategy.NEVER;
+        }
+        RootablePath rootablePath = (RootablePath) archiveFile;
+        return rootablePath.getRootStrategy();
     }
 
 
@@ -160,11 +167,6 @@ class ArchivePath extends ByteStringListPath implements RootablePath {
         super(in);
 
         mFileSystem = in.readParcelable(ArchiveFileSystem.class.getClassLoader());
-    }
-
-    @Override
-    public int describeContents() {
-        return 0;
     }
 
     @Override

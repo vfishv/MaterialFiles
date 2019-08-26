@@ -6,7 +6,6 @@
 package me.zhanghai.android.files.settings;
 
 import android.content.Context;
-import android.content.Intent;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.widget.TextView;
@@ -21,9 +20,9 @@ import androidx.lifecycle.Observer;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceViewHolder;
 import me.zhanghai.android.files.compat.ListFormatterCompat;
-import me.zhanghai.android.files.functional.Functional;
 import me.zhanghai.android.files.navigation.StandardDirectoriesLiveData;
 import me.zhanghai.android.files.navigation.StandardDirectory;
+import me.zhanghai.java.functional.Functional;
 
 public class StandardDirectoriesPreference extends Preference {
 
@@ -100,6 +99,6 @@ public class StandardDirectoriesPreference extends Preference {
     @Override
     protected void onClick() {
         Context context = getContext();
-        context.startActivity(new Intent(context, StandardDirectoriesActivity.class));
+        context.startActivity(StandardDirectoriesActivity.newIntent(context));
     }
 }

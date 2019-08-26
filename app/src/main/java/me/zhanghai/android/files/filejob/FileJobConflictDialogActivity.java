@@ -11,24 +11,37 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
+import me.zhanghai.android.files.AppActivity;
 import me.zhanghai.android.files.filelist.FileItem;
 import me.zhanghai.android.files.util.FragmentUtils;
 
-public class FileJobConflictDialogActivity extends AppCompatActivity {
+public class FileJobConflictDialogActivity extends AppActivity {
 
     private static final String FRAGMENT_TAG = FileJobConflictDialogFragment.class.getName();
 
     private FileJobConflictDialogFragment mFragment;
 
     @NonNull
-    public static Intent makeIntent(@NonNull FileItem sourceFile, @NonNull FileItem targetFile,
-                                    boolean copy,
-                                    @NonNull FileJobConflictDialogFragment.Listener listener,
-                                    @NonNull Context context) {
+    public static Intent newIntent(@NonNull FileItem sourceFile, @NonNull FileItem targetFile,
+                                   @NonNull FileJobs.Base.CopyMoveType type,
+                                   @NonNull FileJobConflictDialogFragment.Listener listener,
+                                   @NonNull Context context) {
         Intent intent = new Intent(context, FileJobConflictDialogActivity.class);
-        FileJobConflictDialogFragment.putArguments(intent, sourceFile, targetFile, copy, listener);
+        FileJobConflictDialogFragment.putArguments(intent, sourceFile, targetFile, type, listener);
         return intent;
+    }
+
+    @NonNull
+    public static String getTitle(@NonNull FileItem sourceFile, @NonNull FileItem targetFile,
+                                  @NonNull Context context) {
+        return FileJobConflictDialogFragment.getTitle(sourceFile, targetFile, context);
+    }
+
+    @NonNull
+    public static String getMessage(@NonNull FileItem sourceFile, @NonNull FileItem targetFile,
+                                    @NonNull FileJobs.Base.CopyMoveType type,
+                                    @NonNull Context context) {
+        return FileJobConflictDialogFragment.getMessage(sourceFile, targetFile, type, context);
     }
 
     @Override

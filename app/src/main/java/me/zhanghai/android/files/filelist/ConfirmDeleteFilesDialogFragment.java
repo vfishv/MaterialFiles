@@ -9,8 +9,7 @@ import android.app.Dialog;
 import android.os.Bundle;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.LinkedHashSet;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -18,9 +17,9 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatDialogFragment;
 import androidx.fragment.app.Fragment;
 import me.zhanghai.android.files.R;
-import me.zhanghai.android.files.functional.Functional;
 import me.zhanghai.android.files.util.CollectionUtils;
 import me.zhanghai.android.files.util.FragmentUtils;
+import me.zhanghai.java.functional.Functional;
 
 public class ConfirmDeleteFilesDialogFragment extends AppCompatDialogFragment {
 
@@ -29,10 +28,11 @@ public class ConfirmDeleteFilesDialogFragment extends AppCompatDialogFragment {
     private static final String EXTRA_FILES = KEY_PREFIX + "FILES";
 
     @NonNull
-    private Set<FileItem> mExtraFiles;
+    private LinkedHashSet<FileItem> mExtraFiles;
 
     @NonNull
-    private static ConfirmDeleteFilesDialogFragment newInstance(@NonNull Set<FileItem> files) {
+    private static ConfirmDeleteFilesDialogFragment newInstance(
+            @NonNull LinkedHashSet<FileItem> files) {
         //noinspection deprecation
         ConfirmDeleteFilesDialogFragment fragment = new ConfirmDeleteFilesDialogFragment();
         FragmentUtils.getArgumentsBuilder(fragment)
@@ -40,13 +40,13 @@ public class ConfirmDeleteFilesDialogFragment extends AppCompatDialogFragment {
         return fragment;
     }
 
-    public static void show(@NonNull Set<FileItem> files, @NonNull Fragment fragment) {
+    public static void show(@NonNull LinkedHashSet<FileItem> files, @NonNull Fragment fragment) {
         ConfirmDeleteFilesDialogFragment.newInstance(files)
                 .show(fragment.getChildFragmentManager(), null);
     }
 
     /**
-     * @deprecated Use {@link #newInstance(Set)} instead.
+     * @deprecated Use {@link #newInstance(LinkedHashSet)} instead.
      */
     public ConfirmDeleteFilesDialogFragment() {}
 
@@ -54,7 +54,7 @@ public class ConfirmDeleteFilesDialogFragment extends AppCompatDialogFragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mExtraFiles = new HashSet<>(getArguments().getParcelableArrayList(EXTRA_FILES));
+        mExtraFiles = new LinkedHashSet<>(getArguments().getParcelableArrayList(EXTRA_FILES));
     }
 
     @NonNull
@@ -88,10 +88,10 @@ public class ConfirmDeleteFilesDialogFragment extends AppCompatDialogFragment {
 
     @NonNull
     private Listener getListener() {
-        return (Listener) getParentFragment();
+        return (Listener) requireParentFragment();
     }
 
     public interface Listener {
-        void deleteFiles(@NonNull Set<FileItem> files);
+        void deleteFiles(@NonNull LinkedHashSet<FileItem> files);
     }
 }

@@ -26,7 +26,7 @@ public abstract class AbstractWatchService implements WatchService {
     @NonNull
     private final LinkedBlockingQueue<WatchKey> mQueue = new LinkedBlockingQueue<>();
 
-    private boolean mClosed;
+    private volatile boolean mClosed;
 
     @NonNull
     private final Object mLock = new Object();
@@ -79,9 +79,9 @@ public abstract class AbstractWatchService implements WatchService {
                 return;
             }
             onClose();
+            mClosed = true;
             mQueue.clear();
             mQueue.offer(KEY_CLOSED);
-            mClosed = true;
         }
     }
 
@@ -91,25 +91,29 @@ public abstract class AbstractWatchService implements WatchService {
 
         @Override
         public boolean isValid() {
-            return false;
+            throw new AssertionError();
         }
 
+        @NonNull
         @Override
         public List<WatchEvent<?>> pollEvents() {
-            return null;
+            throw new AssertionError();
         }
 
         @Override
         public boolean reset() {
-            return false;
+            throw new AssertionError();
         }
 
         @Override
-        public void cancel() {}
+        public void cancel() {
+            throw new AssertionError();
+        }
 
+        @NonNull
         @Override
         public Watchable watchable() {
-            return null;
+            throw new AssertionError();
         }
     }
 }

@@ -7,7 +7,9 @@ package me.zhanghai.android.files.filelist;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
+import android.provider.DocumentsContract;
 import android.text.TextUtils;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
@@ -21,6 +23,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -28,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.fragment.app.Fragment;
@@ -44,8 +48,11 @@ import me.zhanghai.android.files.file.FormatUtils;
 import me.zhanghai.android.files.file.MimeTypes;
 import me.zhanghai.android.files.glide.GlideApp;
 import me.zhanghai.android.files.glide.IgnoreErrorDrawableImageViewTarget;
+import me.zhanghai.android.files.provider.archive.ArchiveFileSystemProvider;
+import me.zhanghai.android.files.provider.document.DocumentFileAttributes;
+import me.zhanghai.android.files.provider.document.DocumentFileSystemProvider;
 import me.zhanghai.android.files.provider.linux.LinuxFileSystemProvider;
-import me.zhanghai.android.files.settings.SettingsLiveDatas;
+import me.zhanghai.android.files.settings.Settings;
 import me.zhanghai.android.files.ui.AnimatedSortedListAdapter;
 import me.zhanghai.android.files.ui.CheckableFrameLayout;
 import me.zhanghai.android.files.util.ViewUtils;
@@ -53,8 +60,9 @@ import me.zhanghai.android.files.util.ViewUtils;
 public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileListAdapter.ViewHolder>
         implements FastScrollRecyclerView.SectionedAdapter {
 
-    private static final Object PAYLOAD_SELECTED_CHANGED = new Object();
+    private static final Object PAYLOAD_STATE_CHANGED = new Object();
 
+    private boolean mSearching;
     @NonNull
     private Comparator<FileItem> mComparator;
     @NonNull
@@ -62,7 +70,11 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
             new SortedListAdapterCallback<FileItem>(this) {
                 @Override
                 public int compare(FileItem file1, FileItem file2) {
-                    return mComparator.compare(file1, file2);
+                    if (mSearching) {
+                        return ((SearchFileItem) file1).compareTo((SearchFileItem) file2);
+                    } else {
+                        return mComparator.compare(file1, file2);
+                    }
                 }
                 @Override
                 public boolean areItemsTheSame(FileItem oldItem, FileItem newItem) {
@@ -74,13 +86,13 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
                 }
             };
 
-    @NonNull
-    private final Set<FileItem> mSelectedFiles = new HashSet<>();
-    @NonNull
-    private final Map<FileItem, Integer> mFilePositionMap = new HashMap<>();
+    @Nullable
+    private PickOptions mPickOptions;
 
     @NonNull
-    private FilePasteMode mPasteMode;
+    private final LinkedHashSet<FileItem> mSelectedFiles = new LinkedHashSet<>();
+    @NonNull
+    private final Map<FileItem, Integer> mFilePositionMap = new HashMap<>();
 
     @NonNull
     private Fragment mFragment;
@@ -96,11 +108,18 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
 
     public void setComparator(@NonNull Comparator<FileItem> comparator) {
         mComparator = comparator;
-        refresh();
-        rebuildFilePositionMap();
+        if (!mSearching) {
+            refresh();
+            rebuildFilePositionMap();
+        }
     }
 
-    public void replaceSelectedFiles(@NonNull Set<FileItem> files) {
+    public void setPickOptions(@Nullable PickOptions pickOptions) {
+        mPickOptions = pickOptions;
+        notifyItemRangeChanged(0, getItemCount(), PAYLOAD_STATE_CHANGED);
+    }
+
+    public void replaceSelectedFiles(@NonNull LinkedHashSet<FileItem> files) {
         Set<FileItem> changedFiles = new HashSet<>();
         for (Iterator<FileItem> iterator = mSelectedFiles.iterator(); iterator.hasNext(); ) {
             FileItem file = iterator.next();
@@ -118,9 +137,42 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
         for (FileItem file : changedFiles) {
             Integer position = mFilePositionMap.get(file);
             if (position != null) {
-                notifyItemChanged(position, PAYLOAD_SELECTED_CHANGED);
+                notifyItemChanged(position, PAYLOAD_STATE_CHANGED);
             }
         }
+    }
+
+    private void selectFile(@NonNull FileItem file) {
+        if (!isFileSelectable(file)) {
+            return;
+        }
+        if (mPickOptions != null && !mPickOptions.allowMultiple) {
+            mListener.clearSelectedFiles();
+        }
+        mListener.selectFile(file, !mSelectedFiles.contains(file));
+    }
+
+    public void selectAllFiles() {
+        LinkedHashSet<FileItem> files = new LinkedHashSet<>();
+        for (int i = 0, count = getItemCount(); i < count; ++i) {
+            FileItem file = getItem(i);
+            if (isFileSelectable(file)) {
+                files.add(file);
+            }
+        }
+        mListener.selectFiles(files, true);
+    }
+
+    private boolean isFileSelectable(@NonNull FileItem file) {
+        if (mPickOptions != null) {
+            if (mPickOptions.pickDirectory) {
+                return file.getAttributes().isDirectory();
+            } else {
+                return !file.getAttributes().isDirectory() && mPickOptions.mimeTypeMatches(
+                        file.getMimeType());
+            }
+        }
+        return true;
     }
 
     @Override
@@ -130,9 +182,20 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
         rebuildFilePositionMap();
     }
 
+    /**
+     * @deprecated Use {@link #replace2(List, boolean)} instead.
+     */
     @Override
-    public void replace(@NonNull List<FileItem> list) {
-        super.replace(list);
+    public void replace(@NonNull List<FileItem> list, boolean clear) {
+        throw new UnsupportedOperationException();
+    }
+
+    public void replace2(@NonNull List<FileItem> list, boolean searching) {
+
+        boolean clear = mSearching != searching;
+        mSearching = searching;
+
+        super.replace(list, clear);
 
         rebuildFilePositionMap();
     }
@@ -143,10 +206,6 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
             FileItem file = getItem(i);
             mFilePositionMap.put(file, i);
         }
-    }
-
-    public void setPasteMode(@NonNull FilePasteMode pasteMode) {
-        mPasteMode = pasteMode;
     }
 
     @NonNull
@@ -171,34 +230,46 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
     public void onBindViewHolder(@NonNull ViewHolder holder, int position,
                                  @NonNull List<Object> payloads) {
         FileItem file = getItem(position);
-        holder.itemLayout.setChecked(mSelectedFiles.contains(file));
+        boolean isDirectory = file.getAttributes().isDirectory();
+        boolean enabled = isFileSelectable(file) || isDirectory;
+        holder.itemLayout.setEnabled(enabled);
+        holder.iconLayout.setEnabled(enabled);
+        holder.menuButton.setEnabled(enabled);
+        Menu menu = holder.menu.getMenu();
+        Path path = file.getPath();
+        boolean hasPickOptions = mPickOptions != null;
+        boolean isReadOnly = path.getFileSystem().isReadOnly();
+        menu.findItem(R.id.action_cut).setVisible(!hasPickOptions && !isReadOnly);
+        menu.findItem(R.id.action_copy).setVisible(!hasPickOptions);
+        boolean checked = mSelectedFiles.contains(file);
+        holder.itemLayout.setChecked(checked);
         if (!payloads.isEmpty()) {
             return;
         }
         bindViewHolderAnimation(holder);
-        holder.itemView.setOnClickListener(view -> {
-            if (mSelectedFiles.isEmpty() || mPasteMode != FilePasteMode.NONE) {
+        holder.itemLayout.setOnClickListener(view -> {
+            if (mSelectedFiles.isEmpty()) {
                 mListener.openFile(file);
             } else {
-                mListener.selectFile(file, !mSelectedFiles.contains(file));
+                selectFile(file);
             }
         });
         holder.itemLayout.setOnLongClickListener(view -> {
-            if (mSelectedFiles.isEmpty() || mPasteMode != FilePasteMode.NONE) {
-                mListener.selectFile(file, !mSelectedFiles.contains(file));
+            if (mSelectedFiles.isEmpty()) {
+                selectFile(file);
             } else {
                 mListener.openFile(file);
             }
             return true;
         });
+        holder.iconLayout.setOnClickListener(view -> selectFile(file));
         String mimeType = file.getMimeType();
         Drawable icon = AppCompatResources.getDrawable(holder.iconImage.getContext(),
                 MimeTypes.getIconRes(mimeType));
         BasicFileAttributes attributes = file.getAttributes();
-        Path path = file.getPath();
-        if (LinuxFileSystemProvider.isLinuxPath(path) && MimeTypes.supportsThumbnail(mimeType)) {
+        if (supportsThumbnail(file)) {
             GlideApp.with(mFragment)
-                    .load(path.toFile())
+                    .load(path)
                     .signature(new ObjectKey(attributes.lastModifiedTime()))
                     .placeholder(icon)
                     .into(new IgnoreErrorDrawableImageViewTarget(holder.iconImage));
@@ -207,8 +278,6 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
                     .clear(holder.iconImage);
             holder.iconImage.setImageDrawable(icon);
         }
-        holder.iconImage.setOnClickListener(view -> mListener.selectFile(file,
-                !mSelectedFiles.contains(file)));
         Integer badgeIconRes;
         if (file.getAttributesNoFollowLinks().isSymbolicLink()) {
             badgeIconRes = file.isSymbolicLinkBroken() ? R.drawable.error_badge_icon_18dp
@@ -223,7 +292,7 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
         }
         holder.nameText.setText(FileUtils.getName(file));
         String description;
-        if (file.getAttributes().isDirectory()) {
+        if (isDirectory) {
             description = null;
         } else {
             Context context = holder.descriptionText.getContext();
@@ -235,10 +304,18 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
             description = StringCompat.join(descriptionSeparator, lastModificationTime, size);
         }
         holder.descriptionText.setText(description);
+        boolean isArchivePath = ArchiveFileSystemProvider.isArchivePath(path);
+        menu.findItem(R.id.action_copy).setTitle(isArchivePath ? R.string.file_item_action_extract
+                : R.string.copy);
+        menu.findItem(R.id.action_delete).setVisible(!isReadOnly);
+        menu.findItem(R.id.action_rename).setVisible(!isReadOnly);
+        boolean isArchiveFile = FileUtils.isArchiveFile(file);
+        menu.findItem(R.id.action_extract).setVisible(isArchiveFile);
+        menu.findItem(R.id.action_add_bookmark).setVisible(isDirectory);
         holder.menu.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
-                case R.id.action_open_as:
-                    mListener.showOpenFileAsDialog(file);
+                case R.id.action_open_with:
+                    mListener.openFileWith(file);
                     return true;
                 case R.id.action_cut:
                     mListener.cutFile(file);
@@ -252,11 +329,20 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
                 case R.id.action_rename:
                     mListener.showRenameFileDialog(file);
                     return true;
-                case R.id.action_send:
-                    mListener.sendFile(file);
+                case R.id.action_extract:
+                    mListener.extractFile(file);
+                    return true;
+                case R.id.action_archive:
+                    mListener.showCreateArchiveDialog(file);
+                    return true;
+                case R.id.action_share:
+                    mListener.shareFile(file);
                     return true;
                 case R.id.action_copy_path:
                     mListener.copyPath(file);
+                    return true;
+                case R.id.action_add_bookmark:
+                    mListener.addBookmark(file);
                     return true;
                 case R.id.action_properties:
                     mListener.showPropertiesDialog(file);
@@ -265,6 +351,21 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
                     return false;
             }
         });
+    }
+
+    // TODO: Move this to somewhere else since it's shared logic.
+    public static boolean supportsThumbnail(@NonNull FileItem file) {
+        Path path = file.getPath();
+        if (LinuxFileSystemProvider.isLinuxPath(path)) {
+            return MimeTypes.supportsThumbnail(file.getMimeType());
+        } else if (DocumentFileSystemProvider.isDocumentPath(path)) {
+            DocumentFileAttributes attributes = (DocumentFileAttributes) file.getAttributes();
+            return (attributes.getFlags() & DocumentsContract.Document.FLAG_SUPPORTS_THUMBNAIL)
+                    == DocumentsContract.Document.FLAG_SUPPORTS_THUMBNAIL;
+        } else {
+            // TODO: Allow other providers as well - but might be resource consuming.
+            return false;
+        }
     }
 
     @NonNull
@@ -280,19 +381,24 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
 
     @Override
     protected boolean isAnimationEnabled() {
-        return SettingsLiveDatas.FILE_LIST_ANIMATION.getValue();
+        return Settings.FILE_LIST_ANIMATION.getValue();
     }
 
     public interface Listener {
+        void clearSelectedFiles();
         void selectFile(@NonNull FileItem file, boolean selected);
+        void selectFiles(@NonNull LinkedHashSet<FileItem> files, boolean selected);
         void openFile(@NonNull FileItem file);
-        void showOpenFileAsDialog(@NonNull FileItem file);
+        void openFileWith(@NonNull FileItem file);
         void cutFile(@NonNull FileItem file);
         void copyFile(@NonNull FileItem file);
         void confirmDeleteFile(@NonNull FileItem file);
         void showRenameFileDialog(@NonNull FileItem file);
-        void sendFile(@NonNull FileItem file);
+        void extractFile(@NonNull FileItem file);
+        void showCreateArchiveDialog(@NonNull FileItem file);
+        void shareFile(@NonNull FileItem file);
         void copyPath(@NonNull FileItem file);
+        void addBookmark(@NonNull FileItem file);
         void showPropertiesDialog(@NonNull FileItem file);
     }
 
@@ -300,6 +406,8 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
 
         @BindView(R.id.item)
         public CheckableFrameLayout itemLayout;
+        @BindView(R.id.icon_layout)
+        public ViewGroup iconLayout;
         @BindView(R.id.icon)
         public ImageView iconImage;
         @BindView(R.id.badge)

@@ -5,6 +5,8 @@
 
 package me.zhanghai.android.files.provider.common;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import androidx.annotation.NonNull;
@@ -22,11 +24,11 @@ public class CopyOptions {
     private final boolean mNoFollowLinks;
     @Nullable
     private final LongConsumer mProgressListener;
-    private final int mProgressIntervalMillis;
+    private final long mProgressIntervalMillis;
 
     public CopyOptions(boolean replaceExisting, boolean copyAttributes, boolean atomicMove,
                        boolean noFollowLinks, @Nullable LongConsumer progressListener,
-                       int progressIntervalMillis) {
+                       long progressIntervalMillis) {
         mReplaceExisting = replaceExisting;
         mCopyAttributes = copyAttributes;
         mAtomicMove = atomicMove;
@@ -42,7 +44,7 @@ public class CopyOptions {
         boolean atomicMove = false;
         boolean noFollowLinks = false;
         LongConsumer progressListener = null;
-        int progressIntervalMillis = 0;
+        long progressIntervalMillis = 0;
         for (CopyOption option : options) {
             Objects.requireNonNull(option);
             if (option instanceof StandardCopyOption) {
@@ -99,7 +101,28 @@ public class CopyOptions {
         return mProgressListener;
     }
 
-    public int getProgressIntervalMillis() {
+    public long getProgressIntervalMillis() {
         return mProgressIntervalMillis;
+    }
+
+    @NonNull
+    public CopyOption[] toArray() {
+        List<CopyOption> options = new ArrayList<>();
+        if (mReplaceExisting) {
+            options.add(StandardCopyOption.REPLACE_EXISTING);
+        }
+        if (mCopyAttributes) {
+            options.add(StandardCopyOption.COPY_ATTRIBUTES);
+        }
+        if (mAtomicMove) {
+            options.add(StandardCopyOption.ATOMIC_MOVE);
+        }
+        if (mNoFollowLinks) {
+            options.add(LinkOption.NOFOLLOW_LINKS);
+        }
+        if (mProgressListener != null) {
+            options.add(new ProgressCopyOption(mProgressListener, mProgressIntervalMillis));
+        }
+        return options.toArray(new CopyOption[0]);
     }
 }

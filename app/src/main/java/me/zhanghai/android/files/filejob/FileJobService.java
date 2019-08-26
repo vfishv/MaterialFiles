@@ -39,6 +39,7 @@ public class FileJobService extends Service {
 
     private FileJobNotificationManager mNotificationManager;
 
+    @MainThread
     private static void startJob(@NonNull FileJob job, @NonNull Context context) {
         if (sInstance != null) {
             sInstance.startJob(job);
@@ -51,6 +52,12 @@ public class FileJobService extends Service {
     public static void copy(@NonNull List<Path> sources, @NonNull Path targetDirectory,
                             @NonNull Context context) {
         startJob(new FileJobs.Copy(sources, targetDirectory), context);
+    }
+
+    public static void archive(@NonNull List<Path> sources, @NonNull Path archiveFile,
+                               @NonNull String archiveType, @Nullable String compressorType,
+                               @NonNull Context context) {
+        startJob(new FileJobs.Archive(sources, archiveFile, archiveType, compressorType), context);
     }
 
     public static void createFile(@NonNull Path path, @NonNull Context context) {
@@ -70,9 +77,22 @@ public class FileJobService extends Service {
         startJob(new FileJobs.Move(sources, targetDirectory), context);
     }
 
+    public static void open(@NonNull Path file, @NonNull String mimeType, boolean withChooser,
+                            @NonNull Context context) {
+        startJob(new FileJobs.Open(file, mimeType, withChooser), context);
+    }
+
     public static void rename(@NonNull Path path, @NonNull String newName,
                               @NonNull Context context) {
         startJob(new FileJobs.Rename(path, newName), context);
+    }
+
+    @MainThread
+    public static int getRunningJobCount() {
+        if (sInstance == null) {
+            return 0;
+        }
+        return sInstance.getJobCount();
     }
 
     @MainThread
@@ -116,6 +136,10 @@ public class FileJobService extends Service {
     @Override
     public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
         return START_STICKY;
+    }
+
+    private int getJobCount() {
+        return mRunningJobs.size();
     }
 
     private void cancelJob(int jobId) {

@@ -21,14 +21,17 @@
 #-renamesourcefileattribute SourceFile
 
 # App
+-keep class me.zhanghai.android.files.** implements androidx.appcompat.view.CollapsibleActionView { *; }
 -keep class me.zhanghai.android.files.provider.common.ByteString { *; }
 -keep class me.zhanghai.android.files.provider.linux.syscall.** { *; }
-# R8 removes default method inside interface even if actually used.
--keepclassmembers class me.zhanghai.android.files.functional.** { *; }
 
 # Apache Commons Compress
 -dontwarn org.apache.commons.compress.compressors.**
 -dontwarn org.apache.commons.compress.archivers.**
+# me.zhanghai.android.files.provider.archive.archiver.ArchiveWriter.sTarArchiveEntryLinkFlagsField
+-keepclassmembernames class org.apache.commons.compress.archivers.tar.TarArchiveEntry {
+    byte linkFlag;
+}
 
 # EventBus
 -keepattributes *Annotation*

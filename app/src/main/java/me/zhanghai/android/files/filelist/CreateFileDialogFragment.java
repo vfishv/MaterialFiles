@@ -6,6 +6,7 @@
 package me.zhanghai.android.files.filelist;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
 import androidx.fragment.app.Fragment;
 import me.zhanghai.android.files.R;
 
@@ -28,6 +29,7 @@ public class CreateFileDialogFragment extends FileNameDialogFragment {
     public CreateFileDialogFragment() {}
 
     @Override
+    @StringRes
     protected int getTitleRes() {
         return R.string.file_create_file_title;
     }
@@ -40,7 +42,7 @@ public class CreateFileDialogFragment extends FileNameDialogFragment {
     @NonNull
     @Override
     protected Listener getListener() {
-        return (Listener) getParentFragment();
+        return (Listener) requireParentFragment();
     }
 
     public interface Listener extends FileNameDialogFragment.Listener {

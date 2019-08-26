@@ -19,9 +19,8 @@ import java8.nio.file.Path;
 import java8.nio.file.WatchEvent;
 import java8.nio.file.WatchKey;
 import java8.nio.file.WatchService;
-import me.zhanghai.android.files.provider.root.RootablePath;
 
-public class ByteStringPath implements Parcelable, Path, RootablePath {
+public class ByteStringPath implements Parcelable, Path {
 
     @NonNull
     private final ByteString mByteString;
@@ -173,21 +172,6 @@ public class ByteStringPath implements Parcelable, Path, RootablePath {
 
     @Override
     public int compareTo(Path other) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean canUseRoot() {
-        return false;
-    }
-
-    @Override
-    public boolean shouldUseRoot() {
-        return false;
-    }
-
-    @Override
-    public void setUseRoot() {
         throw new UnsupportedOperationException();
     }
 

@@ -17,10 +17,11 @@ import java.util.List;
 import androidx.annotation.NonNull;
 import java8.nio.file.Path;
 import me.zhanghai.android.files.provider.common.ByteString;
+import me.zhanghai.android.files.provider.common.ByteStringListPathFactory;
 import me.zhanghai.android.files.provider.remote.RemoteFileSystemException;
 import me.zhanghai.android.files.provider.root.RootableFileSystem;
 
-class ArchiveFileSystem extends RootableFileSystem implements Parcelable {
+class ArchiveFileSystem extends RootableFileSystem implements ByteStringListPathFactory {
 
     static final byte SEPARATOR = LocalArchiveFileSystem.SEPARATOR;
 
@@ -93,8 +94,9 @@ class ArchiveFileSystem extends RootableFileSystem implements Parcelable {
     }
 
     @NonNull
-    Path getPath(@NonNull ByteString path) {
-        return getLocalFileSystem().getPath(path);
+    @Override
+    public ArchivePath getPath(@NonNull ByteString first, @NonNull ByteString... more) {
+        return getLocalFileSystem().getPath(first, more);
     }
 
 

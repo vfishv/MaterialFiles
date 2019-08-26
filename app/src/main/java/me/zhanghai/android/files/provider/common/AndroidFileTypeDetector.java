@@ -42,6 +42,14 @@ public class AndroidFileTypeDetector extends FileTypeDetector {
         if (attributes.isDirectory()) {
             return MimeTypes.DIRECTORY_MIME_TYPE;
         }
+        if (attributes instanceof ContentProviderFileAttributes) {
+            ContentProviderFileAttributes contentProviderAttributes =
+                    (ContentProviderFileAttributes) attributes;
+            String contentProviderMimeType = contentProviderAttributes.mimeType();
+            if (contentProviderMimeType != null) {
+                return contentProviderMimeType;
+            }
+        }
         return MimeTypes.getMimeType(path.toString());
     }
 }
