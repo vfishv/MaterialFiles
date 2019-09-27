@@ -13,10 +13,12 @@ import java.util.LinkedHashSet;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatDialogFragment;
 import androidx.fragment.app.Fragment;
 import me.zhanghai.android.files.R;
+import me.zhanghai.android.files.compat.AlertDialogBuilderCompat;
+import me.zhanghai.android.files.file.FileItem;
+import me.zhanghai.android.files.util.BundleUtils;
 import me.zhanghai.android.files.util.CollectionUtils;
 import me.zhanghai.android.files.util.FragmentUtils;
 import me.zhanghai.java.functional.Functional;
@@ -54,7 +56,8 @@ public class ConfirmDeleteFilesDialogFragment extends AppCompatDialogFragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mExtraFiles = new LinkedHashSet<>(getArguments().getParcelableArrayList(EXTRA_FILES));
+        mExtraFiles = new LinkedHashSet<>(BundleUtils.getParcelableArrayList(getArguments(),
+                EXTRA_FILES));
     }
 
     @NonNull
@@ -78,7 +81,7 @@ public class ConfirmDeleteFilesDialogFragment extends AppCompatDialogFragment {
                     : R.string.file_delete_message_multiple_mixed_format;
             message = getString(messageRes, mExtraFiles.size());
         }
-        return new AlertDialog.Builder(requireContext(), getTheme())
+        return AlertDialogBuilderCompat.create(requireContext(), getTheme())
                 .setMessage(message)
                 .setPositiveButton(android.R.string.ok, (dialog, which) -> getListener()
                         .deleteFiles(mExtraFiles))

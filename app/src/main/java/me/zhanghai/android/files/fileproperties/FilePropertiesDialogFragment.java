@@ -19,13 +19,18 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatDialogFragment;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager.widget.ViewPager;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import me.zhanghai.android.files.R;
-import me.zhanghai.android.files.filelist.FileItem;
+import me.zhanghai.android.files.compat.AlertDialogBuilderCompat;
+import me.zhanghai.android.files.file.FileItem;
 import me.zhanghai.android.files.filelist.FileUtils;
+import me.zhanghai.android.files.fileproperties.basic.FilePropertiesBasicTabFragment;
+import me.zhanghai.android.files.fileproperties.permissions.FilePropertiesPermissionsTabFragment;
 import me.zhanghai.android.files.ui.TabFragmentPagerAdapter;
+import me.zhanghai.android.files.util.BundleUtils;
 import me.zhanghai.android.files.util.FragmentUtils;
 import me.zhanghai.android.files.util.ViewUtils;
 
@@ -67,7 +72,7 @@ public class FilePropertiesDialogFragment extends AppCompatDialogFragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mExtraFile = getArguments().getParcelable(EXTRA_FILE);
+        mExtraFile = BundleUtils.getParcelable(getArguments(), EXTRA_FILE);
     }
 
     @NonNull
@@ -76,7 +81,7 @@ public class FilePropertiesDialogFragment extends AppCompatDialogFragment {
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
         String title = getString(R.string.file_properties_title_format, FileUtils.getName(
                 mExtraFile));
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext(), getTheme())
+        AlertDialog.Builder builder = AlertDialogBuilderCompat.create(requireContext(), getTheme())
                 .setTitle(title);
         mView = ViewUtils.inflate(R.layout.file_properties_dialog, builder.getContext());
         ButterKnife.bind(this, mView);
@@ -97,12 +102,15 @@ public class FilePropertiesDialogFragment extends AppCompatDialogFragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
+        new ViewModelProvider(this, new FilePropertiesViewModel.Factory(mExtraFile))
+                .get(FilePropertiesViewModel.class);
+
         mTabAdapter = new TabFragmentPagerAdapter(this);
-        mTabAdapter.addTab(() -> FilePropertiesBasicTabFragment.newInstance(mExtraFile), getString(
+        mTabAdapter.addTab(FilePropertiesBasicTabFragment::newInstance, getString(
                 R.string.file_properties_basic));
         if (FilePropertiesPermissionsTabFragment.isAvailable(mExtraFile)) {
-            mTabAdapter.addTab(() -> FilePropertiesPermissionsTabFragment.newInstance(mExtraFile),
-                    getString(R.string.file_properties_permissions));
+            mTabAdapter.addTab(FilePropertiesPermissionsTabFragment::newInstance, getString(
+                    R.string.file_properties_permissions));
         }
         mViewPager.setOffscreenPageLimit(mTabAdapter.getCount() - 1);
         mViewPager.setAdapter(mTabAdapter);

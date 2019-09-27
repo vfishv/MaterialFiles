@@ -12,8 +12,8 @@ import android.os.Bundle;
 import android.os.Parcelable;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -24,8 +24,11 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import java8.nio.file.Path;
 import me.zhanghai.android.files.R;
+import me.zhanghai.android.files.compat.AlertDialogBuilderCompat;
 import me.zhanghai.android.files.filelist.FileListActivity;
 import me.zhanghai.android.files.filelist.FileUtils;
+import me.zhanghai.android.files.settings.Settings;
+import me.zhanghai.android.files.util.BundleUtils;
 import me.zhanghai.android.files.util.FragmentUtils;
 import me.zhanghai.android.files.util.IntentPathUtils;
 import me.zhanghai.android.files.util.ViewUtils;
@@ -49,7 +52,7 @@ public class EditBookmarkDirectoryDialogFragment extends AppCompatDialogFragment
     @BindView(R.id.name)
     EditText mNameEdit;
     @BindView(R.id.path)
-    Button mPathButton;
+    TextView mPathText;
 
     @NonNull
     private static EditBookmarkDirectoryDialogFragment newInstance(
@@ -76,15 +79,17 @@ public class EditBookmarkDirectoryDialogFragment extends AppCompatDialogFragment
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mExtraBookmarkDirectory = getArguments().getParcelable(EXTRA_BOOKMARK_DIRECTORY);
+        mExtraBookmarkDirectory = BundleUtils.getParcelable(getArguments(),
+                EXTRA_BOOKMARK_DIRECTORY);
     }
 
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext(), getTheme());
-        View contentView = ViewUtils.inflate(R.layout.edit_bookmark_directory_dialog,
-                builder.getContext());
+        AlertDialog.Builder builder = AlertDialogBuilderCompat.create(requireContext(), getTheme());
+        View contentView = ViewUtils.inflate(Settings.MATERIAL_DESIGN_2.getValue() ?
+                        R.layout.edit_bookmark_directory_dialog_md2
+                        : R.layout.edit_bookmark_directory_dialog, builder.getContext());
         ButterKnife.bind(this, contentView);
         if (savedInstanceState == null) {
             String name = mExtraBookmarkDirectory.getName();
@@ -92,10 +97,10 @@ public class EditBookmarkDirectoryDialogFragment extends AppCompatDialogFragment
             mNameEdit.setSelection(0, name.length());
             mPath = mExtraBookmarkDirectory.getPath();
         } else {
-            mPath = savedInstanceState.getParcelable(STATE_PATH);
+            mPath = BundleUtils.getParcelable(savedInstanceState, STATE_PATH);
         }
         updatePathButton();
-        mPathButton.setOnClickListener(view -> {
+        mPathText.setOnClickListener(view -> {
             Intent intent = FileListActivity.newPickDirectoryIntent(mPath, requireContext());
             startActivityForResult(intent, REQUEST_CODE_PICK_DIRECTORY);
         });
@@ -141,7 +146,7 @@ public class EditBookmarkDirectoryDialogFragment extends AppCompatDialogFragment
     }
 
     private void updatePathButton() {
-        mPathButton.setText(FileUtils.getPathString(mPath));
+        mPathText.setText(FileUtils.getPathString(mPath));
     }
 
     @NonNull

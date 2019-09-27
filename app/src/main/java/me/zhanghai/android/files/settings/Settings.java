@@ -8,18 +8,27 @@ package me.zhanghai.android.files.settings;
 import android.os.Environment;
 import android.os.Parcelable;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.List;
 
 import java8.nio.file.Path;
 import java8.nio.file.Paths;
+import me.zhanghai.android.files.AppApplication;
 import me.zhanghai.android.files.R;
+import me.zhanghai.android.files.compat.MoreEnvironmentCompat;
 import me.zhanghai.android.files.filelist.FileSortOptions;
 import me.zhanghai.android.files.filelist.OpenApkDefaultAction;
 import me.zhanghai.android.files.navigation.BookmarkDirectory;
 import me.zhanghai.android.files.navigation.StandardDirectorySettings;
 import me.zhanghai.android.files.provider.root.RootStrategy;
-import me.zhanghai.android.files.settings.SettingLiveDatas.*;
+import me.zhanghai.android.files.settings.SettingLiveDatas.BooleanSettingLiveData;
+import me.zhanghai.android.files.settings.SettingLiveDatas.EnumSettingLiveData;
+import me.zhanghai.android.files.settings.SettingLiveDatas.IntegerSettingLiveData;
+import me.zhanghai.android.files.settings.SettingLiveDatas.ParcelableListSettingLiveData;
+import me.zhanghai.android.files.settings.SettingLiveDatas.ParcelableSettingLiveData;
+import me.zhanghai.android.files.settings.SettingLiveDatas.ResourceIdSettingLiveData;
+import me.zhanghai.android.files.settings.SettingLiveDatas.StringSettingLiveData;
 import me.zhanghai.android.files.theme.custom.CustomThemeColors;
 import me.zhanghai.android.files.theme.night.NightMode;
 
@@ -77,7 +86,10 @@ public interface Settings {
     SettingLiveData<CustomThemeColors.Accent> ACCENT_COLOR = new EnumSettingLiveData<>(
             R.string.pref_key_accent_color, R.string.pref_default_value_accent_color,
             CustomThemeColors.Accent.class);
- 
+
+    SettingLiveData<Boolean> MATERIAL_DESIGN_2 = new BooleanSettingLiveData(
+            R.string.pref_key_material_design_2, R.bool.pref_default_value_material_design_2);
+
     SettingLiveData<NightMode> NIGHT_MODE = new EnumSettingLiveData<>(R.string.pref_key_night_mode,
             R.string.pref_default_value_night_mode, NightMode.class);
 
@@ -90,7 +102,14 @@ public interface Settings {
 
     SettingLiveData<List<BookmarkDirectory>> BOOKMARK_DIRECTORIES =
             new ParcelableListSettingLiveData<>(R.string.pref_key_bookmark_directories,
-                    Collections.emptyList(), BookmarkDirectory.CREATOR);
+                    Collections.singletonList(new BookmarkDirectory(
+                            AppApplication.getInstance().getString(
+                                    R.string.settings_bookmark_directory_screenshots),
+                            Paths.get(new File(Environment.getExternalStoragePublicDirectory(
+                                    Environment.DIRECTORY_PICTURES),
+                                    MoreEnvironmentCompat.DIRECTORY_SCREENSHOTS)
+                                    .getAbsolutePath()))),
+                    BookmarkDirectory.CREATOR);
 
     SettingLiveData<RootStrategy> ROOT_STRATEGY = new EnumSettingLiveData<>(
             R.string.pref_key_root_strategy, R.string.pref_default_value_root_strategy,
@@ -103,4 +122,8 @@ public interface Settings {
     SettingLiveData<OpenApkDefaultAction> OPEN_APK_DEFAULT_ACTION = new EnumSettingLiveData<>(
             R.string.pref_key_open_apk_default_action,
             R.string.pref_default_value_open_apk_default_action, OpenApkDefaultAction.class);
+
+    SettingLiveData<Boolean> READ_REMOTE_FILES_FOR_THUMBNAIL = new BooleanSettingLiveData(
+            R.string.pref_key_read_remote_files_for_thumbnail,
+            R.bool.pref_default_value_read_remote_files_for_thumbnail);
 }

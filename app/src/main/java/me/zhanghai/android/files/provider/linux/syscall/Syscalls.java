@@ -57,6 +57,12 @@ public class Syscalls {
 
     public static native void closedir(long dir) throws SyscallException;
 
+    public static native void endgrent() throws SyscallException;
+
+    public static native void endmntent(long file) throws SyscallException;
+
+    public static native void endpwent() throws SyscallException;
+
     private static native int errno();
 
     public static int fcntl(@NonNull FileDescriptor fd, int cmd) throws SyscallException {
@@ -84,16 +90,28 @@ public class Syscalls {
     }
 
     @Nullable
+    public static native StructGroup getgrent() throws SyscallException;
+
+    @Nullable
     public static native StructGroup getgrgid(int gid) throws SyscallException;
 
     @Nullable
     public static native StructGroup getgrnam(@NonNull ByteString name) throws SyscallException;
 
     @Nullable
+    public static native StructMntent getmntent(long file) throws SyscallException;
+
+    @Nullable
+    public static native StructPasswd getpwent() throws SyscallException;
+
+    @Nullable
     public static native StructPasswd getpwnam(@NonNull ByteString name) throws SyscallException;
 
     @Nullable
     public static native StructPasswd getpwuid(int uid) throws SyscallException;
+
+    public static native boolean hasmntopt(@NonNull StructMntent mntent,
+                                           @NonNull ByteString option);
 
     public static native int inotify_add_watch(@NonNull FileDescriptor fd, @NonNull ByteString path,
                                                int mask) throws SyscallException;
@@ -108,6 +126,9 @@ public class Syscalls {
 
     public static native void inotify_rm_watch(@NonNull FileDescriptor fd, int wd)
             throws SyscallException;
+
+    public static native int ioctl_int(@NonNull FileDescriptor fd, int request,
+                                       @Nullable Int32Ref argument) throws SyscallException;
 
     public static boolean is_selinux_enabled() {
         return SeLinux.is_selinux_enabled();
@@ -155,6 +176,10 @@ public class Syscalls {
             throws SyscallException;
 
     public static native void mkdir(@NonNull ByteString path, int mode) throws SyscallException;
+
+    public static native int mount(@Nullable ByteString source, @NonNull ByteString target,
+                                   @Nullable ByteString fileSystemType, long mountFlags,
+                                   @Nullable byte[] data) throws SyscallException;
 
     @NonNull
     public static native FileDescriptor open(@NonNull ByteString path, int flags, int mode)
@@ -255,6 +280,13 @@ public class Syscalls {
             throw new SyscallException(e);
         }
     }
+
+    public static native void setgrent() throws SyscallException;
+
+    public static native long setmntent(@NonNull ByteString path, @NonNull ByteString mode)
+            throws SyscallException;
+
+    public static native void setpwent() throws SyscallException;
 
     @NonNull
     @Size(2)

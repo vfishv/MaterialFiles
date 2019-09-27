@@ -46,13 +46,14 @@ import java9.util.function.Consumer;
 import me.zhanghai.android.files.file.MimeTypes;
 import me.zhanghai.android.files.provider.common.AccessModes;
 import me.zhanghai.android.files.provider.common.ByteString;
+import me.zhanghai.android.files.provider.common.ByteStringPath;
 import me.zhanghai.android.files.provider.common.ByteStringUriUtils;
 import me.zhanghai.android.files.provider.common.CopyOptions;
-import me.zhanghai.android.files.provider.common.DirectoryObservable;
-import me.zhanghai.android.files.provider.common.DirectoryObservableProvider;
 import me.zhanghai.android.files.provider.common.MoreFileChannels;
 import me.zhanghai.android.files.provider.common.OpenOptions;
 import me.zhanghai.android.files.provider.common.PathListDirectoryStream;
+import me.zhanghai.android.files.provider.common.PathObservable;
+import me.zhanghai.android.files.provider.common.PathObservableProvider;
 import me.zhanghai.android.files.provider.common.Searchable;
 import me.zhanghai.android.files.provider.common.WalkFileTreeSearchable;
 import me.zhanghai.android.files.provider.content.resolver.Resolver;
@@ -60,7 +61,7 @@ import me.zhanghai.android.files.provider.content.resolver.ResolverException;
 import me.zhanghai.android.files.provider.document.resolver.DocumentResolver;
 
 public class DocumentFileSystemProvider extends FileSystemProvider
-        implements DirectoryObservableProvider, Searchable {
+        implements PathObservableProvider, Searchable {
 
     static final String SCHEME = "document";
 
@@ -373,7 +374,7 @@ public class DocumentFileSystemProvider extends FileSystemProvider
     public void createSymbolicLink(@NonNull Path link, @NonNull Path target,
                                    @NonNull FileAttribute<?>... attributes) {
         requireDocumentPath(link);
-        requireDocumentPath(target);
+        requireDocumentOrByteStringPath(target);
         Objects.requireNonNull(attributes);
         throw new UnsupportedOperationException();
     }
@@ -536,10 +537,9 @@ public class DocumentFileSystemProvider extends FileSystemProvider
 
     @NonNull
     @Override
-    public DirectoryObservable observeDirectory(@NonNull Path directory,
-                                                long intervalMillis) throws IOException {
-        DocumentPath documentDirectory = requireDocumentPath(directory);
-        return new DocumentDirectoryObservable(documentDirectory, intervalMillis);
+    public PathObservable observePath(@NonNull Path path, long intervalMillis) throws IOException {
+        DocumentPath documentDirectory = requireDocumentPath(path);
+        return new DocumentPathObservable(documentDirectory, intervalMillis);
     }
 
     @Override
@@ -558,5 +558,16 @@ public class DocumentFileSystemProvider extends FileSystemProvider
             throw new ProviderMismatchException(path.toString());
         }
         return (DocumentPath) path;
+    }
+
+    private static ByteString requireDocumentOrByteStringPath(@NonNull Path path) {
+        Objects.requireNonNull(path);
+        if (path instanceof DocumentPath) {
+            return ((DocumentPath) path).toByteString();
+        } else if (path instanceof ByteStringPath) {
+            return ((ByteStringPath) path).toByteString();
+        } else {
+            throw new ProviderMismatchException(path.toString());
+        }
     }
 }

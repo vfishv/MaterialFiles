@@ -21,6 +21,7 @@ import java8.nio.file.NotDirectoryException;
 import me.zhanghai.android.files.compat.ErrnoExceptionCompat;
 import me.zhanghai.android.files.provider.common.InvalidFileNameException;
 import me.zhanghai.android.files.provider.common.IsDirectoryException;
+import me.zhanghai.android.files.provider.common.ReadOnlyFileSystemException;
 
 public class SyscallException extends Exception {
 
@@ -96,7 +97,7 @@ public class SyscallException extends Exception {
     @NonNull
     private FileSystemException toFileSystemExceptionWithoutCause(@Nullable String file,
                                                                   @Nullable String other) {
-        if (mErrno == OsConstants.EACCES) {
+        if (mErrno == OsConstants.EACCES || mErrno == OsConstants.EPERM) {
             return new AccessDeniedException(file, other, getMessage());
         } else if (mErrno == OsConstants.EEXIST) {
             return new FileAlreadyExistsException(file, other, getMessage());
@@ -110,6 +111,8 @@ public class SyscallException extends Exception {
             return new DirectoryNotEmptyException(file);
         } else if (mErrno == OsConstants.ENOENT) {
             return new NoSuchFileException(file, other, getMessage());
+        } else if (mErrno == OsConstants.EROFS) {
+            return new ReadOnlyFileSystemException(file, other, getMessage());
         } else {
             return new FileSystemException(file, other, getMessage());
         }

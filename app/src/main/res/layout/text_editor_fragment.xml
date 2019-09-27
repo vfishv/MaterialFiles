@@ -5,24 +5,30 @@
   ~ All Rights Reserved.
   -->
 
-<LinearLayout
+<androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:fitsSystemWindows="true">
 
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="?actionBarSize"
-        android:background="?colorPrimary"
-        android:elevation="@dimen/design_appbar_elevation"
+        android:layout_height="wrap_content"
+        android:background="?colorAppBarSurface"
         android:theme="?actionBarTheme"
-        app:navigationIcon="@drawable/back_icon_white_24dp"
-        app:popupTheme="?actionBarPopupTheme" />
+        app:liftOnScroll="?appBarLiftOnScroll"
+        app:liftOnScrollTargetViewId="@id/scroll">
 
-    <FrameLayout
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?actionBarSize"
+            app:navigationIcon="@drawable/back_icon_control_normal_24dp"
+            app:popupTheme="?actionBarPopupTheme" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <me.zhanghai.android.files.ui.CoordinatorScrollingFrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -47,22 +53,26 @@
             android:visibility="gone" />
 
         <!-- TODO: Use a WebView for large amount of text. -->
-        <ScrollView
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/scroll"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:fillViewport="true">
+            android:clipToPadding="false"
+            android:fillViewport="true"
+            android:scrollbars="vertical">
 
-            <EditText
+            <me.zhanghai.android.files.ui.IsRestoringInstanceStateEditText
                 android:id="@+id/text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/screen_edge_margin"
                 android:background="@null"
                 android:gravity="top"
+                android:importantForAutofill="no"
                 android:inputType="textMultiLine"
                 android:textAppearance="@style/TextAppearance.AppCompat.Body1">
                 <requestFocus />
-            </EditText>
-        </ScrollView>
-    </FrameLayout>
-</LinearLayout>
+            </me.zhanghai.android.files.ui.IsRestoringInstanceStateEditText>
+        </androidx.core.widget.NestedScrollView>
+    </me.zhanghai.android.files.ui.CoordinatorScrollingFrameLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

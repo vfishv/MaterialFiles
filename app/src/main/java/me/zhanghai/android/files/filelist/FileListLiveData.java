@@ -16,6 +16,8 @@ import java8.nio.file.DirectoryIteratorException;
 import java8.nio.file.DirectoryStream;
 import java8.nio.file.Files;
 import java8.nio.file.Path;
+import me.zhanghai.android.files.file.FileItem;
+import me.zhanghai.android.files.util.CloseableLiveData;
 
 public class FileListLiveData extends CloseableLiveData<FileListData> {
 
@@ -23,14 +25,14 @@ public class FileListLiveData extends CloseableLiveData<FileListData> {
     private final Path mPath;
 
     @NonNull
-    private final DirectoryObserver mObserver;
+    private final PathObserver mObserver;
 
     private volatile boolean mChangedWhileInactive;
 
     public FileListLiveData(@NonNull Path path) {
         mPath = path;
         loadValue();
-        mObserver = new DirectoryObserver(path, this::onChangeObserved);
+        mObserver = new PathObserver(path, this::onChangeObserved);
     }
 
     private void loadValue() {

@@ -24,16 +24,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import androidx.annotation.NonNull;
 import java8.nio.file.ClosedWatchServiceException;
-import java8.nio.file.NotDirectoryException;
+import java8.nio.file.Files;
+import java8.nio.file.LinkOption;
 import java8.nio.file.Path;
 import java8.nio.file.StandardWatchEventKinds;
 import java8.nio.file.WatchEvent;
+import java8.nio.file.attribute.BasicFileAttributes;
 import me.zhanghai.android.files.provider.FileSystemProviders;
 import me.zhanghai.android.files.provider.common.AbstractWatchService;
 import me.zhanghai.android.files.provider.common.ByteString;
 import me.zhanghai.android.files.provider.linux.syscall.Constants;
 import me.zhanghai.android.files.provider.linux.syscall.StructInotifyEvent;
-import me.zhanghai.android.files.provider.linux.syscall.StructStat;
 import me.zhanghai.android.files.provider.linux.syscall.SyscallException;
 import me.zhanghai.android.files.provider.linux.syscall.Syscalls;
 import me.zhanghai.java.promise.Promise;
@@ -139,18 +140,8 @@ class LocalLinuxWatchService extends AbstractWatchService {
             return awaitPromise(new Promise<>(settler -> post(true, settler, () -> {
                 try {
                     ByteString pathBytes = path.toByteString();
-                    StructStat structStat;
-                    try {
-                        structStat = Syscalls.stat(pathBytes);
-                    } catch (SyscallException e) {
-                        settler.reject(e.toFileSystemException(pathBytes.toString()));
-                        return;
-                    }
-                    if (!OsConstants.S_ISDIR(structStat.st_mode)) {
-                        settler.reject(new NotDirectoryException(pathBytes.toString()));
-                        return;
-                    }
                     int mask = eventKindsToMask(kinds);
+                    mask = maybeAddDontFollowMask(path, mask);
                     int wd;
                     try {
                         wd = Syscalls.inotify_add_watch(mInotifyFd, pathBytes, mask);
@@ -165,6 +156,23 @@ class LocalLinuxWatchService extends AbstractWatchService {
                     settler.reject(e);
                 }
             })));
+        }
+
+        private static int maybeAddDontFollowMask(@NonNull Path path, int mask) {
+            BasicFileAttributes attributes = null;
+            try {
+                attributes = Files.readAttributes(path, BasicFileAttributes.class);
+            } catch (IOException ignored) {}
+            if (attributes == null) {
+                try {
+                    attributes = Files.readAttributes(path, BasicFileAttributes.class,
+                            LinkOption.NOFOLLOW_LINKS);
+                } catch (IOException ignored) {}
+            }
+            if (attributes != null && attributes.isSymbolicLink()) {
+                return mask | Constants.IN_DONT_FOLLOW;
+            }
+            return mask;
         }
 
         void cancel(@NonNull LocalLinuxWatchKey key) {
@@ -324,12 +332,11 @@ class LocalLinuxWatchService extends AbstractWatchService {
                                     key.setInvalid();
                                     key.signal();
                                     mKeys.remove(event.wd);
-                                } else if (event.name == null) {
-                                    // Event for directory itself, ignored.
                                 } else {
                                     WatchEvent.Kind<Path> kind = maskToEventKind(event.mask);
-                                    LinuxFileSystem fileSystem = key.watchable().getFileSystem();
-                                    Path name = fileSystem.getPath(event.name);
+                                    LinuxPath name = event.name != null ?
+                                            key.watchable().getFileSystem().getPath(event.name)
+                                            : null;
                                     key.addEvent(kind, name);
                                 }
                             }
@@ -355,9 +362,10 @@ class LocalLinuxWatchService extends AbstractWatchService {
                 if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
                     mask |= Constants.IN_CREATE | Constants.IN_MOVED_TO;
                 } else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
-                    mask |= Constants.IN_DELETE | Constants.IN_MOVED_FROM;
+                    mask |= Constants.IN_DELETE_SELF | Constants.IN_DELETE
+                            | Constants.IN_MOVED_FROM;
                 } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
-                    mask |= Constants.IN_MODIFY | Constants.IN_ATTRIB;
+                    mask |= Constants.IN_MOVE_SELF | Constants.IN_MODIFY | Constants.IN_ATTRIB;
                 }
             }
             return mask;
@@ -368,10 +376,12 @@ class LocalLinuxWatchService extends AbstractWatchService {
             if ((mask & Constants.IN_CREATE) == Constants.IN_CREATE
                     || (mask & Constants.IN_MOVED_TO) == Constants.IN_MOVED_TO) {
                 return StandardWatchEventKinds.ENTRY_CREATE;
-            } else if ((mask & Constants.IN_DELETE) == Constants.IN_DELETE
+            } else if ((mask & Constants.IN_DELETE_SELF) == Constants.IN_DELETE_SELF
+                    || (mask & Constants.IN_DELETE) == Constants.IN_DELETE
                     || (mask & Constants.IN_MOVED_FROM) == Constants.IN_MOVED_FROM) {
                 return StandardWatchEventKinds.ENTRY_DELETE;
-            } else if ((mask & Constants.IN_MODIFY) == Constants.IN_MODIFY
+            } else if ((mask & Constants.IN_MOVE_SELF) == Constants.IN_MOVE_SELF
+                    || (mask & Constants.IN_MODIFY) == Constants.IN_MODIFY
                     || (mask & Constants.IN_ATTRIB) == Constants.IN_ATTRIB) {
                 return StandardWatchEventKinds.ENTRY_MODIFY;
             } else {

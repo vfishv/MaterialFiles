@@ -24,6 +24,7 @@
 -keep class me.zhanghai.android.files.** implements androidx.appcompat.view.CollapsibleActionView { *; }
 -keep class me.zhanghai.android.files.provider.common.ByteString { *; }
 -keep class me.zhanghai.android.files.provider.linux.syscall.** { *; }
+-keepnames class * extends java.lang.Exception
 
 # Apache Commons Compress
 -dontwarn org.apache.commons.compress.compressors.**
@@ -33,9 +34,16 @@
     byte linkFlag;
 }
 
+# Apache FtpServer
+-keepclassmembers class * implements org.apache.mina.core.service.IoProcessor {
+    public <init>(java.util.concurrent.ExecutorService);
+    public <init>(java.util.concurrent.Executor);
+    public <init>();
+}
+
 # EventBus
 -keepattributes *Annotation*
--keepclassmembers class ** {
+-keepclassmembers class * {
     @org.greenrobot.eventbus.Subscribe <methods>;
 }
 -keep enum org.greenrobot.eventbus.ThreadMode { *; }

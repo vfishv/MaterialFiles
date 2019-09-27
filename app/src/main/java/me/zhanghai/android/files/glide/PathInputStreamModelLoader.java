@@ -9,6 +9,7 @@ import com.bumptech.glide.Priority;
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.Options;
 import com.bumptech.glide.load.data.DataFetcher;
+import com.bumptech.glide.load.data.mediastore.MediaStoreUtil;
 import com.bumptech.glide.load.model.ModelLoader;
 import com.bumptech.glide.load.model.ModelLoaderFactory;
 import com.bumptech.glide.load.model.MultiModelLoaderFactory;
@@ -33,6 +34,10 @@ public class PathInputStreamModelLoader implements ModelLoader<Path, InputStream
     @Override
     public LoadData<InputStream> buildLoadData(@NonNull Path model, int width, int height,
                                                @NonNull Options options) {
+        if (MediaStoreUtil.isThumbnailSize(width, height) && !GlidePathUtils.shouldLoadThumbnail(
+                model)) {
+            return null;
+        }
         return new LoadData<>(new ObjectKey(model), new Fetcher(model));
     }
 

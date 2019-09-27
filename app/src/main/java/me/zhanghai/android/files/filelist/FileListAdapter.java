@@ -44,13 +44,16 @@ import java8.nio.file.Path;
 import java8.nio.file.attribute.BasicFileAttributes;
 import me.zhanghai.android.files.R;
 import me.zhanghai.android.files.compat.StringCompat;
+import me.zhanghai.android.files.file.FileItem;
 import me.zhanghai.android.files.file.FormatUtils;
 import me.zhanghai.android.files.file.MimeTypes;
+import me.zhanghai.android.files.glide.DownsampleStrategies;
 import me.zhanghai.android.files.glide.GlideApp;
 import me.zhanghai.android.files.glide.IgnoreErrorDrawableImageViewTarget;
 import me.zhanghai.android.files.provider.archive.ArchiveFileSystemProvider;
 import me.zhanghai.android.files.provider.document.DocumentFileAttributes;
 import me.zhanghai.android.files.provider.document.DocumentFileSystemProvider;
+import me.zhanghai.android.files.provider.document.resolver.DocumentResolver;
 import me.zhanghai.android.files.provider.linux.LinuxFileSystemProvider;
 import me.zhanghai.android.files.settings.Settings;
 import me.zhanghai.android.files.ui.AnimatedSortedListAdapter;
@@ -208,6 +211,19 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
         }
     }
 
+    @Override
+    protected boolean getHasStableIds() {
+        // If we have stable IDs, changing sort options results in a weird animation, and we only
+        // want the animation when files change. So we disable stable IDs and only let the sorted
+        // list callback instruct animation properly.
+        return false;
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return getItem(position).getPath().hashCode();
+    }
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -217,7 +233,6 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
         holder.menu = new PopupMenu(holder.menuButton.getContext(), holder.menuButton);
         holder.menu.inflate(R.menu.file_item);
         holder.menuButton.setOnClickListener(view -> holder.menu.show());
-        holder.menuButton.setOnTouchListener(holder.menu.getDragToOpenListener());
         return holder;
     }
 
@@ -271,6 +286,7 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
             GlideApp.with(mFragment)
                     .load(path)
                     .signature(new ObjectKey(attributes.lastModifiedTime()))
+                    .downsample(DownsampleStrategies.AT_MOST_CENTER_OUTSIDE)
                     .placeholder(icon)
                     .into(new IgnoreErrorDrawableImageViewTarget(holder.iconImage));
         } else {
@@ -360,8 +376,15 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
             return MimeTypes.supportsThumbnail(file.getMimeType());
         } else if (DocumentFileSystemProvider.isDocumentPath(path)) {
             DocumentFileAttributes attributes = (DocumentFileAttributes) file.getAttributes();
-            return (attributes.getFlags() & DocumentsContract.Document.FLAG_SUPPORTS_THUMBNAIL)
-                    == DocumentsContract.Document.FLAG_SUPPORTS_THUMBNAIL;
+            if ((attributes.getFlags() & DocumentsContract.Document.FLAG_SUPPORTS_THUMBNAIL)
+                    == DocumentsContract.Document.FLAG_SUPPORTS_THUMBNAIL) {
+                return true;
+            }
+            if (MimeTypes.isMedia(file.getMimeType())) {
+                return DocumentResolver.isLocal((DocumentResolver.Path) path)
+                        || Settings.READ_REMOTE_FILES_FOR_THUMBNAIL.getValue();
+            }
+            return false;
         } else {
             // TODO: Allow other providers as well - but might be resource consuming.
             return false;

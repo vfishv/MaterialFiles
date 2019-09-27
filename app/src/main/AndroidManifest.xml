@@ -10,6 +10,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="me.zhanghai.android.files">
 
+    <uses-feature android:name="android.hardware.wifi" android:required="false" />
+
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -24,10 +26,11 @@
         android:fullBackupContent="true"
         android:icon="@mipmap/launcher_icon"
         android:label="@string/app_name"
+        android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/launcher_icon"
         android:supportsRtl="true"
         android:theme="@style/Theme.MaterialFiles"
-        tools:ignore="GoogleAppIndexingWarning">
+        tools:ignore="GoogleAppIndexingWarning,UnusedAttribute">
 
         <activity
             android:name="me.zhanghai.android.files.filelist.FileListActivity"
@@ -47,11 +50,17 @@
                 <data android:mimeType="vnd.android.document/directory" />
             </intent-filter>
             <!-- @see me.zhanghai.android.files.file.MimeTypes#isSupportedArchive(String) -->
+            <!--
+              ~ We don't really support content URI archives.
+              ~ TODO: Figure out a good way to allow choosing this activity only in our app, or
+              ~ support content URI archives.
             <intent-filter tools:ignore="AppLinkUrlError">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/gzip" />
                 <data android:mimeType="application/java-archive" />
+                <data android:mimeType="application/rar" />
+                <data android:mimeType="application/zip" />
                 <data android:mimeType="application/vnd.android.package-archive" />
                 <data android:mimeType="application/vnd.debian.binary-package" />
                 <data android:mimeType="application/x-7z-compressed" />
@@ -66,8 +75,8 @@
                 <data android:mimeType="application/x-lzma" />
                 <data android:mimeType="application/x-tar" />
                 <data android:mimeType="application/x-xz" />
-                <data android:mimeType="application/zip" />
             </intent-filter>
+            -->
             <!-- @see https://android.googlesource.com/platform/packages/apps/DocumentsUI/+/master/AndroidManifest.xml -->
             <intent-filter>
                 <action android:name="android.intent.action.OPEN_DOCUMENT" />
@@ -174,7 +183,6 @@
             android:name="me.zhanghai.android.files.viewer.text.TextEditorActivity"
             android:label="@string/text_editor_title"
             android:theme="@style/Theme.MaterialFiles">
-            <!-- TODO: Support viewing content URIs. -->
             <intent-filter tools:ignore="AppLinkUrlError">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -193,7 +201,6 @@
             android:name="me.zhanghai.android.files.viewer.image.ImageViewerActivity"
             android:label="@string/image_viewer_title"
             android:theme="@style/Theme.MaterialFiles.Immersive">
-            <!-- TODO: Support viewing content URIs. -->
             <intent-filter tools:ignore="AppLinkUrlError">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -218,5 +225,10 @@
         <meta-data
             android:name="firebase_crashlytics_collection_enabled"
             android:value="false" />
+
+        <!-- We need to reference a MD2 theme in XML for R8 to keep relevant resources. -->
+        <activity
+            android:name=".KeepMd2Resources"
+            android:theme="@style/Theme.MaterialFiles.Md2" />
     </application>
 </manifest>

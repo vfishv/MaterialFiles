@@ -11,47 +11,37 @@
     android:layout_height="wrap_content"
     android:paddingStart="?dialogPreferredPadding"
     android:paddingEnd="?dialogPreferredPadding"
-    android:paddingTop="?dialogPreferredPadding"
-    android:paddingBottom="@dimen/dialog_padding_minus_8dp"
+    android:paddingTop="16dp"
     android:clipChildren="false"
     android:clipToPadding="false"
     android:orientation="vertical">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="4dp"
-        android:text="@string/navigation_edit_bookmark_directory_name"
-        android:textAppearance="@style/TextAppearance.AppCompat.Caption" />
-
-    <me.zhanghai.android.materialedittext.MaterialEditText
-        android:id="@id/name"
+    <me.zhanghai.android.materialedittext.MaterialTextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="-4dp"
         android:layout_marginEnd="-4dp"
-        android:layout_marginTop="-10dp"
-        android:layout_marginBottom="-7dp">
-        <requestFocus />
-    </me.zhanghai.android.materialedittext.MaterialEditText>
+        android:hint="@string/navigation_edit_bookmark_directory_name">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:layout_marginBottom="4dp"
-        android:text="@string/navigation_edit_bookmark_directory_path"
-        android:textAppearance="@style/TextAppearance.AppCompat.Caption" />
+        <me.zhanghai.android.materialedittext.MaterialEditText
+            android:id="@id/name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:importantForAutofill="no"
+            android:inputType="text">
+            <requestFocus />
+        </me.zhanghai.android.materialedittext.MaterialEditText>
+    </me.zhanghai.android.materialedittext.MaterialTextInputLayout>
 
-    <Button
-        android:id="@+id/path"
+    <me.zhanghai.android.files.ui.AppCompatTextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="-19dp"
-        android:layout_marginTop="-9dp"
-        android:layout_marginBottom="-9dp"
-        android:paddingTop="13dp"
-        android:paddingBottom="13dp"
-        android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
-        style="?spinnerStyle" />
+        android:layout_marginTop="16dp"
+        android:hint="@string/navigation_edit_bookmark_directory_path">
+
+        <me.zhanghai.android.files.ui.TextInputTextView
+            android:id="@+id/path"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </me.zhanghai.android.files.ui.AppCompatTextInputLayout>
 </LinearLayout>

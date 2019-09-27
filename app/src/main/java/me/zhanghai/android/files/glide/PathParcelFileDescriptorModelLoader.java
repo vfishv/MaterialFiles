@@ -11,6 +11,7 @@ import com.bumptech.glide.Priority;
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.Options;
 import com.bumptech.glide.load.data.DataFetcher;
+import com.bumptech.glide.load.data.mediastore.MediaStoreUtil;
 import com.bumptech.glide.load.model.ModelLoader;
 import com.bumptech.glide.load.model.ModelLoaderFactory;
 import com.bumptech.glide.load.model.MultiModelLoaderFactory;
@@ -21,6 +22,8 @@ import java.io.IOException;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import java8.nio.file.Path;
+import me.zhanghai.android.files.provider.document.DocumentFileSystemProvider;
+import me.zhanghai.android.files.provider.document.resolver.DocumentResolver;
 import me.zhanghai.android.files.provider.linux.LinuxFileSystemProvider;
 
 public class PathParcelFileDescriptorModelLoader
@@ -28,13 +31,18 @@ public class PathParcelFileDescriptorModelLoader
 
     @Override
     public boolean handles(@NonNull Path model) {
-        return LinuxFileSystemProvider.isLinuxPath(model);
+        return LinuxFileSystemProvider.isLinuxPath(model)
+                || DocumentFileSystemProvider.isDocumentPath(model);
     }
 
     @Nullable
     @Override
     public LoadData<ParcelFileDescriptor> buildLoadData(@NonNull Path model, int width, int height,
                                                         @NonNull Options options) {
+        if (MediaStoreUtil.isThumbnailSize(width, height) && !GlidePathUtils.shouldLoadThumbnail(
+                model)) {
+            return null;
+        }
         return new LoadData<>(new ObjectKey(model), new Fetcher(model));
     }
 
@@ -53,8 +61,15 @@ public class PathParcelFileDescriptorModelLoader
         public void loadData(@NonNull Priority priority,
                              @NonNull DataCallback<? super ParcelFileDescriptor> callback) {
             try {
-                parcelFileDescriptor = ParcelFileDescriptor.open(path.toFile(),
-                        ParcelFileDescriptor.MODE_READ_ONLY);
+                if (LinuxFileSystemProvider.isLinuxPath(path)) {
+                    parcelFileDescriptor = ParcelFileDescriptor.open(path.toFile(),
+                            ParcelFileDescriptor.MODE_READ_ONLY);
+                } else if (DocumentFileSystemProvider.isDocumentPath(path)) {
+                    parcelFileDescriptor = DocumentResolver.openParcelFileDescriptor(
+                            (DocumentResolver.Path) path, "r");
+                } else {
+                    throw new AssertionError(path);
+                }
             } catch (Exception e) {
                 callback.onLoadFailed(e);
                 return;

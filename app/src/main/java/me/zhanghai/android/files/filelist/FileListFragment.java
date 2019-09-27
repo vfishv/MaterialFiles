@@ -57,10 +57,12 @@ import me.zhanghai.android.effortlesspermissions.AfterPermissionDenied;
 import me.zhanghai.android.effortlesspermissions.EffortlessPermissions;
 import me.zhanghai.android.effortlesspermissions.OpenAppDetailsDialogFragment;
 import me.zhanghai.android.files.R;
+import me.zhanghai.android.files.file.FileItem;
 import me.zhanghai.android.files.file.FileProvider;
 import me.zhanghai.android.files.file.MimeTypes;
 import me.zhanghai.android.files.filejob.FileJobService;
 import me.zhanghai.android.files.fileproperties.FilePropertiesDialogFragment;
+import me.zhanghai.android.files.navigation.BookmarkDirectories;
 import me.zhanghai.android.files.navigation.BookmarkDirectory;
 import me.zhanghai.android.files.navigation.NavigationFragment;
 import me.zhanghai.android.files.navigation.NavigationRoot;
@@ -68,7 +70,6 @@ import me.zhanghai.android.files.navigation.NavigationRootMapLiveData;
 import me.zhanghai.android.files.provider.archive.ArchiveFileSystemProvider;
 import me.zhanghai.android.files.provider.document.DocumentFileSystemProvider;
 import me.zhanghai.android.files.provider.linux.LinuxFileSystemProvider;
-import me.zhanghai.android.files.navigation.BookmarkDirectories;
 import me.zhanghai.android.files.settings.Settings;
 import me.zhanghai.android.files.terminal.Terminal;
 import me.zhanghai.android.files.ui.FixQueryChangeSearchView;
@@ -78,6 +79,7 @@ import me.zhanghai.android.files.ui.PersistentBarLayoutToolbarActionMode;
 import me.zhanghai.android.files.ui.PersistentDrawerLayout;
 import me.zhanghai.android.files.ui.ToolbarActionMode;
 import me.zhanghai.android.files.util.AppUtils;
+import me.zhanghai.android.files.util.BundleUtils;
 import me.zhanghai.android.files.util.ClipboardUtils;
 import me.zhanghai.android.files.util.CollectionUtils;
 import me.zhanghai.android.files.util.DebouncedRunnable;
@@ -116,6 +118,8 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     PersistentDrawerLayout mPersistentDrawerLayout;
     @BindView(R.id.bar_layout)
     PersistentBarLayout mPersistentBarLayout;
+    @BindView(R.id.bottom_bar)
+    ViewGroup mBottomBarLayout;
     @BindView(R.id.bottom_toolbar)
     Toolbar mBottomToolbar;
     @BindView(R.id.app_bar)
@@ -131,7 +135,7 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     @BindView(R.id.progress)
     ProgressBar mProgress;
     @BindView(R.id.error)
-    TextView mErrorView;
+    TextView mErrorText;
     @BindView(R.id.empty)
     View mEmptyView;
     @BindView(R.id.swipe_refresh)
@@ -209,7 +213,7 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mIntent = getArguments().getParcelable(Intent.EXTRA_INTENT);
+        mIntent = BundleUtils.getParcelable(getArguments(), Intent.EXTRA_INTENT);
         mExtraPath = IntentPathUtils.getExtraPath(mIntent);
 
         setHasOptionsMenu(true);
@@ -245,8 +249,8 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
         activity.setSupportActionBar(mToolbar);
 
         mOverlayActionMode = new OverlayToolbarActionMode(mOverlayToolbar);
-        mBottomActionMode = new PersistentBarLayoutToolbarActionMode(mBottomToolbar,
-                mPersistentBarLayout);
+        mBottomActionMode = new PersistentBarLayoutToolbarActionMode(mPersistentBarLayout,
+                mBottomBarLayout, mBottomToolbar);
 
         int contentLayoutInitialPaddingBottom = mContentLayout.getPaddingBottom();
         mAppBarLayout.addOnOffsetChangedListener((appBarLayout, verticalOffset) ->
@@ -459,9 +463,6 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
                             !Settings.FILE_LIST_PERSISTENT_DRAWER_OPEN.getValue());
                 }
                 return true;
-            case R.id.action_search:
-                // TODO
-                return true;
             case R.id.action_sort_by_name:
                 mViewModel.setSortBy(FileSortOptions.By.NAME);
                 return true;
@@ -561,11 +562,10 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
                 mLastLoadingPath = path;
                 mLastLoadingSearching = searching;
                 if (searching) {
-                    List<FileItem> fileList = fileListData.fileList;
-                    updateSubtitle(fileList);
+                    updateSubtitle(fileListData.data);
                     mSwipeRefreshLayout.setRefreshing(true);
                     ViewUtils.fadeOut(mProgress);
-                    ViewUtils.fadeOut(mErrorView);
+                    ViewUtils.fadeOut(mErrorText);
                     // We are still searching so it's never empty.
                     ViewUtils.fadeOut(mEmptyView);
                     updateAdapterFileList();
@@ -575,7 +575,7 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
                     mToolbar.setSubtitle(R.string.loading);
                     mSwipeRefreshLayout.setRefreshing(false);
                     ViewUtils.fadeIn(mProgress);
-                    ViewUtils.fadeOut(mErrorView);
+                    ViewUtils.fadeOut(mErrorText);
                     ViewUtils.fadeOut(mEmptyView);
                     mAdapter.clear();
                 }
@@ -586,18 +586,17 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
                 mToolbar.setSubtitle(R.string.error);
                 mSwipeRefreshLayout.setRefreshing(false);
                 ViewUtils.fadeOut(mProgress);
-                ViewUtils.fadeIn(mErrorView);
-                mErrorView.setText(fileListData.exception.toString());
+                ViewUtils.fadeIn(mErrorText);
+                mErrorText.setText(fileListData.exception.toString());
                 ViewUtils.fadeOut(mEmptyView);
                 mAdapter.clear();
                 break;
             case SUCCESS: {
-                List<FileItem> fileList = fileListData.fileList;
-                updateSubtitle(fileList);
+                updateSubtitle(fileListData.data);
                 mSwipeRefreshLayout.setRefreshing(false);
                 ViewUtils.fadeOut(mProgress);
-                ViewUtils.fadeOut(mErrorView);
-                ViewUtils.fadeToVisibility(mEmptyView, fileList.isEmpty());
+                ViewUtils.fadeOut(mErrorText);
+                ViewUtils.fadeToVisibility(mEmptyView, fileListData.data.isEmpty());
                 updateAdapterFileList();
                 Parcelable state = mViewModel.getPendingState();
                 if (state != null) {
@@ -704,10 +703,10 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
 
     private void updateAdapterFileList() {
         FileListData fileListData = mViewModel.getFileListData();
-        if (fileListData.fileList == null) {
+        if (fileListData.data == null) {
             return;
         }
-        List<FileItem> files = fileListData.fileList;
+        List<FileItem> files = fileListData.data;
         if (!Settings.FILE_LIST_SHOW_HIDDEN_FILES.getValue()) {
             files = Functional.filter(files, file -> !file.isHidden());
         }
@@ -899,6 +898,9 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
             case R.id.action_archive:
                 showCreateArchiveDialog(mViewModel.getSelectedFiles());
                 return true;
+            case R.id.action_share:
+                shareFiles(mViewModel.getSelectedFiles());
+                return true;
             case R.id.action_select_all:
                 selectAllFiles();
                 return true;
@@ -941,6 +943,12 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
         Path archiveFile = mViewModel.getCurrentPath().resolve(name);
         FileJobService.archive(makePathListForJob(files), archiveFile, archiveType, compressorType,
                 requireContext());
+        mViewModel.selectFiles(files, false);
+    }
+
+    private void shareFiles(@NonNull LinkedHashSet<FileItem> files) {
+        shareFiles(Functional.map(files, FileItem::getPath), Functional.map(files,
+                FileItem::getMimeType));
         mViewModel.selectFiles(files, false);
     }
 
@@ -1192,7 +1200,7 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
         if (fileListData.state != FileListData.State.SUCCESS) {
             return false;
         }
-        return Functional.some(fileListData.fileList, path -> Objects.equals(FileUtils.getName(
+        return Functional.some(fileListData.data, path -> Objects.equals(FileUtils.getName(
                 path), name));
     }
 
@@ -1218,14 +1226,13 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     }
 
     private void shareFile(@NonNull Path path, @NonNull String mimeType) {
-        if (LinuxFileSystemProvider.isLinuxPath(path)
-                || DocumentFileSystemProvider.isDocumentPath(path)) {
-            Uri uri = FileProvider.getUriForPath(path);
-            Intent intent = IntentUtils.makeSendStream(uri, mimeType);
-            AppUtils.startActivityWithChooser(intent, this);
-        } else {
-            // TODO
-        }
+        shareFiles(Collections.singletonList(path), Collections.singletonList(mimeType));
+    }
+
+    private void shareFiles(@NonNull List<Path> paths, @NonNull List<String> mimeTypes) {
+        List<Uri> uris = Functional.map(paths, FileProvider::getUriForPath);
+        Intent intent = IntentUtils.makeSendStream(uris, mimeTypes);
+        AppUtils.startActivityWithChooser(intent, this);
     }
 
     @Override
@@ -1256,7 +1263,7 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     public void createFile(@NonNull String name) {
         // TODO
         Path path = getCurrentPath().resolve(name);
-        FileJobService.createFile(path, requireContext());
+        FileJobService.create(path, false, requireContext());
     }
 
     private void showCreateDirectoryDialog() {
@@ -1267,7 +1274,7 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     public void createDirectory(@NonNull String name) {
         // TODO
         Path path = getCurrentPath().resolve(name);
-        FileJobService.createDirectory(path, requireContext());
+        FileJobService.create(path, true, requireContext());
     }
 
     @NonNull

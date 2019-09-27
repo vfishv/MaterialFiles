@@ -24,6 +24,9 @@ import androidx.fragment.app.Fragment;
 import butterknife.BindView;
 import java8.nio.file.Path;
 import me.zhanghai.android.files.R;
+import me.zhanghai.android.files.file.FileItem;
+import me.zhanghai.android.files.settings.Settings;
+import me.zhanghai.android.files.util.BundleUtils;
 import me.zhanghai.android.files.util.CollectionUtils;
 import me.zhanghai.android.files.util.FragmentUtils;
 import me.zhanghai.java.functional.Functional;
@@ -62,7 +65,8 @@ public class CreateArchiveDialogFragment extends FileNameDialogFragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mExtraFiles = new LinkedHashSet<>(getArguments().getParcelableArrayList(EXTRA_FILES));
+        mExtraFiles = new LinkedHashSet<>(BundleUtils.getParcelableArrayList(getArguments(),
+                EXTRA_FILES));
     }
 
     @NonNull
@@ -98,7 +102,8 @@ public class CreateArchiveDialogFragment extends FileNameDialogFragment {
 
     @Override
     protected int getLayoutRes() {
-        return R.layout.create_archive_dialog;
+        return Settings.MATERIAL_DESIGN_2.getValue() ? R.layout.create_archive_dialog_md2
+                : R.layout.create_archive_dialog;
     }
 
     @NonNull

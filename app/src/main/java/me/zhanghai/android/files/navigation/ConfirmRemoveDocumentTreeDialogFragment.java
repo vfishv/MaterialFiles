@@ -12,11 +12,12 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatDialogFragment;
 import androidx.fragment.app.Fragment;
 import me.zhanghai.android.files.R;
+import me.zhanghai.android.files.compat.AlertDialogBuilderCompat;
 import me.zhanghai.android.files.navigation.file.DocumentTree;
+import me.zhanghai.android.files.util.BundleUtils;
 import me.zhanghai.android.files.util.FragmentUtils;
 
 public class ConfirmRemoveDocumentTreeDialogFragment extends AppCompatDialogFragment {
@@ -52,7 +53,7 @@ public class ConfirmRemoveDocumentTreeDialogFragment extends AppCompatDialogFrag
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mExtraTreeUri = getArguments().getParcelable(EXTRA_TREE_URI);
+        mExtraTreeUri = BundleUtils.getParcelable(getArguments(), EXTRA_TREE_URI);
     }
 
     @NonNull
@@ -60,7 +61,7 @@ public class ConfirmRemoveDocumentTreeDialogFragment extends AppCompatDialogFrag
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
         Context context = requireContext();
         String displayName = DocumentTree.getDisplayName(mExtraTreeUri, context);
-        return new AlertDialog.Builder(context, getTheme())
+        return AlertDialogBuilderCompat.create(context, getTheme())
                 .setMessage(getString(R.string.navigation_confirm_remove_document_tree_format,
                         displayName))
                 .setPositiveButton(android.R.string.ok, (dialog, which) -> getListener()

@@ -6,8 +6,10 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <grp.h>
+#include <mntent.h>
 #include <pwd.h>
 #include <sys/inotify.h>
+#include <sys/mount.h>
 #include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
@@ -120,6 +122,22 @@ static jfieldID getFileDescriptorDescriptorField(JNIEnv *env) {
     return fileDescriptorDescriptorField;
 }
 
+static jclass getInt32RefClass(JNIEnv *env) {
+    static jclass int32RefClass = NULL;
+    if (!int32RefClass) {
+        int32RefClass = findClass(env, "me/zhanghai/android/files/provider/linux/syscall/Int32Ref");
+    }
+    return int32RefClass;
+}
+
+static jfieldID getInt32RefValueField(JNIEnv *env) {
+    static jclass int32RefValueField = NULL;
+    if (!int32RefValueField) {
+        int32RefValueField = findField(env, getInt32RefClass(env), "value", "I");
+    }
+    return int32RefValueField;
+}
+
 static jclass getInt64RefClass(JNIEnv *env) {
     static jclass int64RefClass = NULL;
     if (!int64RefClass) {
@@ -161,6 +179,24 @@ static jclass getStructInotifyEventClass(JNIEnv *env) {
                 "me/zhanghai/android/files/provider/linux/syscall/StructInotifyEvent");
     }
     return structInotifyEventClass;
+}
+
+static jclass getStructMntentClass(JNIEnv *env) {
+    static jclass structMntentClass = NULL;
+    if (!structMntentClass) {
+        structMntentClass = findClass(env,
+                "me/zhanghai/android/files/provider/linux/syscall/StructMntent");
+    }
+    return structMntentClass;
+}
+
+static jfieldID getStructMntentMntOptsField(JNIEnv *env) {
+    static jclass structMntentMntOptsField = NULL;
+    if (!structMntentMntOptsField) {
+        structMntentMntOptsField = findField(env, getStructMntentClass(env), "mnt_opts",
+                "Lme/zhanghai/android/files/provider/common/ByteString;");
+    }
+    return structMntentMntOptsField;
 }
 
 static jclass getStructPasswdClass(JNIEnv *env) {
@@ -358,6 +394,86 @@ Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_closedir(
     }
 }
 
+JNIEXPORT void JNICALL
+Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_endmntent(
+        JNIEnv *env, jclass clazz, jlong javaFile) {
+    FILE *file = (FILE *) javaFile;
+    TEMP_FAILURE_RETRY(endmntent(file));
+    if (errno) {
+        throwSyscallException(env, "endmntent");
+    }
+}
+
+#define AID_APP_START 10000
+
+#if __ANDROID_API__ < __ANDROID_API_O__
+
+static __thread gid_t getgrentGid = AID_APP_START;
+
+void setgrent() {
+    getgrentGid = 0;
+}
+
+struct group *getgrent() {
+    while (getgrentGid < AID_APP_START) {
+        struct group *group = getgrgid(getgrentGid);
+        ++getgrentGid;
+        errno = 0;
+        if (group) {
+            return group;
+        }
+    }
+    return NULL;
+}
+
+void endgrent() {
+    setgrent();
+}
+
+#endif
+
+JNIEXPORT void JNICALL
+Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_endgrent(JNIEnv *env, jclass clazz) {
+    TEMP_FAILURE_RETRY_V(endgrent());
+    if (errno) {
+        throwSyscallException(env, "endgrent");
+    }
+}
+
+#if __ANDROID_API__ < __ANDROID_API_O__
+
+static __thread uid_t getpwentUid = AID_APP_START;
+
+void setpwent() {
+    getpwentUid = 0;
+}
+
+struct passwd *getpwent() {
+    while (getpwentUid < AID_APP_START) {
+        struct passwd *passwd = getpwuid(getpwentUid);
+        ++getpwentUid;
+        errno = 0;
+        if (passwd) {
+            return passwd;
+        }
+    }
+    return NULL;
+}
+
+void endpwent() {
+    setpwent();
+}
+
+#endif
+
+JNIEXPORT void JNICALL
+Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_endpwent(JNIEnv *env, jclass clazz) {
+    TEMP_FAILURE_RETRY_V(endpwent());
+    if (errno) {
+        throwSyscallException(env, "endpwent");
+    }
+}
+
 JNIEXPORT jint JNICALL
 Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_errno(
         JNIEnv *env, jclass clazz) {
@@ -446,9 +562,37 @@ static jobject newStructGroup(JNIEnv *env, const struct group *group) {
 }
 
 JNIEXPORT jobject JNICALL
+Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_getgrent(JNIEnv *env, jclass clazz) {
+    while (true) {
+        // getgrent() in bionic is thread safe.
+        struct group *group = TEMP_FAILURE_RETRY(getgrent());
+        if (errno) {
+            throwSyscallException(env, "getgrent");
+            return NULL;
+        }
+        if (!group) {
+            return NULL;
+        }
+        if (group->gr_name[0] == 'o' && group->gr_name[1] == 'e' && group->gr_name[2] == 'm'
+            && group->gr_name[3] == '_') {
+            continue;
+        }
+        if (group->gr_name[0] == 'u' && (group->gr_name[1] >= '0' && group->gr_name[1] <= '9')) {
+            return NULL;
+        }
+        if (group->gr_name[0] == 'a' && group->gr_name[1] == 'l' && group->gr_name[2] == 'l'
+            && group->gr_name[3] == '_' && group->gr_name[4] == 'a'
+            && (group->gr_name[5] >= '0' && group->gr_name[5] <= '9')) {
+            return NULL;
+        }
+        return newStructGroup(env, group);
+    }
+}
+
+JNIEXPORT jobject JNICALL
 Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_getgrgid(
         JNIEnv *env, jclass clazz, jint javaGid) {
-#if __ANDROID_API__ >= 24
+#if __ANDROID_API__ >= __ANDROID_API_N__
     gid_t gid = (gid_t) javaGid;
     size_t bufferSize = (size_t) sysconf(_SC_GETGR_R_SIZE_MAX);
     if (bufferSize == -1) {
@@ -484,7 +628,7 @@ Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_getgrgid(
 JNIEXPORT jobject JNICALL
 Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_getgrnam(
         JNIEnv *env, jclass clazz, jobject javaName) {
-#if __ANDROID_API__ >= 24
+#if __ANDROID_API__ >= __ANDROID_API_N__
     char *name = mallocStringFromByteString(env, javaName);
     size_t bufferSize = (size_t) sysconf(_SC_GETGR_R_SIZE_MAX);
     if (bufferSize == -1) {
@@ -517,6 +661,87 @@ Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_getgrnam(
     }
     return newStructGroup(env, result);
 #endif
+}
+
+#if __ANDROID_API__ < __ANDROID_API_L_MR1__
+// https://android.googlesource.com/platform/bionic/+/master/libc/bionic/mntent.cpp
+static struct mntent* _getmntent_r(FILE* fp, struct mntent* e, char* buf, int buf_len) {
+    memset(e, 0, sizeof(*e));
+    while (fgets(buf, buf_len, fp) != NULL) {
+        // Entries look like "proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0".
+        // That is: mnt_fsname mnt_dir mnt_type mnt_opts 0 0.
+        int fsname0, fsname1, dir0, dir1, type0, type1, opts0, opts1;
+        if (sscanf(buf, " %n%*s%n %n%*s%n %n%*s%n %n%*s%n %d %d",
+                   &fsname0, &fsname1, &dir0, &dir1, &type0, &type1, &opts0, &opts1,
+                   &e->mnt_freq, &e->mnt_passno) == 2) {
+            e->mnt_fsname = &buf[fsname0];
+            buf[fsname1] = '\0';
+            e->mnt_dir = &buf[dir0];
+            buf[dir1] = '\0';
+            e->mnt_type = &buf[type0];
+            buf[type1] = '\0';
+            e->mnt_opts = &buf[opts0];
+            buf[opts1] = '\0';
+            return e;
+        }
+    }
+    return NULL;
+}
+#endif
+
+static jobject newStructMntent(JNIEnv *env, const struct mntent *mntent) {
+    static jmethodID constructor = NULL;
+    if (!constructor) {
+        constructor = findMethod(env, getStructMntentClass(env), "<init>",
+                                 "(Lme/zhanghai/android/files/provider/common/ByteString;"
+                                 "Lme/zhanghai/android/files/provider/common/ByteString;"
+                                 "Lme/zhanghai/android/files/provider/common/ByteString;"
+                                 "Lme/zhanghai/android/files/provider/common/ByteString;II)V");
+    }
+    jobject mnt_fsname = newByteStringFromString(env, mntent->mnt_fsname);
+    if (!mnt_fsname) {
+        return NULL;
+    }
+    jobject mnt_dir = newByteStringFromString(env, mntent->mnt_dir);
+    if (!mnt_dir) {
+        return NULL;
+    }
+    jobject mnt_type = newByteStringFromString(env, mntent->mnt_type);
+    if (!mnt_type) {
+        return NULL;
+    }
+    jobject mnt_opts = newByteStringFromString(env, mntent->mnt_opts);
+    if (!mnt_opts) {
+        return NULL;
+    }
+    jint mnt_freq = mntent->mnt_freq;
+    jint mnt_passno = mntent->mnt_passno;
+    return (*env)->NewObject(env, getStructMntentClass(env), constructor, mnt_fsname, mnt_dir,
+            mnt_type, mnt_opts, mnt_freq, mnt_passno);
+}
+
+JNIEXPORT jobject JNICALL
+Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_getmntent(
+        JNIEnv *env, jclass clazz, jlong javaFile) {
+    FILE *file = (FILE *) javaFile;
+#if __ANDROID_API__ >= __ANDROID_API_L_MR1__
+    // getmntent() in bionic is thread safe.
+    struct mntent *mntent = TEMP_FAILURE_RETRY(getmntent(file));
+#else
+    // getmntent() in bionic is a stub until API 22.
+    struct mntent entryBuffer;
+    char stringsBuffer[BUFSIZ];
+    struct mntent *mntent = TEMP_FAILURE_RETRY(_getmntent_r(file, &entryBuffer, stringsBuffer,
+            sizeof(stringsBuffer)));
+#endif
+    if (errno) {
+        throwSyscallException(env, "getmntent");
+        return NULL;
+    }
+    if (!mntent) {
+        return NULL;
+    }
+    return newStructMntent(env, mntent);
 }
 
 static jobject newStructPasswd(JNIEnv *env, const struct passwd *passwd) {
@@ -575,6 +800,29 @@ static jobject newStructPasswd(JNIEnv *env, const struct passwd *passwd) {
 }
 
 JNIEXPORT jobject JNICALL
+Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_getpwent(JNIEnv *env, jclass clazz) {
+    while (true) {
+        // getpwent() in bionic is thread safe.
+        struct passwd *passwd = TEMP_FAILURE_RETRY(getpwent());
+        if (errno) {
+            throwSyscallException(env, "getpwent");
+            return NULL;
+        }
+        if (!passwd) {
+            return NULL;
+        }
+        if (passwd->pw_name[0] == 'o' && passwd->pw_name[1] == 'e' && passwd->pw_name[2] == 'm'
+            && passwd->pw_name[3] == '_') {
+            continue;
+        }
+        if (passwd->pw_name[0] == 'u' && passwd->pw_name[1] >= '0' && passwd->pw_name[1] <= '9') {
+            return NULL;
+        }
+        return newStructPasswd(env, passwd);
+    }
+}
+
+JNIEXPORT jobject JNICALL
 Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_getpwnam(
         JNIEnv *env, jclass clazz, jobject javaName) {
     char *name = mallocStringFromByteString(env, javaName);
@@ -619,6 +867,47 @@ Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_getpwuid(
         return NULL;
     }
     return newStructPasswd(env, result);
+}
+
+static char *mallocMntOptsFromStructMntent(JNIEnv *env, jobject javaMntent) {
+    jobject javaOpts = (*env)->GetObjectField(env, javaMntent, getStructMntentMntOptsField(env));
+    return mallocStringFromByteString(env, javaOpts);
+}
+
+#if __ANDROID_API__ < __ANDROID_API_O__
+static char* _hasmntopt(const struct mntent* mnt, const char* opt) {
+    char* token = mnt->mnt_opts;
+    char* const end = mnt->mnt_opts + strlen(mnt->mnt_opts);
+    const size_t optLen = strlen(opt);
+    while (token) {
+        char* const tokenEnd = token + optLen;
+        if (tokenEnd > end) break;
+        if (memcmp(token, opt, optLen) == 0 &&
+            (*tokenEnd == '\0' || *tokenEnd == ',' || *tokenEnd == '=')) {
+            return token;
+        }
+        token = strchr(token, ',');
+        if (token) token++;
+    }
+    return NULL;
+}
+#endif
+
+JNIEXPORT jboolean JNICALL
+Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_hasmntopt(
+        JNIEnv *env, jclass clazz, jobject javaMntent, jobject javaOption) {
+    struct mntent mntent = { 0 };
+    mntent.mnt_opts = mallocMntOptsFromStructMntent(env, javaMntent);
+    char *option = mallocStringFromByteString(env, javaOption);
+#if __ANDROID_API__ >= __ANDROID_API_O__
+    char *match = hasmntopt(&mntent, option);
+#else
+    char *match = _hasmntopt(&mntent, option);
+#endif
+    free(mntent.mnt_opts);
+    free(option);
+    bool hasOption = match != NULL;
+    return (jboolean) hasOption;
 }
 
 JNIEXPORT jint JNICALL
@@ -673,7 +962,7 @@ static jobject newStructInotifyEvent(JNIEnv *env, const struct inotify_event *ev
 
 JNIEXPORT jobjectArray JNICALL
 Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_inotify_1get_1events(
-        JNIEnv *env, jclass clazz, jbyteArray javaBuffer, jsize javaOffset, jsize javaLength) {
+        JNIEnv *env, jclass clazz, jbyteArray javaBuffer, jint javaOffset, jint javaLength) {
     void *buffer = (*env)->GetByteArrayElements(env, javaBuffer, NULL);
     size_t offset = (size_t) javaOffset;
     size_t length = (size_t) javaLength;
@@ -718,6 +1007,28 @@ Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_inotify_1rm_1watc
     if (errno) {
         throwSyscallException(env, "inotify_rm_watch");
     }
+}
+
+JNIEXPORT jint JNICALL
+Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_ioctl_1int(
+        JNIEnv* env, jclass clazz, jobject javaFd, jint javaRequest, jobject javaArgument) {
+    int fd = getFdFromFileDescriptor(env, javaFd);
+    int request = javaRequest;
+    int argument = 0;
+    int* argumentPointer = NULL;
+    if (javaArgument) {
+        argument = (*env)->GetIntField(env, javaArgument, getInt32RefValueField(env));
+        argumentPointer = &argument;
+    }
+    int result = TEMP_FAILURE_RETRY(ioctl(fd, request, argumentPointer));
+    if (errno) {
+        throwSyscallException(env, "ioctl");
+        return 0;
+    }
+    if (javaArgument) {
+        (*env)->SetIntField(env, javaArgument, getInt32RefValueField(env), argument);
+    }
+    return result;
 }
 
 JNIEXPORT void JNICALL
@@ -848,7 +1159,7 @@ Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_lsetxattr(
         jint javaFlags) {
     char *path = mallocStringFromByteString(env, javaPath);
     char *name = mallocStringFromByteString(env, javaName);
-    jbyte *value = (*env)->GetByteArrayElements(env, javaValue, NULL);
+    void *value = (*env)->GetByteArrayElements(env, javaValue, NULL);
     size_t size = (size_t) (*env)->GetArrayLength(env, javaValue);
     int flags = javaFlags;
     TEMP_FAILURE_RETRY(lsetxattr(path, name, value, size, flags));
@@ -924,8 +1235,8 @@ Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_lstat(
 }
 
 static void readStructTimespec(JNIEnv *env, jobject javaTime, struct timespec *time) {
-    time->tv_sec = (*env)->GetLongField(env, javaTime, getStructTimespecTvSecField(env));
-    time->tv_nsec = (*env)->GetLongField(env, javaTime, getStructTimespecTvNsecField(env));
+    time->tv_sec = (time_t) (*env)->GetLongField(env, javaTime, getStructTimespecTvSecField(env));
+    time->tv_nsec = (long) (*env)->GetLongField(env, javaTime, getStructTimespecTvNsecField(env));
 }
 
 JNIEXPORT void JNICALL
@@ -962,6 +1273,40 @@ Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_mkdir(
     if (errno) {
         throwSyscallException(env, "mkdir");
     }
+}
+
+JNIEXPORT jint JNICALL
+Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_mount(
+        JNIEnv *env, jclass clazz, jobject javaSource, jobject javaTarget,
+        jobject javaFileSystemType, jlong javaMountFlags, jbyteArray javaData) {
+    if (geteuid() != 0) {
+        // Avoid getting killed by seccomp.
+        errno = EPERM;
+        throwSyscallException(env, "mount");
+        return 0;
+    }
+    char *source = javaSource ? mallocStringFromByteString(env, javaSource) : NULL;
+    char *target = mallocStringFromByteString(env, javaTarget);
+    char *fileSystemType = javaFileSystemType ? mallocStringFromByteString(env, javaFileSystemType)
+            : NULL;
+    unsigned long mountFlags = (unsigned long) javaMountFlags;
+    void *data = javaData ? (*env)->GetByteArrayElements(env, javaData, NULL) : NULL;
+    int result = TEMP_FAILURE_RETRY(mount(source, target, fileSystemType, mountFlags, data));
+    if (javaSource) {
+        free(source);
+    }
+    free(target);
+    if (javaFileSystemType) {
+        free(fileSystemType);
+    }
+    if (javaData) {
+        (*env)->ReleaseByteArrayElements(env, javaData, data, JNI_ABORT);
+    }
+    if (errno) {
+        throwSyscallException(env, "mount");
+        return 0;
+    }
+    return result;
 }
 
 JNIEXPORT jobject JNICALL
@@ -1105,15 +1450,46 @@ Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_sendfile(
         offsetPointer = &offset;
     }
     size_t count = (size_t) javaCount;
-    jlong result = TEMP_FAILURE_RETRY(sendfile64(outFd, inFd, offsetPointer, count));
+    long result = TEMP_FAILURE_RETRY(sendfile64(outFd, inFd, offsetPointer, count));
     if (errno) {
         throwSyscallException(env, "sendfile64");
-        return result;
+        return 0;
     }
     if (javaOffset) {
         (*env)->SetLongField(env, javaOffset, getInt64RefValueField(env), offset);
     }
     return result;
+}
+
+JNIEXPORT void JNICALL
+Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_setgrent(JNIEnv *env, jclass clazz) {
+    TEMP_FAILURE_RETRY_V(setgrent());
+    if (errno) {
+        throwSyscallException(env, "setgrent");
+    }
+}
+
+JNIEXPORT jlong JNICALL
+Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_setmntent(
+        JNIEnv *env, jclass clazz, jobject javaPath, jobject javaMode) {
+    char *path = mallocStringFromByteString(env, javaPath);
+    char *mode = mallocStringFromByteString(env, javaMode);
+    FILE *file = TEMP_FAILURE_RETRY(setmntent(path, mode));
+    free(path);
+    free(mode);
+    if (errno) {
+        throwSyscallException(env, "setmntent");
+        return (jlong) NULL;
+    }
+    return (jlong) file;
+}
+
+JNIEXPORT void JNICALL
+Java_me_zhanghai_android_files_provider_linux_syscall_Syscalls_setpwent(JNIEnv *env, jclass clazz) {
+    TEMP_FAILURE_RETRY_V(setpwent());
+    if (errno) {
+        throwSyscallException(env, "setpwent");
+    }
 }
 
 JNIEXPORT jobject JNICALL

@@ -15,6 +15,8 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.fragment.app.Fragment;
 import me.zhanghai.android.files.R;
+import me.zhanghai.android.files.file.FileItem;
+import me.zhanghai.android.files.util.BundleUtils;
 import me.zhanghai.android.files.util.FileNameUtils;
 import me.zhanghai.android.files.util.FragmentUtils;
 
@@ -50,7 +52,7 @@ public class RenameFileDialogFragment extends FileNameDialogFragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mExtraFile = getArguments().getParcelable(EXTRA_FILE);
+        mExtraFile = BundleUtils.getParcelable(getArguments(), EXTRA_FILE);
     }
 
     @NonNull

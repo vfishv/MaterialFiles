@@ -16,7 +16,9 @@ import java.util.concurrent.Future;
 
 import androidx.annotation.NonNull;
 import java8.nio.file.Path;
+import me.zhanghai.android.files.file.FileItem;
 import me.zhanghai.android.files.provider.common.MoreFiles;
+import me.zhanghai.android.files.util.CloseableLiveData;
 
 public class SearchFileListLiveData extends CloseableLiveData<FileListData> {
 

@@ -91,5 +91,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:layout_marginStart="@dimen/content_start_margin"
-        android:background="?dividerVertical" />
+        android:background="?dividerVertical"
+        android:visibility="?dividerVisibility" />
 </me.zhanghai.android.files.ui.CheckableFrameLayout>

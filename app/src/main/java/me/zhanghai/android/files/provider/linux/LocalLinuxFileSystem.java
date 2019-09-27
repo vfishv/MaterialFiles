@@ -7,6 +7,7 @@ package me.zhanghai.android.files.provider.linux;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 
@@ -109,8 +110,8 @@ class LocalLinuxFileSystem extends FileSystem implements ByteStringListPathFacto
     @NonNull
     @Override
     public Iterable<FileStore> getFileStores() {
-        // TODO
-        throw new UnsupportedOperationException();
+        //noinspection unchecked
+        return (Iterable<FileStore>) (Iterator<?>) LocalLinuxFileStore.getFileStores(this);
     }
 
     @NonNull

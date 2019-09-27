@@ -7,25 +7,29 @@ package me.zhanghai.android.files.provider.linux;
 
 import android.os.Parcel;
 
+import java.io.IOException;
+
 import androidx.annotation.NonNull;
-import java8.nio.file.attribute.FileAttributeView;
-import me.zhanghai.android.files.provider.common.ByteString;
-import me.zhanghai.android.files.provider.root.RootableFileStore;
+import java8.nio.file.Path;
+import me.zhanghai.android.files.provider.root.RootPosixFileStore;
+import me.zhanghai.android.files.provider.root.RootablePosixFileStore;
 
-class LinuxFileStore extends RootableFileStore {
+class LinuxFileStore extends RootablePosixFileStore {
 
-    public LinuxFileStore(@NonNull ByteString path) {
-        super(new LocalLinuxFileStore(path));
+    @NonNull
+    private final LinuxPath mPath;
+    @NonNull
+    private final LocalLinuxFileStore mLocalFileStore;
+
+    public LinuxFileStore(@NonNull LinuxPath path) throws IOException {
+        this(path, new LocalLinuxFileStore(path));
     }
 
-    @Override
-    public boolean supportsFileAttributeView(@NonNull Class<? extends FileAttributeView> type) {
-        return LocalLinuxFileStore.supportsFileAttributeView_(type);
-    }
+    private LinuxFileStore(@NonNull LinuxPath path, @NonNull LocalLinuxFileStore localFileStore) {
+        super(path, localFileStore, RootPosixFileStore::new);
 
-    @Override
-    public boolean supportsFileAttributeView(@NonNull String name) {
-        return LocalLinuxFileStore.supportsFileAttributeView_(name);
+        mPath = path;
+        mLocalFileStore = localFileStore;
     }
 
 
@@ -41,6 +45,18 @@ class LinuxFileStore extends RootableFileStore {
     };
 
     protected LinuxFileStore(Parcel in) {
-        super(in);
+        this(in.readParcelable(Path.class.getClassLoader()),
+                in.readParcelable(LocalLinuxFileStore.class.getClassLoader()));
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeParcelable(mPath, flags);
+        dest.writeParcelable(mLocalFileStore, flags);
     }
 }

@@ -17,9 +17,11 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import java8.nio.channels.SeekableByteChannel;
 import java8.nio.file.AccessMode;
 import java8.nio.file.CopyOption;
 import java8.nio.file.Files;
@@ -28,6 +30,10 @@ import java8.nio.file.OpenOption;
 import java8.nio.file.Path;
 import java8.nio.file.ProviderMismatchException;
 import java8.nio.file.attribute.BasicFileAttributes;
+import java8.nio.file.attribute.FileAttribute;
+import java8.nio.file.attribute.FileOwnerAttributeView;
+import java8.nio.file.attribute.GroupPrincipal;
+import java8.nio.file.attribute.UserPrincipal;
 import java8.nio.file.spi.FileSystemProvider;
 import java9.util.function.Consumer;
 import java9.util.function.LongConsumer;
@@ -87,6 +93,12 @@ public class MoreFiles {
         }
     }
 
+    @Nullable
+    public static Set<PosixFileModeBit> getMode(@NonNull Path path, @NonNull LinkOption... options)
+            throws IOException {
+        return Files.readAttributes(path, PosixFileAttributes.class, options).mode();
+    }
+
     // Can handle ProgressCopyOption.
     public static void move(@NonNull Path source, @NonNull Path target,
                             @NonNull CopyOption... options) throws IOException {
@@ -116,6 +128,29 @@ public class MoreFiles {
     }
 
     @NonNull
+    public static SeekableByteChannel newByteChannel(@NonNull Path path,
+                                                     @NonNull Set<? extends OpenOption> options,
+                                                     @NonNull FileAttribute<?>... attributes)
+            throws IOException {
+        try {
+            return Files.newByteChannel(path, options, attributes);
+        } catch (UnsupportedOperationException e) {
+            throw new IOException(e);
+        }
+    }
+
+    @NonNull
+    public static SeekableByteChannel newByteChannel(@NonNull Path path,
+                                                     @NonNull OpenOption... options)
+            throws IOException {
+        try {
+            return Files.newByteChannel(path, options);
+        } catch (UnsupportedOperationException e) {
+            throw new IOException(e);
+        }
+    }
+
+    @NonNull
     public static InputStream newInputStream(@NonNull Path path, @NonNull OpenOption... options)
             throws IOException {
         return new InterruptedIOExceptionInputStream(Files.newInputStream(path, options));
@@ -128,10 +163,9 @@ public class MoreFiles {
     }
 
     @NonNull
-    public static DirectoryObservable observeDirectory(@NonNull Path directory, long intervalMillis)
+    public static PathObservable observePath(@NonNull Path path, long intervalMillis)
             throws IOException {
-        return ((DirectoryObservableProvider) provider(directory)).observeDirectory(directory,
-                intervalMillis);
+        return ((PathObservableProvider) provider(path)).observePath(path, intervalMillis);
     }
 
     // TODO: Just use Files.readAllBytes(), if all our providers support
@@ -181,10 +215,61 @@ public class MoreFiles {
         return result;
     }
 
+    public static void restoreSeLinuxContext(@NonNull Path path, @NonNull LinkOption... options)
+            throws IOException {
+        PosixFileAttributeView view = Files.getFileAttributeView(path, PosixFileAttributeView.class,
+                options);
+        if (view == null) {
+            throw new UnsupportedOperationException();
+        }
+        view.restoreSeLinuxContext();
+    }
+
     public static void search(@NonNull Path directory, @NonNull String query,
                               @NonNull Consumer<List<Path>> listener, long intervalMillis)
             throws IOException {
         ((Searchable) provider(directory)).search(directory, query, listener, intervalMillis);
+    }
+
+    public static void setGroup(@NonNull Path path, @NonNull GroupPrincipal group,
+                                @NonNull LinkOption... options) throws IOException {
+        java8.nio.file.attribute.PosixFileAttributeView view = Files.getFileAttributeView(path,
+                java8.nio.file.attribute.PosixFileAttributeView.class, options);
+        if (view == null) {
+            throw new UnsupportedOperationException();
+        }
+        view.setGroup(group);
+    }
+
+    public static void setMode(@NonNull Path path, @NonNull Set<PosixFileModeBit> mode)
+            throws IOException {
+        PosixFileAttributeView view = Files.getFileAttributeView(path,
+                PosixFileAttributeView.class);
+        if (view == null) {
+            throw new UnsupportedOperationException();
+        }
+        view.setMode(mode);
+    }
+
+    public static void setOwner(@NonNull Path path, @NonNull UserPrincipal owner,
+                                @NonNull LinkOption... options) throws IOException {
+        FileOwnerAttributeView view = Files.getFileAttributeView(path, FileOwnerAttributeView.class,
+                options);
+        if (view == null) {
+            throw new UnsupportedOperationException();
+        }
+        view.setOwner(owner);
+    }
+
+    public static void setSeLinuxContext(@NonNull Path path, @NonNull ByteString seLinuxContext,
+                                         @NonNull LinkOption... options)
+            throws IOException {
+        PosixFileAttributeView view = Files.getFileAttributeView(path, PosixFileAttributeView.class,
+                options);
+        if (view == null) {
+            throw new UnsupportedOperationException();
+        }
+        view.setSeLinuxContext(seLinuxContext);
     }
 
     // Can accept link options.
@@ -192,6 +277,7 @@ public class MoreFiles {
         return Files.readAttributes(path, BasicFileAttributes.class, options).size();
     }
 
+    @NonNull
     public static ByteString toByteString(@NonNull Path path) {
         ByteStringListPath byteStringPath = requireByteStringListPath(path);
         return byteStringPath.toByteString();

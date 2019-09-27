@@ -32,25 +32,12 @@ public abstract class RootablePosixFileAttributeView implements PosixFileAttribu
     private final RootPosixFileAttributeView mRootAttributeView;
 
     public RootablePosixFileAttributeView(
-            @NonNull Path path,
-            @NonNull Function<PosixFileAttributeView, PosixFileAttributeView> newLocalAttributeView,
+            @NonNull Path path, @NonNull PosixFileAttributeView localAttributeView,
             @NonNull Function<PosixFileAttributeView, RootPosixFileAttributeView>
                     newRootAttributeView) {
         mPath = path;
-        mLocalAttributeView = newLocalAttributeView.apply(this);
+        mLocalAttributeView = localAttributeView;
         mRootAttributeView = newRootAttributeView.apply(this);
-    }
-
-    @NonNull
-    protected <FS extends PosixFileAttributeView> FS getLocalAttributeView() {
-        //noinspection unchecked
-        return (FS) mLocalAttributeView;
-    }
-
-    @NonNull
-    protected <FS extends RootPosixFileAttributeView> FS getRootAttributeView() {
-        //noinspection unchecked
-        return (FS) mRootAttributeView;
     }
 
     @Override
@@ -78,7 +65,7 @@ public abstract class RootablePosixFileAttributeView implements PosixFileAttribu
 
     @Override
     public void setGroup(@NonNull PosixGroup group) throws IOException {
-        acceptRootable(mPath, attributeView -> attributeView.setOwner(group));
+        acceptRootable(mPath, attributeView -> attributeView.setGroup(group));
     }
 
     @Override
