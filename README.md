@@ -6,12 +6,12 @@
 
 An open source Material Design file manager, for Android 5.0+.
 
-Download: [Google Play](https://play.google.com/store/apps/details?id=me.zhanghai.android.files), [Coolapk](https://www.coolapk.com/apk/me.zhanghai.android.files), [APK](https://github.com/zhanghai/MaterialFiles/releases/download/v1.0.0-beta.10/app-release.apk)
+Download: [Google Play](https://play.google.com/store/apps/details?id=me.zhanghai.android.files), [Coolapk](https://www.coolapk.com/apk/me.zhanghai.android.files), [APK](https://github.com/zhanghai/MaterialFiles/releases/download/v1.0.0-beta.11/app-release.apk)
 
 ## Preview
 
-<p><img src="screenshots/main.png" width="32%" /> <img src="screenshots/drawer.png" width="32%" /> <img src="screenshots/properties-basic.png" width="32%" />
-<img src="screenshots/settings.png" width="32%" /> <img src="screenshots/standard-directories.png" width="32%" /> <img src="screenshots/about.png" width="32%" /></p>
+<p><img src="screenshots/main.png" width="32%" /> <img src="screenshots/drawer.png" width="32%" /> <img src="screenshots/properties.png" width="32%" />
+<img src="screenshots/main-night.png" width="32%" /> <img src="screenshots/main-md2.png" width="32%" /> <img src="screenshots/main-md2-night.png" width="32%" /></p>
 
 ## Features
 

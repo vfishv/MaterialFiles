@@ -17,7 +17,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.signature.ObjectKey;
-import com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -42,6 +41,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import java8.nio.file.Path;
 import java8.nio.file.attribute.BasicFileAttributes;
+import me.zhanghai.android.fastscroll.PopupTextProvider;
 import me.zhanghai.android.files.R;
 import me.zhanghai.android.files.compat.StringCompat;
 import me.zhanghai.android.files.file.FileItem;
@@ -61,7 +61,7 @@ import me.zhanghai.android.files.ui.CheckableFrameLayout;
 import me.zhanghai.android.files.util.ViewUtils;
 
 public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileListAdapter.ViewHolder>
-        implements FastScrollRecyclerView.SectionedAdapter {
+        implements PopupTextProvider {
 
     private static final Object PAYLOAD_STATE_CHANGED = new Object();
 
@@ -360,6 +360,9 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
                 case R.id.action_add_bookmark:
                     mListener.addBookmark(file);
                     return true;
+                case R.id.action_create_shortcut:
+                    mListener.createShortcut(file);
+                    return true;
                 case R.id.action_properties:
                     mListener.showPropertiesDialog(file);
                     return true;
@@ -393,7 +396,7 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
 
     @NonNull
     @Override
-    public String getSectionName(int position) {
+    public String getPopupText(int position) {
         FileItem file = getItem(position);
         String name = FileUtils.getName(file);
         if (TextUtils.isEmpty(name)) {
@@ -422,6 +425,7 @@ public class FileListAdapter extends AnimatedSortedListAdapter<FileItem, FileLis
         void shareFile(@NonNull FileItem file);
         void copyPath(@NonNull FileItem file);
         void addBookmark(@NonNull FileItem file);
+        void createShortcut(@NonNull FileItem file);
         void showPropertiesDialog(@NonNull FileItem file);
     }
 

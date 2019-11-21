@@ -11,12 +11,15 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.os.Parcelable;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -47,6 +50,7 @@ import java8.nio.file.SimpleFileVisitor;
 import java8.nio.file.StandardCopyOption;
 import java8.nio.file.StandardOpenOption;
 import java8.nio.file.attribute.BasicFileAttributes;
+import java9.util.function.Consumer;
 import me.zhanghai.android.files.R;
 import me.zhanghai.android.files.file.FileItem;
 import me.zhanghai.android.files.file.FileProvider;
@@ -69,6 +73,7 @@ import me.zhanghai.android.files.provider.common.PosixUser;
 import me.zhanghai.android.files.provider.common.ProgressCopyOption;
 import me.zhanghai.android.files.provider.common.ReadOnlyFileSystemException;
 import me.zhanghai.android.files.provider.linux.LinuxFileSystemProvider;
+import me.zhanghai.android.files.util.AppUtils;
 import me.zhanghai.android.files.util.BackgroundActivityStarter;
 import me.zhanghai.android.files.util.IntentPathUtils;
 import me.zhanghai.android.files.util.IntentUtils;
@@ -1010,6 +1015,70 @@ public class FileJobs {
             visitor.postVisitDirectory(start, exception);
         }
 
+        protected boolean write(@NonNull Path file, @NonNull byte[] content) throws IOException {
+            ScanInfo scanInfo = new ScanInfo();
+            scanInfo.incrementFileCount();
+            scanInfo.addToSize(content.length);
+            boolean retry;
+            do {
+                retry = false;
+                TransferInfo transferInfo = new TransferInfo(scanInfo, file);
+                try (OutputStream outputStream = MoreFiles.newOutputStream(file)) {
+                    MoreFiles.copy(new ByteArrayInputStream(content), outputStream, size -> {
+                        transferInfo.addToTransferredSize(size);
+                        postWriteNotification(transferInfo);
+                    }, PROGRESS_INTERVAL_MILLIS);
+                    postWriteNotification(transferInfo);
+                } catch (InterruptedIOException e) {
+                    throw e;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    ActionResult result = showActionDialog(
+                            getString(R.string.file_job_write_error_title, getFileName(file)),
+                            getString(R.string.file_job_write_error_message_format,
+                                    getFileName(file), e.getLocalizedMessage()),
+                            getReadOnlyFileStore(file, e),
+                            false,
+                            getString(R.string.retry),
+                            getString(android.R.string.cancel),
+                            null);
+                    switch (result.getAction()) {
+                        case POSITIVE:
+                            retry = true;
+                            continue;
+                        case NEGATIVE:
+                        case CANCELED:
+                            return false;
+                        case NEUTRAL:
+                            throw new InterruptedIOException();
+                        default:
+                            throw new AssertionError(result.getAction());
+                    }
+                }
+            } while (retry);
+            return true;
+        }
+
+        private void postWriteNotification(@NonNull TransferInfo transferInfo) {
+            if (!transferInfo.shouldPostNotification()) {
+                return;
+            }
+            Path target = transferInfo.getTarget();
+            String title = getString(R.string.file_job_write_notification_title,
+                    getFileName(target));
+            long size = transferInfo.getSize();
+            Context context = getService();
+            String sizeString = FormatUtils.formatHumanReadableSize(size, context);
+            long transferredSize = transferInfo.getTransferredSize();
+            String transferredSizeString = FormatUtils.formatHumanReadableSize(transferredSize,
+                    context);
+            String text = getString(R.string.file_job_transfer_size_notification_text_one,
+                    transferredSizeString, sizeString);
+            int max = (int) size;
+            int progress = (int) transferredSize;
+            postNotification(title, text, null, null, max, progress, false, true);
+        }
+
         protected void throwIfInterrupted() throws InterruptedIOException {
             if (Thread.interrupted()) {
                 throw new InterruptedIOException();
@@ -1767,18 +1836,13 @@ public class FileJobs {
         }
     }
 
-    public static class Open extends Base {
+    public static abstract class BaseOpen extends Base {
 
         @NonNull
         private final Path mFile;
-        @NonNull
-        private final String mMimeType;
-        private final boolean mWithChooser;
 
-        public Open(@NonNull Path file, @NonNull String mimeType, boolean withChooser) {
+        public BaseOpen(@NonNull Path file) {
             mFile = file;
-            mMimeType = mimeType;
-            mWithChooser = withChooser;
         }
 
         @Override
@@ -1796,19 +1860,9 @@ public class FileJobs {
             ActionAllInfo actionAllInfo = new ActionAllInfo();
             actionAllInfo.replace = true;
             copy(mFile, targetFile, isExtract, transferInfo, actionAllInfo);
-            Uri uri = FileProvider.getUriForPath(targetFile);
-            Intent intent = IntentUtils.makeView(uri, mMimeType)
-                    .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            IntentPathUtils.putExtraPath(intent, targetFile);
-            if (mWithChooser) {
-                intent = IntentUtils.withChooser(intent);
-                intent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Parcelable[] {
-                        OpenFileAsDialogActivity.newIntent(targetFile, context)
-                });
-            }
-            BackgroundActivityStarter.startActivity(intent,
-                    getString(R.string.file_open_from_background_title_format, targetFileName),
-                    getString(R.string.file_open_from_background_text), context);
+            BackgroundActivityStarter.startActivity(createIntent(targetFile),
+                    getString(getNotificationTitleFormatRes(), targetFileName),
+                    getString(getNotificationTextRes()), context);
         }
 
         @NonNull
@@ -1821,6 +1875,85 @@ public class FileJobs {
                 return externalCacheDirectory;
             }
             return context.getCacheDir();
+        }
+
+        @NonNull
+        protected abstract Intent createIntent(@NonNull Path file);
+
+        @StringRes
+        protected abstract int getNotificationTitleFormatRes();
+
+        @StringRes
+        protected abstract int getNotificationTextRes();
+    }
+
+    public static class InstallApk extends BaseOpen {
+
+        public InstallApk(@NonNull Path file) {
+            super(file);
+        }
+
+        @NonNull
+        @Override
+        protected Intent createIntent(@NonNull Path file) {
+            Uri uri;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                uri = FileProvider.getUriForPath(file);
+            } else {
+                // PackageInstaller only supports file URI before N.
+                uri = Uri.fromFile(file.toFile());
+            }
+            return IntentUtils.makeInstallPackage(uri);
+        }
+
+        @Override
+        protected int getNotificationTitleFormatRes() {
+            return R.string.file_install_apk_from_background_title_format;
+        }
+
+        @Override
+        protected int getNotificationTextRes() {
+            return R.string.file_install_apk_from_background_text;
+        }
+    }
+
+    public static class Open extends BaseOpen {
+
+        @NonNull
+        private final String mMimeType;
+        private final boolean mWithChooser;
+
+        public Open(@NonNull Path file, @NonNull String mimeType, boolean withChooser) {
+            super(file);
+
+            mMimeType = mimeType;
+            mWithChooser = withChooser;
+        }
+
+        @NonNull
+        @Override
+        protected Intent createIntent(@NonNull Path file) {
+            Uri uri = FileProvider.getUriForPath(file);
+            Intent intent = IntentUtils.makeView(uri, mMimeType)
+                    .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            IntentPathUtils.putExtraPath(intent, file);
+            if (mWithChooser) {
+                intent = IntentUtils.withChooser(intent);
+                intent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Parcelable[] {
+                        OpenFileAsDialogActivity.newIntent(file, getService())
+                });
+            }
+            return intent;
+        }
+
+        @Override
+        protected int getNotificationTitleFormatRes() {
+            return R.string.file_open_from_background_title_format;
+        }
+
+        @Override
+        protected int getNotificationTextRes() {
+            return R.string.file_open_from_background_text;
         }
     }
 
@@ -2157,6 +2290,31 @@ public class FileJobs {
                     return super.postVisitDirectory(directory, exception);
                 }
             });
+        }
+    }
+
+    public static class Write extends Base {
+
+        @NonNull
+        private final Path mFile;
+        @NonNull
+        private final byte[] mContent;
+        @Nullable
+        private final Consumer<Boolean> mListener;
+
+        public Write(@NonNull Path file, @NonNull byte[] content,
+                     @Nullable Consumer<Boolean> listener) {
+            mFile = file;
+            mContent = content;
+            mListener = listener;
+        }
+
+        @Override
+        public void run() throws IOException {
+            boolean success = write(mFile, mContent);
+            if (mListener != null) {
+                AppUtils.runOnUiThread(() -> mListener.accept(success));
+            }
         }
     }
 }

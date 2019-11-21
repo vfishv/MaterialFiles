@@ -23,6 +23,7 @@ import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import java8.nio.file.Path;
+import java9.util.function.Consumer;
 import me.zhanghai.android.files.provider.common.PosixFileModeBit;
 import me.zhanghai.android.files.provider.common.PosixGroup;
 import me.zhanghai.android.files.provider.common.PosixUser;
@@ -78,6 +79,10 @@ public class FileJobService extends Service {
         startJob(new FileJobs.Move(sources, targetDirectory), context);
     }
 
+    public static void installApk(@NonNull Path file, @NonNull Context context) {
+        startJob(new FileJobs.InstallApk(file), context);
+    }
+
     public static void open(@NonNull Path file, @NonNull String mimeType, boolean withChooser,
                             @NonNull Context context) {
         startJob(new FileJobs.Open(file, mimeType, withChooser), context);
@@ -111,6 +116,11 @@ public class FileJobService extends Service {
     public static void setSeLinuxContext(@NonNull Path path, @NonNull String seLinuxContext,
                                          boolean recursive, @NonNull Context context) {
         startJob(new FileJobs.SetSeLinuxContext(path, seLinuxContext, recursive), context);
+    }
+
+    public static void write(@NonNull Path file, @NonNull byte[] content,
+                             @Nullable Consumer<Boolean> listener, @NonNull Context context) {
+        startJob(new FileJobs.Write(file, content, listener), context);
     }
 
     @MainThread

@@ -48,6 +48,7 @@
     <string name="activity_not_found">未找到可处理此操作的应用</string>
     <string name="copied_to_clipboard_format">@string/preference_copied</string>
     <string name="open_settings">打开设置</string>
+    <string name="shortcut_created">已创建快捷方式</string>
 
     <plurals name="size_in_bytes_format">
         <item quantity="other">%1$,d 字节</item>
@@ -136,8 +137,9 @@
         <item quantity="other">正在还原 %1$,d 个文件的 SELinux 上下文</item>
     </plurals>
     <string name="file_job_transfer_count_notification_text_multiple">%1$,d / %2$,d</string>
-    <string name="file_job_create_error_title">新建时发生错误</string>
-    <string name="file_job_create_error_message_format">在新建“%1$s”时发生错误。\n%2$s</string>
+    <string name="file_job_write_notification_title">正在写入“%1$s”</string>
+    <string name="file_job_create_error_title">创建时发生错误</string>
+    <string name="file_job_create_error_message_format">在创建“%1$s”时发生错误。\n%2$s</string>
     <string name="file_job_cannot_copy_into_itself_title">无法将文件夹复制到自身</string>
     <string name="file_job_cannot_extract_into_itself_title">无法将文件夹提取到自身</string>
     <string name="file_job_cannot_move_into_itself_title">无法将文件夹移动到自身</string>
@@ -176,6 +178,8 @@
     <string name="file_job_set_selinux_context_error_message_format">将 SELinux 上下文更改为“%1$s”时发生错误。\n%2$s</string>
     <string name="file_job_restore_selinux_context_error_title">还原 SELinux 上下文时发生错误</string>
     <string name="file_job_restore_selinux_context_error_message_format">在还原“%1$s”的 SELinux 上下文时发生错误。\n%2$s</string>
+    <string name="file_job_write_error_title">写入时发生错误</string>
+    <string name="file_job_write_error_message_format">在写入“%1$s”时发生错误。\n%2$s</string>
     <string name="file_job_get_information_error_message_format">在获取“%1$s”的信息时发生错误。</string>
     <string name="file_job_remount_format">重新挂载“%1$s”为读写模式</string>
     <string name="file_job_remount_loading_format">正在重新挂载“%1$s”为读写模式…</string>
@@ -191,6 +195,8 @@
     <string name="file_open_as_type_video">视频</string>
     <string name="file_open_as_type_directory">文件夹</string>
     <string name="file_open_as_type_any">其他</string>
+    <string name="file_install_apk_from_background_title_format">“%1$s”已可安装</string>
+    <string name="file_install_apk_from_background_text">点按即可安装</string>
     <string name="file_open_from_background_title_format">“%1$s”已可打开</string>
     <string name="file_open_from_background_text">点按即可打开</string>
     <string name="file_name_error_empty">文件名不能为空</string>
@@ -201,7 +207,7 @@
     <string name="file_delete_message_multiple_files_format">删除 %1$,d 个文件？</string>
     <string name="file_delete_message_multiple_directories_format">删除 %1$,d 个文件夹和它们的内容？</string>
     <string name="file_delete_message_multiple_mixed_format">删除 %1$,d 个文件和文件夹?</string>
-    <string name="file_create_archive_title">新建压缩文件</string>
+    <string name="file_create_archive_title">创建压缩文件</string>
     <string name="file_create_archive_type_zip">.zip</string>
     <string name="file_create_archive_type_tar_xz">.tar.xz</string>
     <string name="file_create_archive_type_7z">.7z</string>
@@ -236,6 +242,7 @@
     <string name="file_list_action_copy_path">复制路径</string>
     <string name="file_list_action_open_in_terminal">在终端中打开</string>
     <string name="file_list_action_add_bookmark">添加书签</string>
+    <string name="file_list_action_create_shortcut">创建快捷方式</string>
     <string name="file_list_breadcrumb_action_copy_path">@string/file_list_action_copy_path</string>
     <string name="file_list_breadcrumb_action_open_in_new_task">在新窗口中打开</string>
     <string name="file_list_select_title_format">已选择 %1$,d</string>
@@ -256,6 +263,7 @@
     <string name="file_item_action_archive">压缩</string>
     <string name="file_item_action_copy_path">@string/file_list_action_copy_path</string>
     <string name="file_item_action_add_bookmark">@string/file_list_action_add_bookmark</string>
+    <string name="file_item_action_create_shortcut">@string/file_list_action_create_shortcut</string>
     <string name="file_item_action_properties">属性</string>
 
     <string name="file_properties_title_format">“%1$s”属性</string>
@@ -414,4 +422,7 @@
     <string name="about_author_github_title">在 GitHub 上关注</string>
     <string name="about_author_google_plus_title">添加到 Google+ 圈子</string>
     <string name="about_author_twitter_title">在 Twitter 上关注</string>
+
+    <string name="shortcut_downloads_title">@string/navigation_standard_directory_downloads</string>
+    <string name="shortcut_ftp_server_title">@string/ftp_server_title</string>
 </resources>

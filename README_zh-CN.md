@@ -4,12 +4,12 @@
 
 一个开源的 Material Design 文件管理器，适用于 Android 5.0+。
 
-下载：[Google Play](https://play.google.com/store/apps/details?id=me.zhanghai.android.files)、[酷安](https://www.coolapk.com/apk/me.zhanghai.android.files)、[APK](https://github.com/zhanghai/MaterialFiles/releases/download/v1.0.0-beta.10/app-release.apk)
+下载：[Google Play](https://play.google.com/store/apps/details?id=me.zhanghai.android.files)、[酷安](https://www.coolapk.com/apk/me.zhanghai.android.files)、[APK](https://github.com/zhanghai/MaterialFiles/releases/download/v1.0.0-beta.11/app-release.apk)
 
 ## 预览
 
-<p><img src="screenshots/main.png" width="32%" /> <img src="screenshots/drawer.png" width="32%" /> <img src="screenshots/properties-basic.png" width="32%" />
-<img src="screenshots/settings.png" width="32%" /> <img src="screenshots/standard-directories.png" width="32%" /> <img src="screenshots/about.png" width="32%" /></p>
+<p><img src="screenshots/main.png" width="32%" /> <img src="screenshots/drawer.png" width="32%" /> <img src="screenshots/properties.png" width="32%" />
+<img src="screenshots/main-night.png" width="32%" /> <img src="screenshots/main-md2.png" width="32%" /> <img src="screenshots/main-md2-night.png" width="32%" /></p>
 
 ## 特性
 

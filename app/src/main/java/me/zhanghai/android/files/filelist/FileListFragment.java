@@ -12,7 +12,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Parcelable;
@@ -41,6 +43,9 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.pm.ShortcutInfoCompat;
+import androidx.core.content.pm.ShortcutManagerCompat;
+import androidx.core.graphics.drawable.IconCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
@@ -53,9 +58,11 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import java8.nio.file.Path;
+import java8.nio.file.Paths;
 import me.zhanghai.android.effortlesspermissions.AfterPermissionDenied;
 import me.zhanghai.android.effortlesspermissions.EffortlessPermissions;
 import me.zhanghai.android.effortlesspermissions.OpenAppDetailsDialogFragment;
+import me.zhanghai.android.fastscroll.FastScroller;
 import me.zhanghai.android.files.R;
 import me.zhanghai.android.files.file.FileItem;
 import me.zhanghai.android.files.file.FileProvider;
@@ -77,6 +84,8 @@ import me.zhanghai.android.files.ui.OverlayToolbarActionMode;
 import me.zhanghai.android.files.ui.PersistentBarLayout;
 import me.zhanghai.android.files.ui.PersistentBarLayoutToolbarActionMode;
 import me.zhanghai.android.files.ui.PersistentDrawerLayout;
+import me.zhanghai.android.files.ui.ScrollingViewOnApplyWindowInsetsListener;
+import me.zhanghai.android.files.ui.ThemedFastScroller;
 import me.zhanghai.android.files.ui.ToolbarActionMode;
 import me.zhanghai.android.files.util.AppUtils;
 import me.zhanghai.android.files.util.BundleUtils;
@@ -97,6 +106,9 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
         ConfirmDeleteFilesDialogFragment.Listener, CreateArchiveDialogFragment.Listener,
         RenameFileDialogFragment.Listener, CreateFileDialogFragment.Listener,
         CreateDirectoryDialogFragment.Listener, NavigationFragment.Listener {
+
+    private static final String ACTION_VIEW_DOWNLOADS =
+            "me.zhanghai.android.files.intent.action.VIEW_DOWNLOADS";
 
     private static final int REQUEST_CODE_STORAGE_PERMISSIONS = 1;
 
@@ -261,6 +273,9 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
         mRecyclerView.setLayoutManager(new GridLayoutManager(activity, /*TODO*/ 1));
         mAdapter = new FileListAdapter(this, this);
         mRecyclerView.setAdapter(mAdapter);
+        FastScroller fastScroller = ThemedFastScroller.create(mRecyclerView);
+        mRecyclerView.setOnApplyWindowInsetsListener(new ScrollingViewOnApplyWindowInsetsListener(
+                mRecyclerView, fastScroller));
         mSpeedDialView.inflate(R.menu.file_list_speed_dial);
         mSpeedDialView.setOnActionSelectedListener(actionItem -> {
             switch (actionItem.getId()) {
@@ -290,10 +305,19 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
                 case Intent.ACTION_OPEN_DOCUMENT:
                 case Intent.ACTION_CREATE_DOCUMENT: {
                     boolean readOnly = Objects.equals(action, Intent.ACTION_GET_CONTENT);
-                    List<String> mimeTypes = Collections.singletonList(mIntent.getType());
+                    String mimeType = mIntent.getType();
+                    if (mimeType == null) {
+                        mimeType = MimeTypes.ANY_MIME_TYPE;
+                    }
+                    List<String> mimeTypes = Collections.singletonList(mimeType);
                     String[] extraMimeTypes = mIntent.getStringArrayExtra(Intent.EXTRA_MIME_TYPES);
                     if (extraMimeTypes != null) {
-                        mimeTypes = Arrays.asList(extraMimeTypes);
+                        List<String> extraMimeTypesList = Arrays.asList(extraMimeTypes);
+                        extraMimeTypesList = Functional.filter(extraMimeTypesList,
+                                java9.util.Objects::nonNull);
+                        if (!extraMimeTypesList.isEmpty()) {
+                            mimeTypes = extraMimeTypesList;
+                        }
                     }
                     boolean localOnly = mIntent.getBooleanExtra(Intent.EXTRA_LOCAL_ONLY, false);
                     boolean allowMultiple = mIntent.getBooleanExtra(Intent.EXTRA_ALLOW_MULTIPLE,
@@ -307,6 +331,10 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
                     boolean localOnly = mIntent.getBooleanExtra(Intent.EXTRA_LOCAL_ONLY, false);
                     pickOptions = new PickOptions(false, true, Collections.emptyList(), localOnly,
                             false);
+                    break;
+                case ACTION_VIEW_DOWNLOADS:
+                    path = Paths.get(Environment.getExternalStoragePublicDirectory(
+                            Environment.DIRECTORY_DOWNLOADS).getPath());
                     break;
                 case Intent.ACTION_VIEW:
                 default:
@@ -325,20 +353,25 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
                 mViewModel.setPickOptions(pickOptions);
             }
         }
+        LifecycleOwner viewLifecycleOwner = getViewLifecycleOwner();
         if (mPersistentDrawerLayout != null) {
-            Settings.FILE_LIST_PERSISTENT_DRAWER_OPEN.observe(this,
+            Settings.FILE_LIST_PERSISTENT_DRAWER_OPEN.observe(viewLifecycleOwner,
                     this::onPersistentDrawerOpenChanged);
         }
-        mViewModel.getCurrentPathLiveData().observe(this, this::onCurrentPathChanged);
-        mViewModel.getSearchViewExpandedLiveData().observe(this, this::onSearchViewExpandedChanged);
-        mViewModel.getBreadcrumbLiveData().observe(this, mBreadcrumbLayout::setData);
-        mViewModel.getSortOptionsLiveData().observe(this, this::onSortOptionsChanged);
-        mViewModel.getSortPathSpecificLiveData().observe(this, this::onSortPathSpecificChanged);
-        mViewModel.getPickOptionsLiveData().observe(this, this::onPickOptionsChanged);
-        mViewModel.getSelectedFilesLiveData().observe(this, this::onSelectedFilesChanged);
-        mViewModel.getPasteStateLiveData().observe(this, this::onPasteStateChanged);
-        mViewModel.getFileListLiveData().observe(this, this::onFileListChanged);
-        Settings.FILE_LIST_SHOW_HIDDEN_FILES.observe(this, this::onShowHiddenFilesChanged);
+        mViewModel.getCurrentPathLiveData().observe(viewLifecycleOwner, this::onCurrentPathChanged);
+        mViewModel.getSearchViewExpandedLiveData().observe(viewLifecycleOwner,
+                this::onSearchViewExpandedChanged);
+        mViewModel.getBreadcrumbLiveData().observe(viewLifecycleOwner, mBreadcrumbLayout::setData);
+        mViewModel.getSortOptionsLiveData().observe(viewLifecycleOwner, this::onSortOptionsChanged);
+        mViewModel.getSortPathSpecificLiveData().observe(viewLifecycleOwner,
+                this::onSortPathSpecificChanged);
+        mViewModel.getPickOptionsLiveData().observe(viewLifecycleOwner, this::onPickOptionsChanged);
+        mViewModel.getSelectedFilesLiveData().observe(viewLifecycleOwner,
+                this::onSelectedFilesChanged);
+        mViewModel.getPasteStateLiveData().observe(viewLifecycleOwner, this::onPasteStateChanged);
+        mViewModel.getFileListLiveData().observe(viewLifecycleOwner, this::onFileListChanged);
+        Settings.FILE_LIST_SHOW_HIDDEN_FILES.observe(viewLifecycleOwner,
+                this::onShowHiddenFilesChanged);
 
         if (!EffortlessPermissions.hasPermissions(this, STORAGE_PERMISSIONS)) {
             EffortlessPermissions.requestPermissions(this,
@@ -511,6 +544,9 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
                 return true;
             case R.id.action_add_bookmark:
                 addBookmark();
+                return true;
+            case R.id.action_create_shortcut:
+                createShortcut();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -742,6 +778,10 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
         addBookmark(getCurrentPath());
     }
 
+    private void createShortcut() {
+        createShortcut(getCurrentPath(), MimeTypes.DIRECTORY_MIME_TYPE);
+    }
+
     @Override
     public void navigateTo(@NonNull Path path) {
         collapseSearchView();
@@ -757,8 +797,7 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     @Override
     public void openInNewTask(@NonNull Path path) {
         Intent intent = FileListActivity.newViewIntent(path, requireContext())
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT)
-                .addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
         startActivity(intent);
     }
 
@@ -1118,7 +1157,25 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
 
     @Override
     public void installApk(@NonNull FileItem file) {
-        openFileWithIntent(file, false);
+        Path path = file.getPath();
+        Uri uri = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            if (LinuxFileSystemProvider.isLinuxPath(path)
+                    || DocumentFileSystemProvider.isDocumentPath(path)) {
+                uri = FileProvider.getUriForPath(path);
+            }
+        } else {
+            // PackageInstaller only supports file URI before N.
+            if (LinuxFileSystemProvider.isLinuxPath(path)) {
+                uri = Uri.fromFile(path.toFile());
+            }
+        }
+        if (uri != null) {
+            Intent intent = IntentUtils.makeInstallPackage(uri);
+            AppUtils.startActivity(intent, this);
+        } else {
+            FileJobService.installApk(path, requireContext());
+        }
     }
 
     @Override
@@ -1248,6 +1305,28 @@ public class FileListFragment extends Fragment implements BreadcrumbLayout.Liste
     private void addBookmark(@NonNull Path path) {
         BookmarkDirectories.add(new BookmarkDirectory(null, path));
         ToastUtils.show(R.string.file_add_bookmark_success, requireContext());
+    }
+
+    @Override
+    public void createShortcut(@NonNull FileItem file) {
+        createShortcut(file.getPath(), file.getMimeType());
+    }
+
+    private void createShortcut(@NonNull Path path, @NonNull String mimeType) {
+        Context context = requireContext();
+        boolean isDirectory = Objects.equals(mimeType, MimeTypes.DIRECTORY_MIME_TYPE);
+        ShortcutInfoCompat shortcutInfo = new ShortcutInfoCompat.Builder(context, path.toString())
+                .setShortLabel(FileUtils.getName(path))
+                .setIntent(isDirectory ? FileListActivity.newViewIntent(path, context)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                        : OpenFileActivity.newIntent(path, mimeType, context))
+                .setIcon(IconCompat.createWithResource(context, isDirectory ?
+                        R.mipmap.directory_shortcut_icon : R.mipmap.file_shortcut_icon))
+                .build();
+        ShortcutManagerCompat.requestPinShortcut(context, shortcutInfo, null);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            ToastUtils.show(R.string.shortcut_created, context);
+        }
     }
 
     @Override

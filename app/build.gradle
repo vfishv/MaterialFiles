@@ -13,10 +13,11 @@ android {
         applicationId 'me.zhanghai.android.files'
         minSdkVersion 21
         targetSdkVersion 29
-        versionCode 11
-        versionName '1.0.0-beta.10'
+        versionCode 12
+        versionName '1.0.0-beta.11'
         resValue 'string', 'app_version', versionName + ' (' + versionCode + ')'
         buildConfigField 'String', 'FILE_PROVIDIER_AUTHORITY', 'APPLICATION_ID + ".file_provider"'
+        resValue 'string', 'app_provider_authority', applicationId + '.app_provider'
         resValue 'string', 'file_provider_authority', applicationId + '.file_provider'
     }
     compileOptions {
@@ -32,26 +33,19 @@ android {
         release {
             minifyEnabled true
             shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             //signingConfig signingConfigs.release
         }
     }
     packagingOptions {
         exclude 'META-INF/DEPENDENCIES'
     }
-}
-
-buildscript {
-    repositories {
-        maven {
-            url 'https://maven.fabric.io/public'
-        }
-    }
-    dependencies {
-        classpath 'io.fabric.tools:gradle:1.31.0'
+    lintOptions {
+        // For "Invalid package reference in library; not included in Android: javax.security.sasl.
+        // Referenced from org.apache.mina.proxy.ProxyAuthException."
+        warning 'InvalidPackage'
     }
 }
-apply plugin: 'io.fabric'
 
 repositories {
     maven {
@@ -66,35 +60,32 @@ dependencies {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'androidx.appcompat:appcompat:1.1.0'
-    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0-alpha05'
-    implementation 'androidx.lifecycle:lifecycle-common-java8:2.2.0-alpha05'
-    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0-alpha02'
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0-rc02'
+    implementation 'androidx.lifecycle:lifecycle-common-java8:2.2.0-rc02'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0-alpha03'
     implementation 'com.caverock:androidsvg-aar:1.4'
-    implementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
-    implementation 'com.crashlytics.sdk.android:crashlytics-ndk:2.1.1'
     implementation 'com.davemorrissey.labs:subsampling-scale-image-view:3.10.0'
     debugImplementation 'com.facebook.stetho:stetho:1.5.1'
     // If added along with okhttp3, remove the related dontwarn from proguard-rules.pro.
     //debugImplementation 'com.facebook.stetho:stetho-okhttp3:1.5.0'
-    implementation 'com.github.bumptech.glide:glide:4.9.0'
-    annotationProcessor 'com.github.bumptech.glide:compiler:4.9.0'
+    implementation 'com.github.bumptech.glide:glide:4.10.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.10.0'
     implementation ('com.github.junrar:junrar:4.0.0') {
         exclude group: 'commons-logging', module: 'commons-logging'
     }
     // As a replacement for commons-logging, to avoid the DuplicatePlatformClasses error due to
     // httpclient depending on commons-logging and being removed in Android 6.0.
-    implementation 'org.slf4j:jcl-over-slf4j:1.7.28'
-    implementation 'com.google.android.material:material:1.1.0-alpha10'
-    implementation 'com.google.firebase:firebase-core:17.2.0'
+    implementation 'org.slf4j:jcl-over-slf4j:1.7.29'
+    // 1.2.0-alpha01 breaks Design widgets in Theme.MaterialComponents.*.Bridge.
+    // https://github.com/material-components/material-components-android/issues/740
+    // TODO: Run `git revert 9fc8452` after upgrading to 1.2.0.
+    implementation 'com.google.android.material:material:1.1.0-beta02'
     implementation 'com.h6ah4i.android.materialshadowninepatch:materialshadowninepatch:1.0.0'
     implementation 'com.h6ah4i.android.widget.advrecyclerview:advrecyclerview:1.0.0'
     implementation 'com.jakewharton:butterknife:10.2.0'
     annotationProcessor 'com.jakewharton:butterknife-compiler:10.2.0'
     implementation 'com.jakewharton.threetenabp:threetenabp:1.2.1'
-    implementation 'com.leinardi.android:speed-dial:3.1.0'
-    // If https://github.com/timusus/RecyclerView-FastScroll/pull/96 is merged and released, remove
-    // the related dontwarn from proguard-rules.pro.
-    implementation 'com.simplecityapps:recyclerview-fastscroll:1.0.18'
+    implementation 'com.leinardi.android:speed-dial:3.1.1'
     implementation 'com.takisoft.preferencex:preferencex:1.1.0-alpha05'
     implementation 'androidx.preference:preference:1.1.0'
     implementation 'com.takisoft.preferencex:preferencex-simplemenu:1.1.0-alpha05'
@@ -102,6 +93,8 @@ dependencies {
     implementation 'eu.chainfire:librootjava:1.2.0'
     implementation 'eu.chainfire:libsuperuser:1.0.0.201704021214'
     implementation 'me.zhanghai.android.effortlesspermissions:library:1.1.0'
+    implementation 'me.zhanghai.android.fastscroll:library:1.0.3'
+    implementation 'me.zhanghai.android.foregroundcompat:library:1.0.0'
     implementation 'me.zhanghai.android.libselinux:library:2.0.0'
     implementation 'me.zhanghai.android.materialedittext:library:1.0.5'
     implementation 'me.zhanghai.android.retrofile:library:1.1.0'
@@ -114,8 +107,41 @@ dependencies {
     // Optional dependency of Commons Compress for 7Z LZMA.
     implementation 'org.tukaani:xz:1.8'
     implementation 'org.apache.ftpserver:ftpserver-core:1.1.1'
-    implementation 'org.slf4j:slf4j-android:1.7.28'
+    implementation 'org.slf4j:slf4j-android:1.7.29'
     implementation 'org.greenrobot:eventbus:3.1.1'
 }
 
+//#ifdef NONFREE
+buildscript {
+    repositories {
+        maven {
+            url 'https://maven.fabric.io/public'
+        }
+    }
+    dependencies {
+        classpath 'io.fabric.tools:gradle:1.31.2'
+    }
+}
+apply plugin: 'io.fabric'
+
+crashlytics {
+    enableNdk true
+}
+
+dependencies {
+    implementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
+    implementation 'com.crashlytics.sdk.android:crashlytics-ndk:2.1.1'
+    implementation 'com.google.firebase:firebase-analytics:17.2.1'
+}
+
+buildscript {
+    repositories {
+        google()
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.google.gms:google-services:4.3.3'
+    }
+}
 apply plugin: 'com.google.gms.google-services'
+//#endif
