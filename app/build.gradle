@@ -4,6 +4,8 @@
  */
 
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-android'
 
 //apply from: '../signing.gradle'
 
@@ -51,13 +53,12 @@ repositories {
     maven {
         url 'https://jitpack.io'
     }
+    mavenCentral()
 }
 dependencies {
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
     releaseImplementation 'com.github.mypplication:stetho-noop:1.1'
-}
 
-dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0-rc02'
@@ -109,6 +110,8 @@ dependencies {
     implementation 'org.apache.ftpserver:ftpserver-core:1.1.1'
     implementation 'org.slf4j:slf4j-android:1.7.29'
     implementation 'org.greenrobot:eventbus:3.1.1'
+    implementation "androidx.core:core-ktx:+"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }
 
 //#ifdef NONFREE
