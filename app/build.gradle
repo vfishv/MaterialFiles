@@ -15,8 +15,8 @@ android {
         applicationId 'me.zhanghai.android.files'
         minSdkVersion 21
         targetSdkVersion 29
-        versionCode 12
-        versionName '1.0.0-beta.11'
+        versionCode 16
+        versionName '1.0.1'
         resValue 'string', 'app_version', versionName + ' (' + versionCode + ')'
         buildConfigField 'String', 'FILE_PROVIDIER_AUTHORITY', 'APPLICATION_ID + ".file_provider"'
         resValue 'string', 'app_provider_authority', applicationId + '.app_provider'
@@ -61,8 +61,8 @@ dependencies {
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'androidx.appcompat:appcompat:1.1.0'
-    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0-rc02'
-    implementation 'androidx.lifecycle:lifecycle-common-java8:2.2.0-rc02'
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0-rc03'
+    implementation 'androidx.lifecycle:lifecycle-common-java8:2.2.0-rc03'
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0-alpha03'
     implementation 'com.caverock:androidsvg-aar:1.4'
     implementation 'com.davemorrissey.labs:subsampling-scale-image-view:3.10.0'
@@ -83,6 +83,7 @@ dependencies {
     implementation 'com.google.android.material:material:1.1.0-beta02'
     implementation 'com.h6ah4i.android.materialshadowninepatch:materialshadowninepatch:1.0.0'
     implementation 'com.h6ah4i.android.widget.advrecyclerview:advrecyclerview:1.0.0'
+    implementation 'com.hierynomus:smbj:0.9.1'
     implementation 'com.jakewharton:butterknife:10.2.0'
     annotationProcessor 'com.jakewharton:butterknife-compiler:10.2.0'
     implementation 'com.jakewharton.threetenabp:threetenabp:1.2.1'
@@ -94,7 +95,7 @@ dependencies {
     implementation 'eu.chainfire:librootjava:1.2.0'
     implementation 'eu.chainfire:libsuperuser:1.0.0.201704021214'
     implementation 'me.zhanghai.android.effortlesspermissions:library:1.1.0'
-    implementation 'me.zhanghai.android.fastscroll:library:1.0.3'
+    implementation 'me.zhanghai.android.fastscroll:library:1.1.0'
     implementation 'me.zhanghai.android.foregroundcompat:library:1.0.0'
     implementation 'me.zhanghai.android.libselinux:library:2.0.0'
     implementation 'me.zhanghai.android.materialedittext:library:1.0.5'

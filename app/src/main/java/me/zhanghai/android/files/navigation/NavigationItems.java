@@ -12,6 +12,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
+import android.provider.DocumentsContract;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,14 +80,13 @@ public class NavigationItems {
                             R.string.navigation_standard_directory_ringtones,
                             Environment.DIRECTORY_RINGTONES, false))
                     .add(new StandardDirectory(R.drawable.qq_icon_white_24dp,
-                            R.string.navigation_standard_directory_qq, "tencent/QQfile_recv",
-                            false))
+                            R.string.navigation_standard_directory_qq, "tencent/QQfile_recv", true))
                     .add(new StandardDirectory(R.drawable.tim_icon_white_24dp,
                             R.string.navigation_standard_directory_tim, "tencent/TIMfile_recv",
-                            false))
+                            true))
                     .add(new StandardDirectory(R.drawable.wechat_icon_white_24dp,
                             R.string.navigation_standard_directory_wechat,
-                            "tencent/MicroMsg/Download", false))
+                            "tencent/MicroMsg/Download", true))
                     .buildUnmodifiable();
 
     @NonNull
@@ -116,11 +116,36 @@ public class NavigationItems {
         StorageManager storageManager = ContextCompat.getSystemService(AppProvider.requireContext(),
                 StorageManager.class);
         List<StorageVolume> storageVolumes = StorageManagerCompat.getStorageVolumes(storageManager);
-        Functional.map(storageVolumes, StorageVolumeRootItem::new, rootItems);
-        List<Uri> treeUris = DocumentTreesLiveData.getInstance().getValue();
-        Functional.map(treeUris, DocumentTreeRootItem::new, rootItems);
+        for (StorageVolume storageVolume : storageVolumes) {
+            if (StorageVolumeCompat.isPrimary(storageVolume)) {
+                rootItems.add(new PrimaryStorageVolumeRootItem(storageVolume));
+            }
+        }
+        List<Uri> treeUris = new ArrayList<>(DocumentTreesLiveData.getInstance().getValue());
+        for (StorageVolume storageVolume : storageVolumes) {
+            if (StorageVolumeCompat.isPrimary(storageVolume)) {
+                continue;
+            }
+            Uri treeUri = getStorageVolumeTreeUri(storageVolume);
+            if (treeUris.remove(treeUri)) {
+                rootItems.add(new DocumentTreeStorageVolumeRootItem(treeUri, storageVolume));
+            }
+        }
+        for (Uri treeUri : treeUris) {
+            rootItems.add(new DocumentTreeRootItem(treeUri));
+        }
         rootItems.add(new AddDocumentTreeItem());
         return rootItems;
+    }
+
+    @NonNull
+    private static Uri getStorageVolumeTreeUri(@NonNull StorageVolume storageVolume) {
+        Intent intent = StorageVolumeCompat.createOpenDocumentTreeIntent(storageVolume);
+        Uri rootUri = intent.getParcelableExtra(DocumentsContract.EXTRA_INITIAL_URI);
+        // @see com.android.externalstorage.ExternalStorageProvider#getDocIdForFile(File)
+        // @see com.android.documentsui.picker.ConfirmFragment#onCreateDialog(Bundle)
+        return DocumentsContract.buildTreeDocumentUri(rootUri.getAuthority(),
+                DocumentsContract.getRootId(rootUri) + ":");
     }
 
     @NonNull
@@ -150,21 +175,18 @@ public class NavigationItems {
 
     @NonNull
     private static List<StandardDirectory> getDefaultStandardDirectories() {
-        // HACK: Enable QQ and WeChat standard directories based on whether the directory exists.
-        return Functional.map(DEFAULT_STANDARD_DIRECTORIES, standardDirectory -> {
+        // HACK: Show QQ, TIM and WeChat standard directories based on whether the directory exists.
+        return Functional.filter(DEFAULT_STANDARD_DIRECTORIES, standardDirectory -> {
             switch (standardDirectory.getIconRes()) {
                 case R.drawable.qq_icon_white_24dp:
                 case R.drawable.tim_icon_white_24dp:
                 case R.drawable.wechat_icon_white_24dp: {
                     String path = getExternalStorageDirectory(standardDirectory.getRelativePath());
-                    if (JavaFile.isDirectory(path)) {
-                        return standardDirectory.withSettings(standardDirectory.toSettings()
-                                .withEnabled(true));
-                    }
-                    break;
+                    return JavaFile.isDirectory(path);
                 }
+                default:
+                    return true;
             }
-            return standardDirectory;
         });
     }
 
@@ -251,13 +273,14 @@ public class NavigationItems {
         private final long mFreeSpace;
         private final long mTotalSpace;
 
-        public LocalRootItem(@NonNull String path, @DrawableRes int iconRes) {
-            super(Paths.get(path));
+        public LocalRootItem(@NonNull Path path, @NonNull String localPath,
+                             @DrawableRes int iconRes) {
+            super(path);
 
             mIconRes = iconRes;
-            long totalSpace = JavaFile.getTotalSpace(path);
+            long totalSpace = JavaFile.getTotalSpace(localPath);
             if (totalSpace != 0) {
-                mFreeSpace = JavaFile.getFreeSpace(path);
+                mFreeSpace = JavaFile.getFreeSpace(localPath);
                 mTotalSpace = totalSpace;
             } else {
                 // Root directory may not be an actual partition on legacy Android versions (can be
@@ -268,6 +291,10 @@ public class NavigationItems {
                 mFreeSpace = JavaFile.getFreeSpace(systemPath);
                 mTotalSpace = JavaFile.getTotalSpace(systemPath);
             }
+        }
+
+        public LocalRootItem(@NonNull String path, @DrawableRes int iconRes) {
+            this(Paths.get(path), path, iconRes);
         }
 
         @DrawableRes
@@ -299,12 +326,12 @@ public class NavigationItems {
         }
     }
 
-    private static class StorageVolumeRootItem extends LocalRootItem {
+    private static class PrimaryStorageVolumeRootItem extends LocalRootItem {
 
         @NonNull
         private final StorageVolume mStorageVolume;
 
-        public StorageVolumeRootItem(@NonNull StorageVolume storageVolume) {
+        public PrimaryStorageVolumeRootItem(@NonNull StorageVolume storageVolume) {
             super(StorageVolumeCompat.getPath(storageVolume), R.drawable.sd_card_icon_white_24dp);
 
             mStorageVolume = storageVolume;
@@ -319,6 +346,40 @@ public class NavigationItems {
         @Override
         public int getTitleRes() {
             throw new AssertionError();
+        }
+    }
+
+    private static class DocumentTreeStorageVolumeRootItem extends LocalRootItem {
+
+        @NonNull
+        private final Uri mTreeUri;
+        @NonNull
+        private final StorageVolume mStorageVolume;
+
+        public DocumentTreeStorageVolumeRootItem(@NonNull Uri treeUri,
+                                                 @NonNull StorageVolume storageVolume) {
+            super(DocumentFileSystemProvider.getRootPathForTreeUri(treeUri),
+                    StorageVolumeCompat.getPath(storageVolume), R.drawable.sd_card_icon_white_24dp);
+
+            mTreeUri = treeUri;
+            mStorageVolume = storageVolume;
+        }
+
+        @NonNull
+        @Override
+        public String getTitle(@NonNull Context context) {
+            return StorageVolumeCompat.getDescription(mStorageVolume, context);
+        }
+
+        @Override
+        public int getTitleRes() {
+            throw new AssertionError();
+        }
+
+        @Override
+        public boolean onLongClick(@NonNull Listener listener) {
+            listener.onRemoveDocumentTree(mTreeUri, mStorageVolume);
+            return true;
         }
     }
 
@@ -355,7 +416,7 @@ public class NavigationItems {
 
         @Override
         public boolean onLongClick(@NonNull Listener listener) {
-            listener.onRemoveDocumentTree(mTreeUri);
+            listener.onRemoveDocumentTree(mTreeUri, null);
             return true;
         }
     }

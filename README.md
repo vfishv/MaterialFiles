@@ -1,26 +1,30 @@
-# Material Files (Beta)
+# Material Files
 
 [本文中文版](README_zh-CN.md)
 
-[![Android CI status](https://github.com/zhanghai/MaterialFiles/workflows/Android%20CI/badge.svg)](https://github.com/zhanghai/MaterialFiles/actions)
+[![Android CI status](https://github.com/zhanghai/MaterialFiles/workflows/Android%20CI/badge.svg)](https://github.com/zhanghai/MaterialFiles/actions) [![GitHub release](https://img.shields.io/github/v/release/zhanghai/MaterialFiles)](https://github.com/zhanghai/MaterialFiles/releases) [![License](https://img.shields.io/github/license/zhanghai/MaterialFiles?color=blue)](LICENSE)
 
 An open source Material Design file manager, for Android 5.0+.
 
-Download: [Google Play](https://play.google.com/store/apps/details?id=me.zhanghai.android.files), [Coolapk](https://www.coolapk.com/apk/me.zhanghai.android.files), [APK](https://github.com/zhanghai/MaterialFiles/releases/download/v1.0.0-beta.11/app-release.apk)
+[<img alt="Get it on Google Play" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" width="240">](https://play.google.com/store/apps/details?id=me.zhanghai.android.files) [<img alt="Get it on F-Droid" src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" width="240">](https://f-droid.org/packages/me.zhanghai.android.files)
+
+[Get it on Coolapk](https://www.coolapk.com/apk/me.zhanghai.android.files) [Get the APK](https://github.com/zhanghai/MaterialFiles/releases/latest/download/app-release.apk)
+
+[Help translation on Transifex](https://www.transifex.com/zhanghai/MaterialFiles/)
 
 ## Preview
 
-<p><img src="screenshots/main.png" width="32%" /> <img src="screenshots/drawer.png" width="32%" /> <img src="screenshots/properties.png" width="32%" />
-<img src="screenshots/main-night.png" width="32%" /> <img src="screenshots/main-md2.png" width="32%" /> <img src="screenshots/main-md2-night.png" width="32%" /></p>
+<p><img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="32%" /> <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="32%" /> <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="32%" />
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" width="32%" /> <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" width="32%" /> <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/8.png" width="32%" /></p>
 
 ## Features
 
 - Open source: Lightweight, clean and secure.
-- Material Design: Like the good old [Cabinet](https://www.ghacks.net/2015/04/27/cabinet-is-a-feature-rich-file-explorer-for-android/), with attention into details.
+- Material Design: Both MD2 and classic themes, with attention into details.
 - Breadcrumbs: Navigate in the filesystem with ease.
 - Root support: View and manage files with root access.
 - Archive support: View, extract and create common compressed files.
-- Themes: Customizable UI colors and night mode.
+- Themes: Customizable UI colors for classic theme, plus night mode.
 - Linux-aware: Like [Nautilus](https://wiki.gnome.org/action/show/Apps/Files), knows symbolic links, file permissions and SELinux context.
 - Robust: Uses Linux system calls under the hood, not yet another [`ls` parser](https://news.ycombinator.com/item?id=7994720).
 - Well-implemented: Built upon the right things, including [Java NIO2 File API](https://docs.oracle.com/javase/8/docs/api/java/nio/file/package-summary.html) and [LiveData](https://developer.android.com/topic/libraries/architecture/livedata).

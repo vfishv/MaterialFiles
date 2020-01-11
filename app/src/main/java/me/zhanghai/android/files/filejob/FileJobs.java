@@ -197,7 +197,7 @@ public class FileJobs {
                 ActionResult result = showActionDialog(
                         getString(R.string.file_job_archive_error_title_format, getFileName(file)),
                         getString(R.string.file_job_archive_error_message_format,
-                                getFileName(archiveFile), e.getLocalizedMessage()),
+                                getFileName(archiveFile), e.toString()),
                         getReadOnlyFileStore(archiveFile, e),
                         false,
                         null,
@@ -368,9 +368,15 @@ public class FileJobs {
                                         actionAllInfo.replace = true;
                                     }
                                 }
-                                replaceExisting = true;
-                                retry = true;
-                                continue;
+                                if (isMerge) {
+                                    transferInfo.addTransferredFile(target);
+                                    postCopyMoveNotification(transferInfo, source, type);
+                                    return true;
+                                } else {
+                                    replaceExisting = true;
+                                    retry = true;
+                                    continue;
+                                }
                             case RENAME:
                                 target = target.resolveSibling(result.getName());
                                 retry = true;
@@ -418,7 +424,7 @@ public class FileJobs {
                             getString(type.getResource(R.string.file_job_copy_error_message_format,
                                     R.string.file_job_extract_error_message_format,
                                     R.string.file_job_move_error_message_format),
-                                    getFileName(targetParent), e.getLocalizedMessage()),
+                                    getFileName(targetParent), e.toString()),
                             getReadOnlyFileStore(target, e),
                             true,
                             getString(R.string.retry),
@@ -524,7 +530,7 @@ public class FileJobs {
                     ActionResult result = showActionDialog(
                             getString(R.string.file_job_create_error_title),
                             getString(R.string.file_job_create_error_message_format,
-                                    getFileName(path), e.getLocalizedMessage()),
+                                    getFileName(path), e.toString()),
                             getReadOnlyFileStore(path, e),
                             false,
                             getString(R.string.retry),
@@ -570,7 +576,7 @@ public class FileJobs {
                     ActionResult result = showActionDialog(
                             getString(R.string.file_job_delete_error_title),
                             getString(R.string.file_job_delete_error_message_format,
-                                    getFileName(path), e.getLocalizedMessage()),
+                                    getFileName(path), e.toString()),
                             getReadOnlyFileStore(path, e),
                             true,
                             getString(R.string.retry),
@@ -651,7 +657,7 @@ public class FileJobs {
                             getString(R.string.file_job_restore_selinux_context_error_title),
                             getString(
                                     R.string.file_job_restore_selinux_context_error_message_format,
-                                    getFileName(path), e.getLocalizedMessage()),
+                                    getFileName(path), e.toString()),
                             getReadOnlyFileStore(path, e),
                             true,
                             getString(R.string.retry),
@@ -711,7 +717,7 @@ public class FileJobs {
                             getString(R.string.file_job_set_group_error_title_format,
                                     getFileName(path)),
                             getString(R.string.file_job_set_group_error_message_format,
-                                    getPrincipalName(group), e.getLocalizedMessage()),
+                                    getPrincipalName(group), e.toString()),
                             getReadOnlyFileStore(path, e),
                             true,
                             getString(R.string.retry),
@@ -770,7 +776,7 @@ public class FileJobs {
                             getString(R.string.file_job_set_mode_error_title_format,
                                     getFileName(path)),
                             getString(R.string.file_job_set_mode_error_message_format,
-                                    PosixFileMode.toString(mode), e.getLocalizedMessage()),
+                                    PosixFileMode.toString(mode), e.toString()),
                             getReadOnlyFileStore(path, e),
                             true,
                             getString(R.string.retry),
@@ -830,7 +836,7 @@ public class FileJobs {
                             getString(R.string.file_job_set_owner_error_title_format,
                                     getFileName(path)),
                             getString(R.string.file_job_set_owner_error_message_format,
-                                    getPrincipalName(owner), e.getLocalizedMessage()),
+                                    getPrincipalName(owner), e.toString()),
                             getReadOnlyFileStore(path, e),
                             true,
                             getString(R.string.retry),
@@ -900,7 +906,7 @@ public class FileJobs {
                             getString(R.string.file_job_set_selinux_context_error_title_format,
                                     getFileName(path)),
                             getString(R.string.file_job_set_selinux_context_error_message_format,
-                                    seLinuxContext, e.getLocalizedMessage()),
+                                    seLinuxContext, e.toString()),
                             getReadOnlyFileStore(path, e),
                             true,
                             getString(R.string.retry),
@@ -1036,7 +1042,7 @@ public class FileJobs {
                     ActionResult result = showActionDialog(
                             getString(R.string.file_job_write_error_title, getFileName(file)),
                             getString(R.string.file_job_write_error_message_format,
-                                    getFileName(file), e.getLocalizedMessage()),
+                                    getFileName(file), e.toString()),
                             getReadOnlyFileStore(file, e),
                             false,
                             getString(R.string.retry),
@@ -1289,6 +1295,16 @@ public class FileJobs {
 
             public void incrementTransferredFileCount() {
                 ++mTransferredFileCount;
+            }
+
+            public void addTransferredFile(@NonNull Path path) {
+                ++mTransferredFileCount;
+                try {
+                    mTransferredSize += Files.readAttributes(path, BasicFileAttributes.class,
+                            LinkOption.NOFOLLOW_LINKS).size();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
             public void skipFile(@NonNull Path path) {

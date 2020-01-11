@@ -10,8 +10,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.IBinder;
 
-import org.apache.ftpserver.ftplet.FtpException;
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -36,9 +34,6 @@ public class FtpServerService extends Service {
 
     public static final String USERNAME_ANONYMOUS = "anonymous";
 
-    @Nullable
-    private static FtpServerService sInstance;
-
     @NonNull
     private static final MutableLiveData<State> sStateLiveData = new MutableLiveData<>(
             State.STOPPED);
@@ -53,16 +48,26 @@ public class FtpServerService extends Service {
     private FtpServer mServer;
 
     public static void start(@NonNull Context context) {
-        if (sInstance != null) {
-            sInstance.executeStart();
-        } else {
-            context.startService(new Intent(context, FtpServerService.class));
-        }
+        context.startService(new Intent(context, FtpServerService.class));
     }
 
-    public static void stop() {
-        if (sInstance != null) {
-            sInstance.executeStop();
+    public static void stop(@NonNull Context context) {
+        context.stopService(new Intent(context, FtpServerService.class));
+    }
+
+    public static void toggle(@NonNull Context context) {
+        switch (sStateLiveData.getValue()) {
+            case STARTING:
+            case STOPPING:
+                break;
+            case RUNNING:
+                FtpServerService.stop(context);
+                break;
+            case STOPPED:
+                FtpServerService.start(context);
+                break;
+            default:
+                throw new AssertionError();
         }
     }
 
@@ -76,8 +81,6 @@ public class FtpServerService extends Service {
         super.onCreate();
 
         mWakeLock = new FtpServerWakeLock(this);
-
-        sInstance = this;
 
         executeStart();
     }
@@ -97,9 +100,8 @@ public class FtpServerService extends Service {
     public void onDestroy() {
         super.onDestroy();
 
-        sInstance = null;
-
         executeStop();
+
         mExecutorService.shutdown();
     }
 
@@ -118,6 +120,7 @@ public class FtpServerService extends Service {
         ToastUtils.show(exception.toString(), this);
         FtpServerServiceNotification.stopForeground(this);
         mWakeLock.release();
+        stopSelf();
     }
 
     private void executeStop() {
@@ -132,9 +135,7 @@ public class FtpServerService extends Service {
 
     private void setState(@NonNull State state) {
         mState = state;
-        if (sInstance == this || sInstance == null) {
-            sStateLiveData.setValue(state);
-        }
+        sStateLiveData.setValue(state);
     }
 
     @WorkerThread
