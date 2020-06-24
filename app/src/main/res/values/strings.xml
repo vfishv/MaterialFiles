@@ -191,6 +191,8 @@
     <string name="file_job_move_error_message_format">There was an error moving the file into “%1$s”.\n%2$s</string>
     <string name="file_job_delete_error_title">Error while deleting</string>
     <string name="file_job_delete_error_message_format">There was an error deleting “%1$s”.\n%2$s</string>
+    <string name="file_job_rename_error_title">Error while renaming “%1$s”</string>
+    <string name="file_job_rename_error_message_format">There was an error renaming the file to “%1$s”.\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">Error while changing owner for “%1$s”</string>
     <string name="file_job_set_owner_error_message_format">There was an error changing the owner to “%1$s”.\n%2$s</string>
     <string name="file_job_set_group_error_title_format">Error while changing group for “%1$s”</string>
@@ -255,7 +257,7 @@
         <item quantity="one">%1$,d file</item>
         <item quantity="other">%1$,d files</item>
     </plurals>
-    <string name="file_list_subtitle_separator">", "</string>
+    <string name="file_list_subtitle_separator">,\u0020</string>
     <string name="file_list_action_sort_by_name">Name</string>
     <string name="file_list_action_sort_by_type">Type</string>
     <string name="file_list_action_sort_by_size">Size</string>
@@ -284,7 +286,7 @@
     <string name="file_list_action_create_file">File</string>
     <string name="file_list_action_create_directory">Folder</string>
 
-    <string name="file_item_description_separator">"    "</string>
+    <string name="file_item_description_separator">\u0020\u0020\u0020\u0020</string>
     <string name="file_item_action_open_with">Open with</string>
     <string name="file_item_action_extract">Extract</string>
     <string name="file_item_action_archive">Compress</string>
@@ -303,6 +305,10 @@
     <string name="file_properties_basic_size">Size</string>
     <string name="file_properties_basic_size_with_human_readable_format">%1$s (%2$s)</string>
     <string name="file_properties_basic_contents">Contents</string>
+    <plurals name="file_properties_basic_contents_format">
+        <item quantity="one">%1$,d item, with size %2$s</item>
+        <item quantity="other">%1$,d items, totaling %2$s</item>
+    </plurals>
     <string name="file_properties_basic_last_modification_time">Last Modified</string>
     <string name="file_properties_basic_parent_directory">Parent Folder</string>
     <string name="file_properties_basic_archive_file">Archive File</string>
@@ -341,6 +347,123 @@
     <string name="file_properties_permissions_set_selinux_context_title">Change SELinux context</string>
     <string name="file_properties_permissions_set_selinux_context_restore">Restore</string>
     <string name="file_properties_permissions_recursive">Apply to enclosed files</string>
+    <string name="file_properties_image">Image</string>
+    <string name="file_properties_media_dimensions">Dimensions</string>
+    <string name="file_properties_media_dimensions_format">%1$d \u00d7 %2$d</string>
+    <string name="file_properties_media_date_time">Taken on</string>
+    <string name="file_properties_media_coordinates">Coordinates</string>
+    <string name="file_properties_media_coordinates_format">%1$.3f, %2$.3f</string>
+    <string name="file_properties_media_address">Location</string>
+    <string name="file_properties_image_gps_altitude">Altitude</string>
+    <string name="file_properties_image_gps_altitude_format">%1$,.3f m</string>
+    <string name="file_properties_image_equipment">Camera</string>
+    <string name="file_properties_image_equipment_format">%1$s %2$s</string>
+    <string name="file_properties_image_f_number">Aperture</string>
+    <string name="file_properties_image_f_number_format" translatable="false">f/%1$.1f</string>
+    <string name="file_properties_image_shutter_speed">Shutter speed</string>
+    <string name="file_properties_image_shutter_speed_with_denominator_format" translatable="false">1/%1$d</string>
+    <string name="file_properties_image_focal_length">Focal length</string>
+    <string name="file_properties_image_focal_length_format">%1$.2f mm</string>
+    <string name="file_properties_image_photographic_sensitivity">ISO equivalent</string>
+    <string name="file_properties_image_photographic_sensitivity_format">ISO %1$d</string>
+    <string name="file_properties_image_software">Software</string>
+    <string name="file_properties_image_description">Description</string>
+    <string name="file_properties_image_artist">Creator</string>
+    <string name="file_properties_image_copyright">Copyright</string>
+    <string name="file_properties_audio">Audio</string>
+    <string name="file_properties_media_title">Title</string>
+    <string name="file_properties_audio_artist">Artist</string>
+    <string name="file_properties_audio_album">Album</string>
+    <string name="file_properties_audio_album_artist">Album artist</string>
+    <string name="file_properties_audio_composer">Composer</string>
+    <string name="file_properties_audio_disc_number">Disc</string>
+    <string name="file_properties_audio_track_number">Track</string>
+    <string name="file_properties_audio_year">Year</string>
+    <string name="file_properties_audio_genre">Genre</string>
+    <string name="file_properties_media_duration">Duration</string>
+    <string name="file_properties_media_bit_rate">Bit rate</string>
+    <string name="file_properties_media_bit_rate_format">%1$d kbps</string>
+    <string name="file_properties_audio_sample_rate">Sample rate</string>
+    <string name="file_properties_audio_sample_rate_format">%1$d Hz</string>
+    <string name="file_properties_video">Video</string>
+    <string name="file_properties_apk">APK</string>
+    <string name="file_properties_apk_label">Name</string>
+    <string name="file_properties_apk_package_name">Package name</string>
+    <string name="file_properties_apk_version">Version</string>
+    <string name="file_properties_apk_version_format">%1$s (%2$d)</string>
+    <string name="file_properties_apk_min_sdk_version">Minimum system version</string>
+    <string name="file_properties_apk_target_sdk_version">Target system version</string>
+    <string name="file_properites_apk_sdk_version_format">%1$s (%2$s, %3$d)</string>
+    <string-array name="file_properites_apk_sdk_version_names" translatable="false">
+        <item>Android ?</item>
+        <item>Android 1.0</item>
+        <item>Android 1.1</item>
+        <item>Android 1.5</item>
+        <item>Android 1.6</item>
+        <item>Android 2.0</item>
+        <item>Android 2.0.1</item>
+        <item>Android 2.1</item>
+        <item>Android 2.2</item>
+        <item>Android 2.3</item>
+        <item>Android 2.3.3</item>
+        <item>Android 3.0</item>
+        <item>Android 3.1</item>
+        <item>Android 3.2</item>
+        <item>Android 4.0</item>
+        <item>Android 4.0.3</item>
+        <item>Android 4.1</item>
+        <item>Android 4.2</item>
+        <item>Android 4.3</item>
+        <item>Android 4.4</item>
+        <item>Android 4.4W</item>
+        <item>Android 5.0</item>
+        <item>Android 5.1</item>
+        <item>Android 6.0</item>
+        <item>Android 7.0</item>
+        <item>Android 7.1</item>
+        <item>Android 8.0</item>
+        <item>Android 8.1</item>
+        <item>Android 9</item>
+        <item>Android 10</item>
+        <item>Android 11</item>
+        <item>Android ?</item>
+    </string-array>
+    <string-array name="file_properites_apk_sdk_version_codenames" translatable="false">
+        <item>\?</item>
+        <item>B</item>
+        <item>B_1_1</item>
+        <item>C</item>
+        <item>D</item>
+        <item>E</item>
+        <item>E_0_1</item>
+        <item>E_MR1</item>
+        <item>F</item>
+        <item>G</item>
+        <item>G_MR1</item>
+        <item>H</item>
+        <item>H_MR1</item>
+        <item>H_MR2</item>
+        <item>ICS</item>
+        <item>ICS_MR1</item>
+        <item>JB</item>
+        <item>JB_MR1</item>
+        <item>JB_MR2</item>
+        <item>KK</item>
+        <item>KK_W</item>
+        <item>L</item>
+        <item>L_MR1</item>
+        <item>M</item>
+        <item>N</item>
+        <item>N_MR1</item>
+        <item>O</item>
+        <item>O_MR1</item>
+        <item>P</item>
+        <item>Q</item>
+        <item>R</item>
+        <item>\?</item>
+    </string-array>
+    <string name="file_properties_apk_signature_digests">Signatures</string>
+    <string name="file_properties_apk_past_signature_digests">Old signatures</string>
 
     <string name="navigation_root_directory">Root</string>
     <string name="navigation_root_subtitle_format">%1$s free of %2$s</string>

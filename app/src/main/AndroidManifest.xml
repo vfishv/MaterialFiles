@@ -23,6 +23,7 @@
 
     <application
         android:allowBackup="true"
+        android:extractNativeLibs="true"
         android:fullBackupContent="true"
         android:icon="@mipmap/launcher_icon"
         android:label="@string/app_name"
@@ -49,7 +50,7 @@
                 <data android:mimeType="resource/folder" />
                 <data android:mimeType="vnd.android.document/directory" />
             </intent-filter>
-            <!-- @see me.zhanghai.android.files.file.MimeTypes#isSupportedArchive(String) -->
+            <!-- @see me.zhanghai.android.files.file.isSupportedArchive -->
             <!--
               ~ We don't really support content URI archives.
               ~ TODO: Figure out a good way to allow choosing this activity only in our app, or
@@ -254,7 +255,7 @@
         </service>
 
         <provider
-            android:name="me.zhanghai.android.files.AppProvider"
+            android:name="me.zhanghai.android.files.app.AppProvider"
             android:authorities="@string/app_provider_authority"
             android:exported="false" />
 

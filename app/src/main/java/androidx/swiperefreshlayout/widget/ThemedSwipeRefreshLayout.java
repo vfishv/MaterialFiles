@@ -13,10 +13,9 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import me.zhanghai.android.files.R;
-import me.zhanghai.android.files.util.ViewUtils;
+import me.zhanghai.android.files.util.ContextExtensionsKt;
 
 public class ThemedSwipeRefreshLayout extends SwipeRefreshLayout {
-
     public ThemedSwipeRefreshLayout(@NonNull Context context) {
         super(context);
 
@@ -32,8 +31,8 @@ public class ThemedSwipeRefreshLayout extends SwipeRefreshLayout {
     private void init() {
         Context context = getContext();
         ((ShapeDrawable) mCircleView.getBackground()).getPaint().setColor(
-                ViewUtils.getColorFromAttrRes(R.attr.colorBackgroundFloating, 0, context));
-        setColorSchemeColors(ViewUtils.getColorFromAttrRes(R.attr.colorAccent, 0, context));
+                ContextExtensionsKt.getColorByAttr(context, R.attr.colorBackgroundFloating));
+        setColorSchemeColors(ContextExtensionsKt.getColorByAttr(context, R.attr.colorAccent));
     }
 
     @Override

@@ -29,13 +29,6 @@
     </notice>
 
     <notice>
-        <name>Glide</name>
-        <url>https://github.com/bumptech/glide</url>
-        <copyright>Copyright 2014 Google, Inc.</copyright>
-        <license>BSD 2-Clause License</license>
-    </notice>
-
-    <notice>
         <name>PhotoView</name>
         <url>https://github.com/chrisbanes/PhotoView</url>
         <copyright>Copyright 2011, 2012 Chris Banes</copyright>
@@ -64,13 +57,6 @@
     </notice>
 
     <notice>
-        <name>ButterKnife</name>
-        <url>https://github.com/JakeWharton/butterknife</url>
-        <copyright>Copyright 2013 Jake Wharton</copyright>
-        <license>Apache Software License 2.0</license>
-    </notice>
-
-    <notice>
         <name>ThreeTenABP</name>
         <url>https://github.com/JakeWharton/ThreeTenABP</url>
         <copyright>Copyright 2015 Jake Wharton</copyright>
@@ -85,13 +71,6 @@
     </notice>
 
     <notice>
-        <name>RecyclerView FastScroll</name>
-        <url>https://github.com/timusus/RecyclerView-FastScroll</url>
-        <copyright>Copyright 2016 Tim Malseed</copyright>
-        <license>Apache Software License 2.0</license>
-    </notice>
-
-    <notice>
         <name>librootjava</name>
         <url>https://github.com/Chainfire/librootjava</url>
         <copyright>Copyright 2018 Jorrit "Chainfire" Jongma</copyright>
@@ -102,6 +81,20 @@
         <name>libsuperuser</name>
         <url>https://github.com/Chainfire/libsuperuser</url>
         <copyright>Copyright 2012 Jorrit "Chainfire" Jongma</copyright>
+        <license>Apache Software License 2.0</license>
+    </notice>
+
+    <notice>
+        <name>Coil</name>
+        <url>https://github.com/coil-kt/coil</url>
+        <copyright>Copyright 2020 Coil Contributors</copyright>
+        <license>Apache Software License 2.0</license>
+    </notice>
+
+    <notice>
+        <name>AppIconLoader</name>
+        <url>https://github.com/zhanghai/AppIconLoader</url>
+        <copyright>Copyright 2020 Google LLC</copyright>
         <license>Apache Software License 2.0</license>
     </notice>
 
@@ -155,20 +148,6 @@
     </notice>
 
     <notice>
-        <name>Functional</name>
-        <url>https://github.com/zhanghai/Functional</url>
-        <copyright>Copyright 2018 Hai Zhang</copyright>
-        <license>Apache Software License 2.0</license>
-    </notice>
-
-    <notice>
-        <name>Promise</name>
-        <url>https://github.com/zhanghai/Promise</url>
-        <copyright>Copyright 2019 Hai Zhang</copyright>
-        <license>Apache Software License 2.0</license>
-    </notice>
-
-    <notice>
         <name>Reflected</name>
         <url>https://github.com/zhanghai/Reflected</url>
         <copyright>Copyright 2018 Hai Zhang</copyright>
@@ -193,13 +172,6 @@
         <name>Apache FtpServer</name>
         <url>https://mina.apache.org/ftpserver-project/index.html</url>
         <copyright>Copyright 2003 The Apache Software Foundation</copyright>
-        <license>Apache Software License 2.0</license>
-    </notice>
-
-    <notice>
-        <name>EventBus</name>
-        <url>https://github.com/greenrobot/EventBus</url>
-        <copyright>Copyright 2012 greenrobot</copyright>
         <license>Apache Software License 2.0</license>
     </notice>
 </notices>

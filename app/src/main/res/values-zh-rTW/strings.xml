@@ -41,7 +41,7 @@
     <string name="skip">跳過</string>
     <string name="sort">排序</string>
     <string name="stop">停止</string>
-    <string name="unknown">未知</string>
+    <string name="unknown">不明</string>
     <string name="view">查看</string>
 
     <!-- android.R.string.app_not_found -->
@@ -170,6 +170,8 @@
     <string name="file_job_move_error_message_format">將檔案移動到「%1$s」時發生錯誤。\n%2$s</string>
     <string name="file_job_delete_error_title">刪除時發生錯誤</string>
     <string name="file_job_delete_error_message_format">在刪除「%1$s」時發生錯誤。\n%2$s</string>
+    <string name="file_job_rename_error_title">重新命名「%1$s」時發生錯誤</string>
+    <string name="file_job_rename_error_message_format">將檔案重新命名為「%1$s」時發生錯誤。\n%2$s</string>
     <string name="file_job_set_owner_error_title_format">變更「%1$s」的擁有者時發生錯誤</string>
     <string name="file_job_set_owner_error_message_format">將擁有者變更為「%1$s」時發生錯誤。\n%2$s</string>
     <string name="file_job_set_group_error_title_format">變更「%1$s」的群組時發生錯誤</string>
@@ -278,6 +280,9 @@
     <string name="file_properties_basic_size">大小</string>
     <string name="file_properties_basic_size_with_human_readable_format">%1$s（%2$s）</string>
     <string name="file_properties_basic_contents">內容</string>
+    <plurals name="file_properties_basic_contents_format">
+        <item quantity="other">%1$,d 個項目，總計 %2$s</item>
+    </plurals>
     <string name="file_properties_basic_last_modification_time">最後修改</string>
     <string name="file_properties_basic_parent_directory">父資料夾</string>
     <string name="file_properties_basic_archive_file">歸檔檔案</string>
@@ -316,6 +321,53 @@
     <string name="file_properties_permissions_set_selinux_context_title">變更 SELinux 上下文</string>
     <string name="file_properties_permissions_set_selinux_context_restore">還原</string>
     <string name="file_properties_permissions_recursive">套用到包含的檔案</string>
+    <string name="file_properties_image">影像</string>
+    <string name="file_properties_media_dimensions">尺寸</string>
+    <string name="file_properties_media_dimensions_format">%1$d \u00d7 %2$d</string>
+    <string name="file_properties_media_date_time">拍攝時間</string>
+    <string name="file_properties_media_coordinates">座標</string>
+    <string name="file_properties_media_coordinates_format">%1$.3f，%2$.3f</string>
+    <string name="file_properties_media_address">位置</string>
+    <string name="file_properties_image_gps_altitude">高度</string>
+    <string name="file_properties_image_gps_altitude_format">%1$,.3f 公尺</string>
+    <string name="file_properties_image_equipment">相機</string>
+    <string name="file_properties_image_equipment_format">%1$s %2$s</string>
+    <string name="file_properties_image_f_number">光圈</string>
+    <string name="file_properties_image_shutter_speed">快門速度</string>
+    <string name="file_properties_image_focal_length">焦距</string>
+    <string name="file_properties_image_focal_length_format">%1$.2f 毫米</string>
+    <string name="file_properties_image_photographic_sensitivity">等效 ISO</string>
+    <string name="file_properties_image_photographic_sensitivity_format">ISO %1$d</string>
+    <string name="file_properties_image_software">軟體</string>
+    <string name="file_properties_image_description">說明</string>
+    <string name="file_properties_image_artist">建立者</string>
+    <string name="file_properties_image_copyright">著作權</string>
+    <string name="file_properties_audio">音訊</string>
+    <string name="file_properties_media_title">標題</string>
+    <string name="file_properties_audio_artist">演出者</string>
+    <string name="file_properties_audio_album">專輯</string>
+    <string name="file_properties_audio_album_artist">專輯演出者</string>
+    <string name="file_properties_audio_composer">作曲者</string>
+    <string name="file_properties_audio_disc_number">光碟編號</string>
+    <string name="file_properties_audio_track_number">曲目編號</string>
+    <string name="file_properties_audio_year">年份</string>
+    <string name="file_properties_audio_genre">內容類型</string>
+    <string name="file_properties_media_duration">時間長度</string>
+    <string name="file_properties_media_bit_rate">位元率</string>
+    <string name="file_properties_media_bit_rate_format">%1$d kbps</string>
+    <string name="file_properties_audio_sample_rate">取樣率</string>
+    <string name="file_properties_audio_sample_rate_format">%1$d Hz</string>
+    <string name="file_properties_video">影片</string>
+    <string name="file_properties_apk">安裝包</string>
+    <string name="file_properties_apk_label">名稱</string>
+    <string name="file_properties_apk_package_name">封裝名稱</string>
+    <string name="file_properties_apk_version">版本</string>
+    <string name="file_properties_apk_version_format">%1$s（%2$d）</string>
+    <string name="file_properties_apk_min_sdk_version">最低系統版本</string>
+    <string name="file_properties_apk_target_sdk_version">目標系統版本</string>
+    <string name="file_properites_apk_sdk_version_format">%1$s（%2$s，%3$d）</string>
+    <string name="file_properties_apk_signature_digests">簽章</string>
+    <string name="file_properties_apk_past_signature_digests">舊簽章</string>
 
     <string name="navigation_root_directory">根目錄</string>
     <string name="navigation_root_subtitle_format">共 %2$s，剩餘 %1$s</string>
