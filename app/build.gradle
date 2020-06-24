@@ -166,8 +166,6 @@ dependencies {
     implementation 'org.tukaani:xz:1.8'
     implementation 'org.apache.ftpserver:ftpserver-core:1.1.1'
     implementation 'org.slf4j:slf4j-android:1.7.30'
-    implementation "androidx.core:core-ktx:+"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
 //#ifdef NONFREE
     implementation 'com.google.firebase:firebase-analytics:17.4.3'
