@@ -52,7 +52,7 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) : FileSyst
 
     override fun getScheme(): String = SCHEME
 
-    override fun newFileSystem(uri: URI, env: Map<String?, *>): FileSystem {
+    override fun newFileSystem(uri: URI, env: Map<String, *>): FileSystem {
         uri.requireSameScheme()
         throw FileSystemAlreadyExistsException()
     }
@@ -199,9 +199,7 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) : FileSyst
         val targetBytes = try {
             Syscalls.readlink(linkBytes)
         } catch (e: SyscallException) {
-            if (e.errno == OsConstants.EINVAL) {
-                throw NotLinkException(linkBytes.toString()).apply { initCause(e) }
-            }
+            e.maybeThrowNotLinkException(linkBytes.toString())
             throw e.toFileSystemException(linkBytes.toString())
         }
         return ByteStringPath(targetBytes)
@@ -330,9 +328,9 @@ class LocalLinuxFileSystemProvider(provider: LinuxFileSystemProvider) : FileSyst
         path: Path,
         vararg options: LinkOption
     ): LinuxFileAttributeView {
-        val linuxPath = path as? LinuxPath ?: throw ProviderMismatchException(path.toString())
+        path as? LinuxPath ?: throw ProviderMismatchException(path.toString())
         val linkOptions = options.toLinkOptions()
-        return LinuxFileAttributeView(linuxPath, linkOptions.noFollowLinks)
+        return LinuxFileAttributeView(path, linkOptions.noFollowLinks)
     }
 
     override fun readAttributes(

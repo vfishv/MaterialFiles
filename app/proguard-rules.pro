@@ -20,11 +20,21 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
+# Native methods
+# https://www.guardsquare.com/en/products/proguard/manual/examples#native
+-keepclasseswithmembernames,includedescriptorclasses class * {
+    native <methods>;
+}
+
 # App
 -keep class me.zhanghai.android.files.** implements androidx.appcompat.view.CollapsibleActionView { *; }
 -keep class me.zhanghai.android.files.provider.common.ByteString { *; }
 -keep class me.zhanghai.android.files.provider.linux.syscall.** { *; }
 -keepnames class * extends java.lang.Exception
+# For Class.getEnumConstants()
+-keepclassmembers enum * {
+  public static **[] values();
+}
 -keepnames class me.zhanghai.android.files.** implements android.os.Parcelable
 
 # Apache Commons Compress
