@@ -14,6 +14,6 @@ public class AppCompatDelegateCompat {
 
     @SuppressLint("RestrictedApi")
     public static int mapNightMode(@NonNull AppCompatDelegate delegate, int mode) {
-        return ((AppCompatDelegateImpl) delegate).mapNightMode(mode);
+        return ((AppCompatDelegateImpl) delegate).mapNightMode(((AppCompatDelegateImpl) delegate).mContext,mode);
     }
 }
