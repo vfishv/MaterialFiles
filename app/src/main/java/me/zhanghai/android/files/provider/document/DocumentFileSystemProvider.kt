@@ -234,7 +234,7 @@ object DocumentFileSystemProvider : FileSystemProvider(), PathObservableProvider
                 throw e.toFileSystemException(file.toString())
             }
         }
-        return FileChannel::class.open(pfd, mode)
+        return FileChannel::class.open(pfd!!, mode)
     }
 
     @Throws(IOException::class)
