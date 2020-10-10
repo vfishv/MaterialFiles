@@ -11,8 +11,8 @@ import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
-import coil.api.clear
-import coil.api.loadAny
+import coil.clear
+import coil.loadAny
 import coil.size.OriginalSize
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
@@ -110,7 +110,7 @@ class ImageViewerAdapter(
         path: Path,
         imageInfo: ImageInfo
     ) {
-        if (!imageInfo.isLargeImageViewPreferred) {
+        if (!imageInfo.shouldUseLargeImageView) {
             binding.image.apply {
                 isVisible = true
                 loadAny(path to imageInfo.attributes) {
@@ -147,7 +147,7 @@ class ImageViewerAdapter(
         }
     }
 
-    private val ImageInfo.isLargeImageViewPreferred: Boolean
+    private val ImageInfo.shouldUseLargeImageView: Boolean
         get() {
             // See BitmapFactory.cpp encodedFormatToString()
             if (mimeType == MimeType.IMAGE_GIF) {
@@ -155,6 +155,10 @@ class ImageViewerAdapter(
             }
             if (width <= 0 || height <= 0) {
                 return false
+            }
+            // 4 bytes per pixel for ARGB_8888.
+            if (width * height * 4 > MAX_BITMAP_SIZE) {
+                return true
             }
             if (width > 2048 || height > 2048) {
                 val ratio = width.toFloat() / height
@@ -181,6 +185,11 @@ class ImageViewerAdapter(
         binding.errorText.text = throwable.toString()
         binding.progress.fadeOutUnsafe()
         binding.errorText.fadeInUnsafe()
+    }
+
+    companion object {
+        // @see android.graphics.RecordingCanvas#MAX_BITMAP_SIZE
+        private const val MAX_BITMAP_SIZE = 100 * 1024 * 1024
     }
 
     private class ImageInfo(

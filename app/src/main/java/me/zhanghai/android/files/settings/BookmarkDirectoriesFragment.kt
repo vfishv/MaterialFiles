@@ -15,7 +15,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.h6ah4i.android.widget.advrecyclerview.animator.DraggableItemAnimator
@@ -76,12 +75,9 @@ class BookmarkDirectoriesFragment : Fragment(), BookmarkDirectoryAdapter.Listene
         dragDropManager.attachRecyclerView(binding.recyclerView)
         binding.fab.setOnClickListener { onAddBookmarkDirectory() }
 
-        Settings.BOOKMARK_DIRECTORIES.observe(
-            viewLifecycleOwner,
-            Observer { bookmarkDirectories: List<BookmarkDirectory> ->
-                onBookmarkDirectoriesChanged(bookmarkDirectories)
-            }
-        )
+        Settings.BOOKMARK_DIRECTORIES.observe(viewLifecycleOwner) {
+            onBookmarkDirectoriesChanged(it)
+        }
     }
 
     override fun onPause() {

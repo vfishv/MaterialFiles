@@ -20,7 +20,7 @@ import kotlin.math.max
 internal class RarFile(file: File, encoding: String?) : Closeable {
     private var archive =
         try {
-            Archive(file, null)
+            Archive(file)
         } catch (e: RarException) {
             throw ArchiveException(e)
         }
@@ -45,16 +45,15 @@ internal class RarFile(file: File, encoding: String?) : Closeable {
     fun getInputStream(entry: RarArchiveEntry): InputStream {
         val inputStream = PipedInputStream()
         val outputStream = PipedOutputStream(inputStream)
-        Thread(Runnable {
+        Thread {
             try {
-                archive.extractFile(entry.header, outputStream)
-                outputStream.close()
+                outputStream.use { archive.extractFile(entry.header, it) }
             } catch (e: IOException) {
                 e.printStackTrace()
             } catch (e: RarException) {
                 e.printStackTrace()
             }
-        }).start()
+        }.start()
         return inputStream
     }
 

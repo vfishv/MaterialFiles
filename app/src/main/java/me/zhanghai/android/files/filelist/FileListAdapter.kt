@@ -10,8 +10,8 @@ import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import coil.api.clear
-import coil.api.loadAny
+import coil.clear
+import coil.loadAny
 import java8.nio.file.Path
 import me.zhanghai.android.fastscroll.PopupTextProvider
 import me.zhanghai.android.files.R
@@ -32,9 +32,7 @@ import java.util.Locale
 
 class FileListAdapter(
     private val listener: Listener
-) : AnimatedListAdapter<FileItem, FileListAdapter.ViewHolder>(
-    CALLBACK
-), PopupTextProvider {
+) : AnimatedListAdapter<FileItem, FileListAdapter.ViewHolder>(CALLBACK), PopupTextProvider {
     private var isSearching = false
 
     private lateinit var _comparator: Comparator<FileItem>
