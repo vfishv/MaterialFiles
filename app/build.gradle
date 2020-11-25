@@ -5,11 +5,11 @@
 
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 kapt {
     correctErrorTypes = true
 }
+apply plugin: 'kotlin-parcelize'
 
 //apply from: '../signing.gradle'
 
@@ -21,7 +21,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.google.gms:google-services:4.3.4'
-        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.3.0'
+        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.4.1'
     }
 }
 apply plugin: 'com.google.gms.google-services'
@@ -37,7 +37,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 29
         versionCode 21
-        versionName '1.2.0'
+        versionName '1.1.4'
         resValue 'string', 'app_version', versionName + ' (' + versionCode + ')'
         buildConfigField 'String', 'FILE_PROVIDIER_AUTHORITY', 'APPLICATION_ID + ".file_provider"'
         resValue 'string', 'app_provider_authority', applicationId + '.app_provider'
@@ -98,27 +98,21 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    def kotlinx_coroutines_version = '1.3.9'
+    def kotlinx_coroutines_version = '1.4.1'
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$kotlinx_coroutines_version"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinx_coroutines_version"
 
     implementation 'androidx.appcompat:appcompat:1.2.0'
-    def androidx_core_version = '1.5.0-alpha04'
-    implementation "androidx.core:core:$androidx_core_version"
-    implementation "androidx.core:core-ktx:$androidx_core_version"
-    implementation 'androidx.exifinterface:exifinterface:1.3.0'
-    def androidx_fragment_version = '1.2.5'
-    implementation "androidx.fragment:fragment:$androidx_fragment_version"
-    implementation "androidx.fragment:fragment-ktx:$androidx_fragment_version"
+    implementation 'androidx.core:core-ktx:1.5.0-alpha05'
+    implementation 'androidx.exifinterface:exifinterface:1.3.1'
+    implementation 'androidx.fragment:fragment-ktx:1.2.5'
     def androidx_lifecycle_version = '2.2.0'
     implementation "androidx.lifecycle:lifecycle-common-java8:$androidx_lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:$androidx_lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-process:$androidx_lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:$androidx_lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$androidx_lifecycle_version"
-    def androidx_preference_version = '1.1.1'
-    implementation "androidx.preference:preference:$androidx_preference_version"
-    implementation "androidx.preference:preference-ktx:$androidx_preference_version"
+    implementation 'androidx.preference:preference-ktx:1.1.1'
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     implementation 'com.google.android.material:material:1.2.1'
 
@@ -127,11 +121,11 @@ dependencies {
     debugImplementation 'com.facebook.stetho:stetho:1.5.1'
     // If added along with okhttp3, remove the related dontwarn from proguard-rules.pro.
     //debugImplementation 'com.facebook.stetho:stetho-okhttp3:1.5.0'
-    implementation 'com.github.junrar:junrar:7.3.0'
+    implementation 'com.github.junrar:junrar:7.4.0'
     implementation 'com.h6ah4i.android.materialshadowninepatch:materialshadowninepatch:1.0.0'
     implementation 'com.h6ah4i.android.widget.advrecyclerview:advrecyclerview:1.0.0'
     implementation 'com.hierynomus:smbj:0.10.0'
-    implementation 'com.jakewharton.threetenabp:threetenabp:1.2.4'
+    implementation 'com.jakewharton.threetenabp:threetenabp:1.3.0'
     implementation 'com.leinardi.android:speed-dial:3.1.1'
     implementation 'com.rapid7.client:dcerpc:0.10.0'
     implementation 'com.takisoft.preferencex:preferencex:1.1.0-alpha05'
@@ -139,14 +133,14 @@ dependencies {
     implementation 'de.psdev.licensesdialog:licensesdialog:2.1.0'
     implementation 'eu.chainfire:librootjava:1.3.0'
     implementation 'eu.chainfire:libsuperuser:1.1.0.201907261845'
-    def coil_version = '0.13.0'
+    def coil_version = '1.1.0'
     implementation "io.coil-kt:coil:$coil_version"
     implementation "io.coil-kt:coil-gif:$coil_version"
     implementation "io.coil-kt:coil-svg:$coil_version"
     implementation "io.coil-kt:coil-video:$coil_version"
     implementation 'me.zhanghai.android.appiconloader:appiconloader:1.2.0'
     implementation 'me.zhanghai.android.effortlesspermissions:library:1.1.0'
-    implementation 'me.zhanghai.android.fastscroll:library:1.1.3'
+    implementation 'me.zhanghai.android.fastscroll:library:1.1.5'
     implementation 'me.zhanghai.android.foregroundcompat:library:1.0.0'
     implementation 'me.zhanghai.android.libselinux:library:2.0.0'
     implementation 'me.zhanghai.android.materialedittext:library:1.0.5'
@@ -162,7 +156,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-android:1.7.30'
 
 //#ifdef NONFREE
-    implementation 'com.google.firebase:firebase-analytics:17.6.0'
-    implementation 'com.google.firebase:firebase-crashlytics-ndk:17.2.2'
+    implementation 'com.google.firebase:firebase-analytics:18.0.0'
+    implementation 'com.google.firebase:firebase-crashlytics-ndk:17.3.0'
 //#endif
 }

@@ -13,12 +13,12 @@
 ## 预览
 
 <p><img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="32%" /> <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="32%" /> <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="32%" />
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" width="32%" /> <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" width="32%" /> <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/8.png" width="32%" /></p>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" width="32%" /> <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" width="32%" /></p>
 
 ## 特性
 
 - 开源：轻量、简洁并且安全。
-- Material Design：支持 MD2 和经典两种主题，并且注重细节。
+- Material Design：遵循 Material Design 规范，并且注重细节。
 - 面包屑导航栏：点击导航栏所显示路径中的任一文件夹即可快速访问。
 - Root 支持：使用 root 权限查看和管理文件。
 - 压缩文件支持：查看、提取和创建常见的压缩文件。

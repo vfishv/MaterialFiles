@@ -15,12 +15,12 @@ An open source Material Design file manager, for Android 5.0+.
 ## Preview
 
 <p><img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="32%" /> <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="32%" /> <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="32%" />
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" width="32%" /> <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" width="32%" /> <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/8.png" width="32%" /></p>
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" width="32%" /> <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" width="32%" /></p>
 
 ## Features
 
 - Open source: Lightweight, clean and secure.
-- Material Design: Both MD2 and classic themes, with attention into details.
+- Material Design: Follows Material Design guidelines, with attention into details.
 - Breadcrumbs: Navigate in the filesystem with ease.
 - Root support: View and manage files with root access.
 - Archive support: View, extract and create common compressed files.
