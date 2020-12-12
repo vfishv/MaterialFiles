@@ -30,8 +30,6 @@
 
             </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
-            <include layout="@layout/file_list_fragment_status_bar_background_include" />
-
             <include layout="@layout/file_list_fragment_bottom_bar_include"/>
 
             <include layout="@layout/file_list_fragment_speed_dial_include" />
@@ -42,7 +40,7 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_gravity="start"
-            android:background="?colorFloatingSurface"
+            android:background="?colorSurface"
             android:fitsSystemWindows="true" />
     </androidx.drawerlayout.widget.DrawerLayout>
 </merge>

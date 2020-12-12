@@ -32,13 +32,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_gravity="start"
-                    android:background="?colorFloatingSurface" />
+                    android:background="?colorSurface" />
 
                 <include layout="@layout/file_list_fragment_content_include" />
             </me.zhanghai.android.files.ui.PersistentDrawerLayout>
         </LinearLayout>
-
-        <include layout="@layout/file_list_fragment_status_bar_background_include" />
 
         <include layout="@layout/file_list_fragment_bottom_bar_include"/>
 

@@ -15,6 +15,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
@@ -26,7 +27,6 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.Toolbar
-import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
@@ -39,7 +39,6 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.AppBarLayout.OnOffsetChangedListener
 import com.leinardi.android.speeddial.SpeedDialView
 import java8.nio.file.AccessDeniedException
@@ -77,6 +76,7 @@ import me.zhanghai.android.files.provider.document.isDocumentPath
 import me.zhanghai.android.files.provider.linux.isLinuxPath
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.terminal.Terminal
+import me.zhanghai.android.files.ui.CoordinatorAppBarLayout
 import me.zhanghai.android.files.ui.FixQueryChangeSearchView
 import me.zhanghai.android.files.ui.OverlayToolbarActionMode
 import me.zhanghai.android.files.ui.PersistentBarLayout
@@ -106,7 +106,6 @@ import me.zhanghai.android.files.util.putArgs
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.startActivitySafe
 import me.zhanghai.android.files.util.takeIfNotEmpty
-import me.zhanghai.android.files.util.updateLiftOnScrollOnPreDraw
 import me.zhanghai.android.files.util.valueCompat
 import me.zhanghai.android.files.util.viewModels
 import me.zhanghai.android.files.util.withChooser
@@ -157,7 +156,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? =
+    ): View =
         Binding.inflate(inflater, container, false)
             .also { binding = it }
             .root
@@ -180,9 +179,6 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
             binding.persistentBarLayout, binding.bottomBarLayout, binding.bottomToolbar
         )
         val contentLayoutInitialPaddingBottom = binding.contentLayout.paddingBottom
-        if (binding.appBarLayout.parent is CoordinatorLayout) {
-            binding.appBarLayout.updateLiftOnScrollOnPreDraw()
-        }
         binding.appBarLayout.addOnOffsetChangedListener(
             OnOffsetChangedListener { _, verticalOffset ->
                 binding.contentLayout.updatePaddingRelative(
@@ -191,6 +187,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
                 )
             }
         )
+        binding.appBarLayout.syncBackgroundElevationTo(binding.overlayToolbar)
         binding.breadcrumbLayout.setListener(this)
         binding.swipeRefreshLayout.setOnRefreshListener { this.refresh() }
         binding.recyclerView.layoutManager = GridLayoutManager(activity, /* TODO */ 1)
@@ -283,6 +280,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         viewModel.pickOptionsLiveData.observe(viewLifecycleOwner) { onPickOptionsChanged(it) }
         viewModel.selectedFilesLiveData.observe(viewLifecycleOwner) { onSelectedFilesChanged(it) }
         viewModel.pasteStateLiveData.observe(viewLifecycleOwner) { onPasteStateChanged(it) }
+        Settings.FILE_NAME_ELLIPSIZE.observe(viewLifecycleOwner) { onFileNameEllipsizeChanged(it) }
         viewModel.fileListLiveData.observe(viewLifecycleOwner) { onFileListChanged(it) }
         Settings.FILE_LIST_SHOW_HIDDEN_FILES.observe(viewLifecycleOwner) {
             onShowHiddenFilesChanged(it)
@@ -985,6 +983,10 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
     private fun makePathListForJob(files: FileItemSet): List<Path> =
         files.map { it.path }.sorted()
 
+    private fun onFileNameEllipsizeChanged(fileNameEllipsize: TextUtils.TruncateAt) {
+        adapter.nameEllipsize = fileNameEllipsize
+    }
+
     override fun clearSelectedFiles() {
         viewModel.clearSelectedFiles()
     }
@@ -1033,18 +1035,10 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
     override fun installApk(file: FileItem) {
         val path = file.path
         val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            if (path.isLinuxPath || path.isDocumentPath) {
-                path.fileProviderUri
-            } else {
-                null
-            }
+            if (!path.isArchivePath) path.fileProviderUri else null
         } else {
             // PackageInstaller only supports file URI before N.
-            if (path.isLinuxPath) {
-                Uri.fromFile(path.toFile())
-            } else {
-                null
-            }
+            if (path.isLinuxPath) Uri.fromFile(path.toFile()) else null
         }
         if (uri != null) {
             startActivitySafe(uri.createInstallPackageIntent())
@@ -1064,7 +1058,9 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
     private fun openFileWithIntent(file: FileItem, withChooser: Boolean) {
         val path = file.path
         val mimeType = file.mimeType
-        if (path.isLinuxPath || path.isDocumentPath) {
+        if (path.isArchivePath) {
+            FileJobService.open(path, mimeType, withChooser, requireContext())
+        } else {
             val intent = path.fileProviderUri.createViewIntent(mimeType)
                 .addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
                 .apply {
@@ -1082,8 +1078,6 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
                     }
                 }
             startActivitySafe(intent)
-        } else {
-            FileJobService.open(path, mimeType, withChooser, requireContext())
         }
     }
 
@@ -1269,7 +1263,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         val drawerLayout: DrawerLayout? = null,
         val persistentDrawerLayout: PersistentDrawerLayout? = null,
         val persistentBarLayout: PersistentBarLayout,
-        val appBarLayout: AppBarLayout,
+        val appBarLayout: CoordinatorAppBarLayout,
         val toolbar: Toolbar,
         val overlayToolbar: Toolbar,
         val breadcrumbLayout: BreadcrumbLayout,

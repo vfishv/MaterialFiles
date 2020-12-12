@@ -14,7 +14,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="?colorFloatingSurface"
+        android:background="?colorSurface"
         android:elevation="@dimen/design_appbar_elevation"
         android:fitsSystemWindows="true">
 
@@ -22,7 +22,8 @@
             android:id="@+id/bottomToolbar"
             android:layout_width="match_parent"
             android:layout_height="?actionBarSize"
-            android:paddingEnd="@dimen/toolbar_padding_end_no_overflow"
+            android:paddingStart="@dimen/file_list_toolbar_padding_start"
+            android:paddingEnd="@dimen/file_list_toolbar_padding_end_no_overflow"
             app:navigationIcon="@drawable/close_icon_control_normal_24dp"
             app:popupTheme="?actionBarPopupTheme" />
     </me.zhanghai.android.files.ui.MaterialFrameLayout>

@@ -22,7 +22,10 @@
     <dimen name="dialog_padding_minus_4dp">20dp</dimen>
     <dimen name="dialog_padding_minus_6dp">18dp</dimen>
     <dimen name="dialog_padding_minus_7dp">17dp</dimen>
+    <dimen name="navigation_max_width">320dp</dimen>
     <dimen name="navigation_header_height">172dp</dimen>
+    <dimen name="navigation_item_horizontal_padding">24dp</dimen>
+    <dimen name="navigation_item_icon_padding">24dp</dimen>
     <dimen name="tab_layout_height">48dp</dimen>
     <dimen name="list_vertical_padding">8dp</dimen>
     <dimen name="list_bottom_padding_with_fab">88dp</dimen>
@@ -36,9 +39,9 @@
     <dimen name="touch_target_size">48dp</dimen>
     <dimen name="touch_target_icon_padding">12dp</dimen>
     <dimen name="touch_target_large_icon_padding">4dp</dimen>
-    <dimen name="badge_size">19dp</dimen>
-    <dimen name="badge_icon_padding">1dp</dimen>
-    <dimen name="badge_elevation">1dp</dimen>
+    <dimen name="badge_size">18dp</dimen>
 
-    <dimen name="toolbar_padding_end_no_overflow">4dp</dimen>
+    <dimen name="file_list_toolbar_padding_start">8dp</dimen>
+    <dimen name="file_list_toolbar_padding_end_no_overflow">14dp</dimen>
+    <dimen name="file_list_toolbar_padding_end_with_overflow">10dp</dimen>
 </resources>

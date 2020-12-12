@@ -7,6 +7,7 @@
 
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical">
@@ -30,6 +31,13 @@
 
             <ImageView
                 android:id="@+id/targetIconImage"
+                android:layout_width="@dimen/icon_size"
+                android:layout_height="@dimen/icon_size"
+                android:layout_gravity="center"
+                android:scaleType="centerCrop" />
+
+            <ImageView
+                android:id="@+id/targetThumbnailImage"
                 android:layout_width="@dimen/large_icon_size"
                 android:layout_height="@dimen/large_icon_size"
                 android:scaleType="centerCrop" />
@@ -39,9 +47,7 @@
                 android:layout_width="@dimen/badge_size"
                 android:layout_height="@dimen/badge_size"
                 android:layout_gravity="end|bottom"
-                android:padding="@dimen/badge_icon_padding"
-                android:background="@drawable/badge_background_18dp"
-                android:elevation="@dimen/badge_elevation" />
+                android:background="@drawable/badge_background_18dp" />
         </FrameLayout>
 
         <LinearLayout
@@ -90,6 +96,13 @@
 
             <ImageView
                 android:id="@+id/sourceIconImage"
+                android:layout_width="@dimen/icon_size"
+                android:layout_height="@dimen/icon_size"
+                android:layout_gravity="center"
+                android:scaleType="centerCrop" />
+
+            <ImageView
+                android:id="@+id/sourceThumbnailImage"
                 android:layout_width="@dimen/large_icon_size"
                 android:layout_height="@dimen/large_icon_size"
                 android:scaleType="centerCrop" />
@@ -99,9 +112,7 @@
                 android:layout_width="@dimen/badge_size"
                 android:layout_height="@dimen/badge_size"
                 android:layout_gravity="end|bottom"
-                android:padding="@dimen/badge_icon_padding"
-                android:background="@drawable/badge_background_18dp"
-                android:elevation="@dimen/badge_elevation" />
+                android:background="@drawable/badge_background_18dp" />
         </FrameLayout>
 
         <LinearLayout
@@ -154,7 +165,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="-3dp"
                 android:src="@drawable/arrow_end_icon_white_24dp"
-                android:tint="?android:textColorSecondary" />
+                app:tint="?android:textColorSecondary" />
 
             <TextView
                 android:layout_width="match_parent"
@@ -196,9 +207,9 @@
                 android:layout_width="wrap_content"
                 android:minWidth="64dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="?textButtonHorizontalPaddingNegative"
+                android:layout_marginEnd="-8dp"
                 android:text="@string/reset"
-                style="?textButtonStyle" />
+                style="?borderlessButtonStyle" />
         </LinearLayout>
     </LinearLayout>
 

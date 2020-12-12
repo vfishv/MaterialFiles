@@ -9,11 +9,11 @@ import android.content.Context
 import android.util.AttributeSet
 import androidx.annotation.AttrRes
 import androidx.annotation.StyleRes
-import androidx.preference.PreferenceDialogFragmentCompat
 import com.takisoft.preferencex.PreferenceFragmentCompat
 import com.takisoft.preferencex.SimpleMenuPreference
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.filejob.FileJobService
+import me.zhanghai.android.files.ui.MaterialPreferenceDialogFragmentCompat
 
 class RootStrategyPreference : SimpleMenuPreference {
     constructor(context: Context) : super(context)
@@ -58,7 +58,7 @@ class RootStrategyPreference : SimpleMenuPreference {
         }
     }
 
-    private class DialogFragment : PreferenceDialogFragmentCompat() {
+    private class DialogFragment : MaterialPreferenceDialogFragmentCompat() {
         override fun onDialogClosed(positiveResult: Boolean) {
             val preference = preference as RootStrategyPreference
             if (positiveResult) {

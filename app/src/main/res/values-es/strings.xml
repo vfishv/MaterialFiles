@@ -395,8 +395,7 @@
 
     <string name="navigation_root_directory">Raíz</string>
     <string name="navigation_root_subtitle_format">%1$slibre de %2$s</string>
-    <string name="navigation_add_document_tree">Agregar almacenamiento externo…</string>
-    <string name="navigation_confirm_remove_document_tree_format">¿Eliminar almacenamiento externo \"%1$s\"?</string>
+    <string name="navigation_add_storage">Agregar almacenamiento externo…</string>
     <string name="navigation_standard_directory_alarms">Alarmas</string>
     <string name="navigation_standard_directory_dcim">DCIM</string>
     <string name="navigation_standard_directory_documents">Documentos</string>
@@ -449,11 +448,6 @@
 
     <string name="settings_title">Ajustes</string>
     <string name="settings_interface_title">Interfaz</string>
-    <string name="settings_primary_color_title">Color primario</string>
-    <string name="settings_primary_color_summary">Color que aparece más seguido en la aplicación</string>
-    <string name="settings_accent_color_title">Color de acento</string>
-    <string name="settings_accent_color_summary">Colo usado para acentuar partes de la UI</string>
-    <string name="settings_material_design_2_title">Material Design 2</string>
     <string name="settings_night_mode_title">Modo nocturno</string>
     <string-array name="settings_night_mode_entries">
         <item>Seguir sistema</item>
@@ -470,7 +464,7 @@
     <string name="settings_bookmark_directory_screenshots">Capturas de pantalla</string>
     <string name="settings_bookmark_directories_title">Carpeta de marcador</string>
     <string name="settings_bookmark_directories_summary_empty">Sin carpetas de marcador</string>
-    <string name="settings_bookmark_directories_empty">@string/settings_bookmark_directories_summary_empty</string>
+    <string name="settings_bookmark_directory_list_empty">@string/settings_bookmark_directories_summary_empty</string>
     <string name="settings_root_strategy_title">Modo de acceso administrativo</string>
     <plurals name="settings_root_strategy_message_format">
         <item quantity="one">Tienes %1$,d operaciones de archivo ejecutándose y cambiar el modo de acceso administrativo puede causar errores inesperados. ¿Estás seguro que quieres cambiarlo ahora?</item>

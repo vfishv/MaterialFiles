@@ -369,8 +369,6 @@
 
     <string name="navigation_root_directory">Root</string>
     <string name="navigation_root_subtitle_format">%1$s 空き / %2$s</string>
-    <string name="navigation_add_document_tree">外部ストレージを追加…</string>
-    <string name="navigation_confirm_remove_document_tree_format">外部ストレージ “%1$s” を取り外しますか？</string>
     <string name="navigation_standard_directory_alarms">アラーム</string>
     <string name="navigation_standard_directory_dcim">写真</string>
     <string name="navigation_standard_directory_documents">ドキュメント</string>
@@ -423,11 +421,6 @@
 
     <string name="settings_title">設定</string>
     <string name="settings_interface_title">外観</string>
-    <string name="settings_primary_color_title">基本色</string>
-    <string name="settings_primary_color_summary">アプリで最も頻繁に表示する色</string>
-    <string name="settings_accent_color_title">アクセントカラー</string>
-    <string name="settings_accent_color_summary">UIの重要な部分の強調に使用する色</string>
-    <string name="settings_material_design_2_title">Material Design 2</string>
     <string name="settings_night_mode_title">夜間モード</string>
     <string-array name="settings_night_mode_entries">
         <item>システム設定に従う</item>
@@ -444,7 +437,7 @@
     <string name="settings_bookmark_directory_screenshots">スクリーンショット</string>
     <string name="settings_bookmark_directories_title">ブックマークフォルダ</string>
     <string name="settings_bookmark_directories_summary_empty">ブックマークフォルダがありません</string>
-    <string name="settings_bookmark_directories_empty">@string/settings_bookmark_directories_summary_empty</string>
+    <string name="settings_bookmark_directory_list_empty">@string/settings_bookmark_directories_summary_empty</string>
     <string name="settings_root_strategy_title">Root アクセスモード</string>
     <plurals name="settings_root_strategy_message_format">
         <item quantity="other">%1$,d 個のファイルが操作中です。ルートアクセスモードを変更すると予期せぬエラーが発生することがあります。 今すぐ変更しますか？</item>

@@ -10,7 +10,6 @@ import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
 import android.os.Parcel
-import android.text.Editable
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.ImageView
@@ -20,16 +19,15 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDialogFragment
 import androidx.core.view.isVisible
 import androidx.core.widget.NestedScrollView
+import androidx.core.widget.doAfterTextChanged
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import coil.clear
 import coil.loadAny
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.parcelize.Parceler
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.WriteWith
 import me.zhanghai.android.files.R
-import me.zhanghai.android.files.coil.ignoreError
-import me.zhanghai.android.files.compat.AlertDialogBuilderCompat
-import me.zhanghai.android.files.compat.getDrawableCompat
 import me.zhanghai.android.files.compat.requireViewByIdCompat
 import me.zhanghai.android.files.databinding.FileJobConflictDialogViewBinding
 import me.zhanghai.android.files.file.FileItem
@@ -41,7 +39,6 @@ import me.zhanghai.android.files.filelist.supportsThumbnail
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.ParcelableState
 import me.zhanghai.android.files.util.RemoteCallback
-import me.zhanghai.android.files.util.SimpleTextWatcher
 import me.zhanghai.android.files.util.args
 import me.zhanghai.android.files.util.getArgs
 import me.zhanghai.android.files.util.getState
@@ -73,7 +70,7 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
         val message = getMessage(sourceFile, targetFile, args.type, requireContext())
         val isMerge = isMerge(sourceFile, targetFile)
         val positiveButtonRes = if (isMerge) R.string.merge else R.string.replace
-        return AlertDialogBuilderCompat.create(requireContext(), theme)
+        return MaterialAlertDialogBuilder(requireContext(), theme)
             .setTitle(title)
             .setMessage(message)
             .apply {
@@ -87,7 +84,7 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
                 )
                 bindFileItem(
                     targetFile, binding.targetIconImage, binding.targetBadgeImage,
-                    binding.targetDescriptionText
+                    binding.targetThumbnailImage, binding.targetDescriptionText
                 )
                 binding.sourceNameText.setText(
                     if (isMerge) {
@@ -98,7 +95,7 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
                 )
                 bindFileItem(
                     sourceFile, binding.sourceIconImage, binding.sourceBadgeImage,
-                    binding.sourceDescriptionText
+                    binding.sourceThumbnailImage, binding.sourceDescriptionText
                 )
                 binding.showNameLayout.setOnClickListener {
                     val visible = !binding.nameLayout.isVisible
@@ -115,20 +112,16 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
                 }
                 val targetFileName = targetFile.path.fileName.toString()
                 binding.nameEdit.setTextWithSelection(targetFileName)
-                binding.nameEdit.addTextChangedListener(object : SimpleTextWatcher {
-                    override fun afterTextChanged(text: Editable) {
-                        val hasNewName = hasNewName()
-                        binding.allCheck.isEnabled = !hasNewName
-                        if (hasNewName) {
-                            binding.allCheck.isChecked = false
-                        }
-                        val positiveButton = requireDialog()
-                            .requireViewByIdCompat<Button>(android.R.id.button1)
-                        positiveButton.setText(
-                            if (hasNewName) R.string.rename else positiveButtonRes
-                        )
+                binding.nameEdit.doAfterTextChanged {
+                    val hasNewName = hasNewName()
+                    binding.allCheck.isEnabled = !hasNewName
+                    if (hasNewName) {
+                        binding.allCheck.isChecked = false
                     }
-                })
+                    val positiveButton = requireDialog()
+                        .requireViewByIdCompat<Button>(android.R.id.button1)
+                    positiveButton.setText(if (hasNewName) R.string.rename else positiveButtonRes)
+                }
                 binding.resetNameButton.setOnClickListener {
                     binding.nameEdit.setTextWithSelection(targetFileName)
                 }
@@ -147,20 +140,20 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
     private fun bindFileItem(
         file: FileItem,
         iconImage: ImageView,
+        thumbnailImage: ImageView,
         badgeImage: ImageView,
         descriptionText: TextView
     ) {
         val path = file.path
+        iconImage.setImageResource(file.mimeType.iconRes)
+        iconImage.isVisible = true
+        thumbnailImage.clear()
+        thumbnailImage.setImageDrawable(null)
         val attributes = file.attributes
-        val icon = iconImage.context.getDrawableCompat(file.mimeType.iconRes)
         if (file.supportsThumbnail) {
-            iconImage.loadAny(path to attributes) {
-                placeholder(icon)
-                ignoreError()
+            thumbnailImage.loadAny(path to attributes) {
+                listener { _, _ -> iconImage.isVisible = false }
             }
-        } else {
-            iconImage.clear()
-            iconImage.setImageDrawable(icon)
         }
         val badgeIconRes = if (file.attributesNoFollowLinks.isSymbolicLink) {
             if (file.isSymbolicLinkBroken) {

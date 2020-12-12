@@ -395,8 +395,7 @@
 
     <string name="navigation_root_directory">Root</string>
     <string name="navigation_root_subtitle_format">%1$s van %2$s vrij</string>
-    <string name="navigation_add_document_tree">Externe opslag toevoegen…</string>
-    <string name="navigation_confirm_remove_document_tree_format">Wil je de externe opslag \'%1$s\' verwijderen?</string>
+    <string name="navigation_add_storage">Externe opslag toevoegen…</string>
     <string name="navigation_standard_directory_alarms">Wekkers</string>
     <string name="navigation_standard_directory_dcim">Camerafoto\'s</string>
     <string name="navigation_standard_directory_documents">Documenten</string>
@@ -449,11 +448,6 @@
 
     <string name="settings_title">Instellingen</string>
     <string name="settings_interface_title">Uiterlijk</string>
-    <string name="settings_primary_color_title">Hoofdkleur</string>
-    <string name="settings_primary_color_summary">De kleur die het vaakst wordt gebruikt in de app</string>
-    <string name="settings_accent_color_title">Accentkleur</string>
-    <string name="settings_accent_color_summary">De kleur die bepaalde onderdelen accentueert</string>
-    <string name="settings_material_design_2_title">Material Design 2</string>
     <string name="settings_night_mode_title">Nachtmodus</string>
     <string-array name="settings_night_mode_entries">
         <item>Systeeminstellingen gebruiken</item>
@@ -470,7 +464,7 @@
     <string name="settings_bookmark_directory_screenshots">Schermfoto\'s</string>
     <string name="settings_bookmark_directories_title">Bladwijzermappen</string>
     <string name="settings_bookmark_directories_summary_empty">Geen bladwijzermappen</string>
-    <string name="settings_bookmark_directories_empty">@string/settings_bookmark_directories_summary_empty</string>
+    <string name="settings_bookmark_directory_list_empty">@string/settings_bookmark_directories_summary_empty</string>
     <string name="settings_root_strategy_title">Roottoegangsmodus</string>
     <plurals name="settings_root_strategy_message_format">
         <item quantity="one">Er wordt %1$,d bestandshandeling uitgevoerd. Als je nu de root-toegangsmodus aanpast, dan kan er een onverwachte fout optreden. Weet je zeker dat je wilt doorgaan?</item>

@@ -19,15 +19,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import me.zhanghai.android.files.R
-import me.zhanghai.android.files.app.mainExecutor
 import me.zhanghai.android.files.file.FileItem
 import me.zhanghai.android.files.file.asFileSize
 import me.zhanghai.android.files.file.fileSize
 import me.zhanghai.android.files.file.formatLong
 import me.zhanghai.android.files.filelist.getMimeTypeName
 import me.zhanghai.android.files.filelist.name
-import me.zhanghai.android.files.fileproperties.FilePropertiesTabFragment
 import me.zhanghai.android.files.fileproperties.FilePropertiesFileViewModel
+import me.zhanghai.android.files.fileproperties.FilePropertiesTabFragment
 import me.zhanghai.android.files.provider.archive.ArchiveFileAttributes
 import me.zhanghai.android.files.provider.archive.archiveFile
 import me.zhanghai.android.files.provider.archive.isArchivePath
@@ -59,18 +58,18 @@ class FilePropertiesBasicTabFragment : FilePropertiesTabFragment() {
         bindView(stateful) { file ->
             addItemView(R.string.file_properties_basic_name, file.name)
             val path = file.path
-            if (path.isLinuxPath || path.isDocumentPath) {
+            if (path.isArchivePath) {
+                val archiveFile = path.archiveFile
+                addItemView(R.string.file_properties_basic_archive_file, archiveFile.toFile().path)
+                val attributes = file.attributes as ArchiveFileAttributes
+                addItemView(R.string.file_properties_basic_archive_entry, attributes.entryName())
+            } else {
                 val parentPath = path.parent
                 if (parentPath != null) {
                     addItemView(
                         R.string.file_properties_basic_parent_directory, parentPath.toString()
                     )
                 }
-            } else if (path.isArchivePath) {
-                val archiveFile = path.archiveFile
-                addItemView(R.string.file_properties_basic_archive_file, archiveFile.toFile().path)
-                val attributes = file.attributes as ArchiveFileAttributes
-                addItemView(R.string.file_properties_basic_archive_entry, attributes.entryName())
             }
             addItemView(R.string.file_properties_basic_type, getTypeText(file))
             val symbolicLinkTarget = file.symbolicLinkTarget

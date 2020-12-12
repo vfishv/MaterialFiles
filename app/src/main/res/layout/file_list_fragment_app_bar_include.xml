@@ -10,13 +10,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <!-- app:statusBarBackground is broken when scrolling. -->
-    <com.google.android.material.appbar.AppBarLayout
+    <me.zhanghai.android.files.ui.CoordinatorAppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?colorAppBarSurface"
         android:theme="?actionBarTheme"
-        app:liftOnScroll="?fileListAppBarLiftOnScroll"
+        app:liftOnScroll="@bool/file_list_app_bar_lift_on_scroll"
         app:liftOnScrollTargetViewId="@id/recyclerView">
 
         <FrameLayout
@@ -28,14 +28,18 @@
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?actionBarSize"
+                android:paddingStart="@dimen/file_list_toolbar_padding_start"
+                android:paddingEnd="@dimen/file_list_toolbar_padding_end_with_overflow"
                 app:navigationIcon="@drawable/menu_icon_control_normal_24dp"
                 app:popupTheme="?actionBarPopupTheme"
                 app:subtitleTextAppearance="@style/TextAppearance.AppCompat.Widget.ActionBar.Subtitle.Small" />
 
-            <me.zhanghai.android.files.ui.SyncAppBarElevationToolbar
+            <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/overlayToolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?actionBarSize"
+                android:paddingStart="@dimen/file_list_toolbar_padding_start"
+                android:paddingEnd="@dimen/file_list_toolbar_padding_end_with_overflow"
                 android:background="?colorAppBarSurface"
                 android:visibility="gone"
                 app:navigationIcon="@drawable/close_icon_control_normal_24dp"
@@ -48,5 +52,5 @@
             android:layout_height="wrap_content"
             android:paddingStart="@dimen/content_start_margin_minus_12dp"
             android:paddingEnd="@dimen/screen_edge_margin_minus_12dp" />
-    </com.google.android.material.appbar.AppBarLayout>
+    </me.zhanghai.android.files.ui.CoordinatorAppBarLayout>
 </merge>

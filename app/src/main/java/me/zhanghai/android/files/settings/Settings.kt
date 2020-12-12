@@ -6,6 +6,7 @@
 package me.zhanghai.android.files.settings
 
 import android.os.Environment
+import android.text.TextUtils
 import java8.nio.file.Path
 import java8.nio.file.Paths
 import me.zhanghai.android.files.R
@@ -16,12 +17,15 @@ import me.zhanghai.android.files.filelist.OpenApkDefaultAction
 import me.zhanghai.android.files.navigation.BookmarkDirectory
 import me.zhanghai.android.files.navigation.StandardDirectorySettings
 import me.zhanghai.android.files.provider.root.RootStrategy
-import me.zhanghai.android.files.theme.custom.CustomThemeAccentColor
-import me.zhanghai.android.files.theme.custom.CustomThemePrimaryColor
+import me.zhanghai.android.files.storage.Storage
+import me.zhanghai.android.files.theme.custom.ThemeColor
 import me.zhanghai.android.files.theme.night.NightMode
 import java.io.File
 
 object Settings {
+    val STORAGES: SettingLiveData<List<Storage>> =
+        ParcelValueSettingLiveData(R.string.pref_key_storages, emptyList())
+
     val FILE_LIST_DEFAULT_DIRECTORY: SettingLiveData<Path> =
         ParcelValueSettingLiveData(
             R.string.pref_key_file_list_default_directory,
@@ -81,21 +85,10 @@ object Settings {
             R.string.pref_key_ftp_server_writable, R.bool.pref_default_value_ftp_server_writable
         )
 
-    val PRIMARY_COLOR: SettingLiveData<CustomThemePrimaryColor> =
+    val THEME_COLOR: SettingLiveData<ThemeColor> =
         EnumSettingLiveData(
-            R.string.pref_key_primary_color, R.string.pref_default_value_primary_color,
-            CustomThemePrimaryColor::class.java
-        )
-
-    val ACCENT_COLOR: SettingLiveData<CustomThemeAccentColor> =
-        EnumSettingLiveData(
-            R.string.pref_key_accent_color, R.string.pref_default_value_accent_color,
-            CustomThemeAccentColor::class.java
-        )
-
-    val MATERIAL_DESIGN_2: SettingLiveData<Boolean> =
-        BooleanSettingLiveData(
-            R.string.pref_key_material_design_2, R.bool.pref_default_value_material_design_2
+            R.string.pref_key_theme_color, R.string.pref_default_value_theme_color,
+            ThemeColor::class.java
         )
 
     val NIGHT_MODE: SettingLiveData<NightMode> =
@@ -104,9 +97,20 @@ object Settings {
             NightMode::class.java
         )
 
+    val BLACK_NIGHT_MODE: SettingLiveData<Boolean> =
+        BooleanSettingLiveData(
+            R.string.pref_key_black_night_mode, R.bool.pref_default_value_black_night_mode
+        )
+
     val FILE_LIST_ANIMATION: SettingLiveData<Boolean> =
         BooleanSettingLiveData(
             R.string.pref_key_file_list_animation, R.bool.pref_default_value_file_list_animation
+        )
+
+    val FILE_NAME_ELLIPSIZE: SettingLiveData<TextUtils.TruncateAt> =
+        EnumSettingLiveData(
+            R.string.pref_key_file_name_ellipsize, R.string.pref_default_value_file_name_ellipsize,
+            TextUtils.TruncateAt::class.java
         )
 
     val STANDARD_DIRECTORY_SETTINGS: SettingLiveData<List<StandardDirectorySettings>> =

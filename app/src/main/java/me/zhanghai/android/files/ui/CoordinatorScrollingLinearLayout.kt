@@ -23,9 +23,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import com.google.android.material.appbar.AppBarLayout.ScrollingViewBehavior
-import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.layoutInNavigation
-import me.zhanghai.android.files.util.valueCompat
 
 class CoordinatorScrollingLinearLayout : LinearLayout, AttachedBehavior {
     private var bottomInsets: WindowInsets? = null
@@ -48,8 +46,7 @@ class CoordinatorScrollingLinearLayout : LinearLayout, AttachedBehavior {
     init {
         orientation = VERTICAL
         fitsSystemWindows = true
-        if (Settings.MATERIAL_DESIGN_2.valueCompat
-            && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             layoutInNavigation = true
         }
     }
@@ -70,15 +67,15 @@ class CoordinatorScrollingLinearLayout : LinearLayout, AttachedBehavior {
             if (childView != null) {
                 val scrollingView = findScrollingView()
                 val scrollingChildView = scrollingView?.let { findChildView(it) }
-                if (childView != scrollingChildView) {
-                    childView.updateLayoutParams<MarginLayoutParams> {
-                        bottomMargin = bottomInsets.systemWindowInsetBottom
-                    }
-                } else {
+                if (childView == scrollingChildView) {
                     if (scrollingView.fitsSystemWindows) {
                         scrollingView.onApplyWindowInsets(bottomInsets)
                     } else {
                         scrollingView.updatePadding(bottom = bottomInsets.systemWindowInsetBottom)
+                    }
+                } else {
+                    childView.updateLayoutParams<MarginLayoutParams> {
+                        bottomMargin = bottomInsets.systemWindowInsetBottom
                     }
                 }
             }
@@ -128,8 +125,8 @@ class CoordinatorScrollingLinearLayout : LinearLayout, AttachedBehavior {
             @SuppressLint("RestrictedApi")
             val parentInsets = parent.lastWindowInsets
             if (parentInsets != null) {
-                var parentHeightSize = MeasureSpec.getSize(parentHeightMeasureSpec)
-                parentHeightSize -= parentInsets.systemWindowInsetTop
+                val parentHeightSize = (MeasureSpec.getSize(parentHeightMeasureSpec)
+                    - parentInsets.systemWindowInsetTop - parentInsets.systemWindowInsetBottom)
                 val parentHeightMode = MeasureSpec.getMode(parentHeightMeasureSpec)
                 parentHeightMeasureSpec = MeasureSpec.makeMeasureSpec(
                     parentHeightSize, parentHeightMode
