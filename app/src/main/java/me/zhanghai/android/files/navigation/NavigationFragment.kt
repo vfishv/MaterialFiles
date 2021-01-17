@@ -23,7 +23,7 @@ import me.zhanghai.android.files.storage.AddStorageDialogActivity
 import me.zhanghai.android.files.storage.Storage
 import me.zhanghai.android.files.storage.Storages
 import me.zhanghai.android.files.util.createIntent
-import me.zhanghai.android.files.util.startActivityForResultSafe
+import me.zhanghai.android.files.util.startActivitySafe
 
 class NavigationFragment : Fragment(), NavigationItem.Listener,
     EditBookmarkDirectoryDialogFragment.Listener {
@@ -78,7 +78,7 @@ class NavigationFragment : Fragment(), NavigationItem.Listener,
     }
 
     override fun onAddStorage() {
-        startActivity(AddStorageDialogActivity::class.createIntent())
+        startActivitySafe(AddStorageDialogActivity::class.createIntent())
     }
 
     override fun onEditStorage(storage: Storage) {

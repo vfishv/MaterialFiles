@@ -103,7 +103,11 @@ object Client {
                 throw ClientException(e)
             }
             val sharePaths = netShareInfos.mapNotNull {
-                if (!it.type.hasBits(ShareTypes.STYPE_IPC.value)) path.resolve(it.netName) else {
+                if (!(it.type.hasBits(ShareTypes.STYPE_PRINTQ.value)
+                        || it.type.hasBits(ShareTypes.STYPE_DEVICE.value)
+                        || it.type.hasBits(ShareTypes.STYPE_IPC.value))) {
+                    path.resolve(it.netName)
+                } else {
                     null
                 }
             }
@@ -594,12 +598,17 @@ object Client {
             val authentication = authenticator.getAuthentication(authority)
                 ?: throw ClientException("No authentication found for $authority")
             val hostAddress = resolveHostName(authority.host)
-            session = try {
-                val connection = client.connect(hostAddress, authority.port)
-                connection.authenticate(authentication.toContext())
+            val connection = try {
+                client.connect(hostAddress, authority.port)
             } catch (e: IOException) {
                 throw ClientException(e)
+            }
+            session = try {
+                connection.authenticate(authentication.toContext())
             } catch (e: SMBRuntimeException) {
+                // We need to close the connection here, otherwise future authentications reusing it
+                // will receive an exception about no available credits.
+                connection.closeSafe()
                 throw ClientException(e)
             // TODO: kotlinc: Type mismatch: inferred type is Session? but TypeVariable(V) was
             //  expected
