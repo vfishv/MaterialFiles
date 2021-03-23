@@ -3,21 +3,23 @@
  * All Rights Reserved.
  */
 
-package me.zhanghai.android.files.storage
+package me.zhanghai.android.files.settings
 
 import android.view.ViewGroup
 import com.h6ah4i.android.widget.advrecyclerview.draggable.DraggableItemAdapter
 import com.h6ah4i.android.widget.advrecyclerview.draggable.ItemDraggableRange
 import com.h6ah4i.android.widget.advrecyclerview.utils.AbstractDraggableItemViewHolder
 import me.zhanghai.android.files.compat.isTransformedTouchPointInViewCompat
-import me.zhanghai.android.files.databinding.StorageItemBinding
+import me.zhanghai.android.files.databinding.BookmarkDirectoryItemBinding
+import me.zhanghai.android.files.filelist.userFriendlyString
+import me.zhanghai.android.files.navigation.BookmarkDirectory
 import me.zhanghai.android.files.ui.SimpleAdapter
 import me.zhanghai.android.files.util.layoutInflater
 
-class StorageAdapter(
+class BookmarkDirectoryListAdapter(
     private val listener: Listener
-) : SimpleAdapter<Storage, StorageAdapter.ViewHolder>(),
-    DraggableItemAdapter<StorageAdapter.ViewHolder> {
+) : SimpleAdapter<BookmarkDirectory, BookmarkDirectoryListAdapter.ViewHolder>(),
+    DraggableItemAdapter<BookmarkDirectoryListAdapter.ViewHolder> {
     override val hasStableIds: Boolean
         get() = true
 
@@ -25,17 +27,17 @@ class StorageAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder =
         ViewHolder(
-            StorageItemBinding.inflate(parent.context.layoutInflater, parent, false)
+            BookmarkDirectoryItemBinding.inflate(parent.context.layoutInflater, parent, false)
         )
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val storage = getItem(position)
+        val bookmarkDirectory = getItem(position)
         val binding = holder.binding
         // Need to remove the ripple before it's drawn onto the bitmap for dragging.
         binding.root.foreground.mutate().setVisible(!holder.dragState.isActive, false)
-        binding.root.setOnClickListener { listener.editStorage(storage) }
-        binding.nameText.text = storage.name
-        binding.descriptionText.text = storage.description
+        binding.root.setOnClickListener { listener.editBookmarkDirectory(bookmarkDirectory) }
+        binding.nameText.text = bookmarkDirectory.name
+        binding.pathText.text = bookmarkDirectory.path.userFriendlyString
     }
 
     override fun onCheckCanStartDrag(holder: ViewHolder, position: Int, x: Int, y: Int): Boolean =
@@ -60,15 +62,15 @@ class StorageAdapter(
         if (fromPosition == toPosition) {
             return
         }
-        listener.moveStorage(fromPosition, toPosition)
+        listener.moveBookmarkDirectory(fromPosition, toPosition)
     }
 
-    class ViewHolder(val binding: StorageItemBinding) : AbstractDraggableItemViewHolder(
+    class ViewHolder(val binding: BookmarkDirectoryItemBinding) : AbstractDraggableItemViewHolder(
         binding.root
     )
 
     interface Listener {
-        fun editStorage(storage: Storage)
-        fun moveStorage(fromPosition: Int, toPosition: Int)
+        fun editBookmarkDirectory(bookmarkDirectory: BookmarkDirectory)
+        fun moveBookmarkDirectory(fromPosition: Int, toPosition: Int)
     }
 }
