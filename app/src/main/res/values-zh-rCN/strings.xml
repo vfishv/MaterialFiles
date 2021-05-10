@@ -381,6 +381,7 @@
     <string name="storage_list_empty">无存储</string>
     <string name="storage_add_storage_title">添加存储</string>
     <string name="storage_add_storage_document_tree">外部存储</string>
+    <string name="storage_add_storage_sftp_server">SFTP 服务器</string>
     <string name="storage_add_storage_smb_server">SMB 服务器</string>
     <string name="storage_edit_device_storage_title">编辑设备存储</string>
     <string name="storage_edit_device_storage_name">名称</string>
@@ -390,16 +391,39 @@
     <string name="storage_edit_document_tree_name">名称</string>
     <string name="storage_edit_document_tree_uri">URI</string>
     <string name="storage_edit_document_tree_path">路径</string>
+    <string name="storage_edit_sftp_server_title_edit">编辑 SFTP 服务器</string>
+    <string name="storage_edit_sftp_server_title_add">添加 SFTP 服务器</string>
+    <string name="storage_edit_sftp_server_host">主机名</string>
+    <string name="storage_edit_sftp_server_host_error_empty">输入主机名</string>
+    <string name="storage_edit_sftp_server_port">端口</string>
+    <string name="storage_edit_sftp_server_port_placeholder" translatable="false">445</string>
+    <string name="storage_edit_sftp_server_port_error_invalid">无效端口</string>
+    <string name="storage_edit_sftp_server_name">名称</string>
+    <string name="storage_edit_sftp_server_name_placeholder">使用主机名</string>
+    <string name="storage_edit_sftp_server_authentication_type">验证</string>
+    <string-array name="storage_edit_sftp_server_authentication_type_entries">
+        <item>密码</item>
+        <item>公钥</item>
+    </string-array>
+    <string name="storage_edit_sftp_server_username">用户名</string>
+    <string name="storage_edit_sftp_server_username_error_empty">输入用户名</string>
+    <string name="storage_edit_sftp_server_password">密码</string>
+    <string name="storage_edit_sftp_server_private_key">私钥</string>
+    <string name="storage_edit_sftp_server_private_key_open_file">打开文件</string>
+    <string name="storage_edit_sftp_server_private_key_error_empty">输入私钥</string>
+    <string name="storage_edit_sftp_server_private_key_error_invalid">私钥无效</string>
+    <string name="storage_edit_sftp_server_connect_and_add">连接并添加</string>
+    <string name="storage_edit_sftp_server_add">添加</string>
     <string name="storage_add_lan_smb_server_title">@string/storage_edit_smb_server_title_add</string>
     <string name="storage_add_lan_smb_server_loading">正在搜索 SMB 服务器…</string>
     <string name="storage_add_lan_smb_server_add">手动添加</string>
     <string name="storage_edit_smb_server_title_edit">编辑 SMB 服务器</string>
     <string name="storage_edit_smb_server_title_add">添加 SMB 服务器</string>
     <string name="storage_edit_smb_server_host">主机名</string>
-    <string name="storage_edit_smb_server_host_empty_error">输入主机名</string>
+    <string name="storage_edit_smb_server_host_error_empty">输入主机名</string>
     <string name="storage_edit_smb_server_port">端口</string>
     <string name="storage_edit_smb_server_port_placeholder" translatable="false">445</string>
-    <string name="storage_edit_smb_server_port_error">无效端口</string>
+    <string name="storage_edit_smb_server_port_error_invalid">无效端口</string>
     <string name="storage_edit_smb_server_name">名称</string>
     <string name="storage_edit_smb_server_name_placeholder">使用主机名</string>
     <string name="storage_edit_smb_server_authentication_type">验证</string>
@@ -409,7 +433,7 @@
         <item>匿名</item>
     </string-array>
     <string name="storage_edit_smb_server_username">用户名</string>
-    <string name="storage_edit_smb_server_username_empty_error">输入用户名</string>
+    <string name="storage_edit_smb_server_username_error_empty">输入用户名</string>
     <string name="storage_edit_smb_server_password">密码</string>
     <string name="storage_edit_smb_server_domain">域</string>
     <string name="storage_edit_smb_server_connect_and_add">连接并添加</string>
@@ -445,6 +469,7 @@
     <string name="text_editor_title_changed_format">*%1$s</string>
     <string name="text_editor_save_success">已保存</string>
     <string name="text_editor_reload_message">您确定要重新加载吗？对此文档未保存的变更将丢失。</string>
+    <string name="text_editor_encoding">编码</string>
     <string name="text_editor_close_message">您确定要舍弃对此文档未保存的变更吗？</string>
 
     <string name="ftp_server_title">FTP 服务器</string>
@@ -513,7 +538,9 @@
         <item>查看内容</item>
         <item>询问操作</item>
     </string-array>
-    <string name="settings_read_remote_files_for_thumbnail_title">读取远程文件以加载缩略图</string>
+    <string name="settings_show_pdf_thumbnail_pre_28_title">显示 PDF 文件缩略图</string>
+    <string name="settings_show_pdf_thumbnail_pre_28_summary">可能导致应用在旧版 Android 上不稳定</string>
+    <string name="settings_read_remote_files_for_thumbnail_title">读取远程文件以显示缩略图</string>
 
     <string name="about_title">关于</string>
     <string name="about_version_title">版本</string>

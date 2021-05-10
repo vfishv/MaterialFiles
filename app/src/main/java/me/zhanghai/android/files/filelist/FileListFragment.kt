@@ -593,13 +593,13 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
             return
         }
         val sortOptions = viewModel.sortOptions
-        val checkedSortByMenuItem = when (sortOptions.by) {
+        val checkedSortByItem = when (sortOptions.by) {
             By.NAME -> menuBinding.sortByNameItem
             By.TYPE -> menuBinding.sortByTypeItem
             By.SIZE -> menuBinding.sortBySizeItem
             By.LAST_MODIFIED -> menuBinding.sortByLastModifiedItem
         }
-        checkedSortByMenuItem.isChecked = true
+        checkedSortByItem.isChecked = true
         menuBinding.sortOrderAscendingItem.isChecked = sortOptions.order == Order.ASCENDING
         menuBinding.sortDirectoriesFirstItem.isChecked = sortOptions.isDirectoriesFirst
         menuBinding.sortPathSpecificItem.isChecked = viewModel.isSortPathSpecific
@@ -765,7 +765,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
             menu.findItem(R.id.action_copy)
                 .setIcon(
                     if (isExtract) {
-                        R.drawable.extract_icon_white_24dp
+                        R.drawable.extract_icon_control_normal_24dp
                     } else {
                         R.drawable.copy_icon_control_normal_24dp
                     }
