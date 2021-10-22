@@ -5,6 +5,7 @@
 
 package me.zhanghai.android.files.provider.linux
 
+import android.system.OsConstants
 import java8.nio.file.attribute.FileTime
 import me.zhanghai.android.files.provider.common.ByteString
 import me.zhanghai.android.files.provider.common.PosixFileAttributeView
@@ -38,12 +39,16 @@ internal class LocalLinuxFileAttributeView(
         val owner = try {
             LinuxUserPrincipalLookupService.getUserById(stat.st_uid)
         } catch (e: SyscallException) {
-            throw e.toFileSystemException(path.toString())
+            // It's okay to have a non-existent UID.
+            e.toFileSystemException(path.toString()).printStackTrace()
+            PosixUser(stat.st_uid, null)
         }
         val group = try {
             LinuxUserPrincipalLookupService.getGroupById(stat.st_gid)
         } catch (e: SyscallException) {
-            throw e.toFileSystemException(path.toString())
+            // It's okay to have a non-existent GID.
+            e.toFileSystemException(path.toString()).printStackTrace()
+            PosixGroup(stat.st_gid, null)
         }
         val seLinuxContext = try {
             if (noFollowLinks) {
@@ -52,9 +57,9 @@ internal class LocalLinuxFileAttributeView(
                 Syscalls.getfilecon(path)
             }
         } catch (e: SyscallException) {
-            // Filesystem may not support xattrs and SELinux calls may fail with EOPNOTSUPP.
+            // SELinux calls may fail with ENODATA or ENOTSUP, and there may be other errors.
             e.toFileSystemException(path.toString()).printStackTrace()
-            null
+            if (e.errno == OsConstants.ENODATA) ByteString.EMPTY else null
         }
         return LinuxFileAttributes.from(stat, owner, group, seLinuxContext)
     }

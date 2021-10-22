@@ -101,6 +101,8 @@ import me.zhanghai.android.files.util.extraPath
 import me.zhanghai.android.files.util.extraPathList
 import me.zhanghai.android.files.util.fadeToVisibilityUnsafe
 import me.zhanghai.android.files.util.getQuantityString
+import me.zhanghai.android.files.util.hasSw600Dp
+import me.zhanghai.android.files.util.isOrientationLandscape
 import me.zhanghai.android.files.util.putArgs
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.startActivitySafe
@@ -172,6 +174,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         }
         navigationFragment.listener = this
         val activity = requireActivity() as AppCompatActivity
+        activity.setTitle(R.string.file_list_title)
         activity.setSupportActionBar(binding.toolbar)
         overlayActionMode = OverlayToolbarActionMode(binding.overlayToolbar)
         bottomActionMode = PersistentBarLayoutToolbarActionMode(
@@ -188,6 +191,11 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         )
         binding.appBarLayout.syncBackgroundElevationTo(binding.overlayToolbar)
         binding.breadcrumbLayout.setListener(this)
+        if (!(activity.hasSw600Dp && activity.isOrientationLandscape)) {
+            binding.swipeRefreshLayout.setProgressViewEndTarget(
+                true, binding.swipeRefreshLayout.progressViewEndOffset
+            )
+        }
         binding.swipeRefreshLayout.setOnRefreshListener { this.refresh() }
         binding.recyclerView.layoutManager = GridLayoutManager(activity, /* TODO */ 1)
         adapter = FileListAdapter(this)
@@ -1069,6 +1077,8 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
                 .let {
                     if (withChooser) {
                         it.withChooser(
+                            EditFileActivity::class.createIntent()
+                                .putArgs(EditFileActivity.Args(path, mimeType)),
                             OpenFileAsDialogActivity::class.createIntent()
                                 .putArgs(OpenFileAsDialogFragment.Args(path))
                         )

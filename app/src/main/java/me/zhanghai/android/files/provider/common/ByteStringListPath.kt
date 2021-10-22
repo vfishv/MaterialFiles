@@ -26,12 +26,13 @@ abstract class ByteStringListPath<T : ByteStringListPath<T>> : AbstractPath<T>, 
     private val isAbsolute: Boolean
     private val segments: List<ByteString>
 
+    @Volatile
     private var byteStringCache: ByteString? = null
 
     constructor(separator: Byte, path: ByteString) {
-        require(separator != '\u0000'.toByte()) { "Separator cannot be the nul character" }
+        require(separator != '\u0000'.code.toByte()) { "Separator cannot be the nul character" }
         this.separator = separator
-        if (path.contains('\u0000'.toByte())) {
+        if (path.contains('\u0000'.code.toByte())) {
             throw InvalidPathException(path.toString(), "Path cannot contain nul characters")
         }
         isAbsolute = isPathAbsolute(path)
@@ -240,10 +241,7 @@ abstract class ByteStringListPath<T : ByteStringListPath<T>> : AbstractPath<T>, 
         return separator == other.separator
             && segments == other.segments
             && isAbsolute == other.isAbsolute
-            // TODO: kotlinc: Cannot infer type parameter T in val <T : ByteStringListPath<T>>
-            //  ByteStringListPath<T>.fileSystem: FileSystem!
-            //&& fileSystem == other.fileSystem
-            && fileSystem == (other as Path).fileSystem
+            && fileSystem == other.fileSystem
     }
 
     override fun hashCode(): Int = hash(separator, segments, isAbsolute, fileSystem)

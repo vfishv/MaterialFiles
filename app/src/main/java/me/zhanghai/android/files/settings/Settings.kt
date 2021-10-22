@@ -34,6 +34,7 @@ object Settings {
     val FILE_LIST_DEFAULT_DIRECTORY: SettingLiveData<Path> =
         ParcelValueSettingLiveData(
             R.string.pref_key_file_list_default_directory,
+            @Suppress("DEPRECATION")
             Paths.get(Environment.getExternalStorageDirectory().absolutePath)
         )
 
@@ -82,6 +83,7 @@ object Settings {
     val FTP_SERVER_HOME_DIRECTORY: SettingLiveData<Path> =
         ParcelValueSettingLiveData(
             R.string.pref_key_ftp_server_home_directory,
+            @Suppress("DEPRECATION")
             Paths.get(Environment.getExternalStorageDirectory().absolutePath)
         )
 
@@ -94,6 +96,11 @@ object Settings {
         EnumSettingLiveData(
             R.string.pref_key_theme_color, R.string.pref_default_value_theme_color,
             ThemeColor::class.java
+        )
+
+    val MATERIAL_DESIGN_3: SettingLiveData<Boolean> =
+        BooleanSettingLiveData(
+            R.string.pref_key_material_design_3, R.bool.pref_default_value_material_design_3
         )
 
     val NIGHT_MODE: SettingLiveData<NightMode> =
