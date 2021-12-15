@@ -11,7 +11,7 @@ kapt {
 }
 apply plugin: 'kotlin-parcelize'
 
-apply from: '../signing.gradle'
+//apply from: '../signing.gradle'
 
 //#ifdef NONFREE
 buildscript {
@@ -30,7 +30,7 @@ apply plugin: 'com.google.firebase.crashlytics'
 
 android {
     compileSdkVersion 31
-    ndkVersion '23.1.7779620'
+    //ndkVersion '23.1.7779620'
     // Build tools 31.0.0 broke librootjava: https://github.com/Chainfire/librootjava/issues/24 .
     //buildToolsVersion '31.0.0'
     buildToolsVersion '30.0.3'
@@ -68,7 +68,7 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            //signingConfig signingConfigs.release
 //#ifdef NONFREE
             firebaseCrashlytics {
                 nativeSymbolUploadEnabled true
@@ -94,9 +94,7 @@ repositories {
 dependencies {
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
     releaseImplementation 'com.github.mypplication:stetho-noop:1.1'
-}
 
-dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
