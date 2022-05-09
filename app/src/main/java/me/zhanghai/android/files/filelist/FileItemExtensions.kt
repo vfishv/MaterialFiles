@@ -22,9 +22,11 @@ import me.zhanghai.android.files.provider.archive.createArchiveRootPath
 import me.zhanghai.android.files.provider.document.documentSupportsThumbnail
 import me.zhanghai.android.files.provider.document.isDocumentPath
 import me.zhanghai.android.files.provider.document.resolver.DocumentResolver
+import me.zhanghai.android.files.provider.ftp.isFtpPath
 import me.zhanghai.android.files.provider.linux.isLinuxPath
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.asFileName
+import me.zhanghai.android.files.util.isGetPackageArchiveInfoCompatible
 import me.zhanghai.android.files.util.valueCompat
 import java.text.CollationKey
 
@@ -55,27 +57,47 @@ val FileItem.listablePath: Path
 
 // @see PathAttributesFetcher.fetch
 val FileItem.supportsThumbnail: Boolean
-    get() =
-        when {
-            path.isLinuxPath ->
-                mimeType.isImage || mimeType.isMedia || (showPdfThumbnail && mimeType.isPdf)
-                        || mimeType.isApk
-            path.isDocumentPath -> {
-                when {
-                    attributes.documentSupportsThumbnail -> true
-                    mimeType.isImage || mimeType.isMedia || (showPdfThumbnail && mimeType.isPdf) ->
-                        DocumentResolver.isLocal(path as DocumentResolver.Path)
-                            || Settings.READ_REMOTE_FILES_FOR_THUMBNAIL.valueCompat
-                    else -> false
-                }
-            }
-            else -> mimeType.isImage && Settings.READ_REMOTE_FILES_FOR_THUMBNAIL.valueCompat
+    get() {
+        if (path.isDocumentPath && attributes.documentSupportsThumbnail) {
+            return true
         }
+        val isLocalPath = path.isLinuxPath
+            || (path.isDocumentPath && DocumentResolver.isLocal(path as DocumentResolver.Path))
+        val shouldReadRemotePath = !path.isFtpPath
+            && Settings.READ_REMOTE_FILES_FOR_THUMBNAIL.valueCompat
+        if (!(isLocalPath || shouldReadRemotePath)) {
+            return false
+        }
+        return when {
+            mimeType.isApk && path.isGetPackageArchiveInfoCompatible -> true
+            mimeType.isImage -> true
+            mimeType.isMedia && (path.isLinuxPath || path.isDocumentPath) -> true
+            mimeType.isPdf && (path.isLinuxPath || path.isDocumentPath) ->
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                    || Settings.SHOW_PDF_THUMBNAIL_PRE_28.valueCompat
+            else -> false
+        }
+    }
 
-private val showPdfThumbnail: Boolean
-    get() =
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
-                || Settings.SHOW_PDF_THUMBNAIL_PRE_28.valueCompat
+// @see android.content.pm.parsing.ApkLiteParseUtils.parsePackageSplitNames
+// @see android.content.pm.parsing.ParsingPackageUtils.validateName
+// @see com.android.server.pm.PackageManagerService.getNextCodePath
+private const val PACKAGE_NAME_COMPONENT_PATTERN = "[A-Za-z][0-9A-Z_a-z]*"
+private const val PACKAGE_NAME_PATTERN =
+    "$PACKAGE_NAME_COMPONENT_PATTERN(?:\\.$PACKAGE_NAME_COMPONENT_PATTERN)+"
+private const val BASE64_URL_SAFE_CHARACTER_CLASS = "[0-9A-Za-z\\-_]"
+private const val BASE64_URL_SAFE_PATTERN = ("(?:$BASE64_URL_SAFE_CHARACTER_CLASS{4})*"
+    + "(?:$BASE64_URL_SAFE_CHARACTER_CLASS{3}=|$BASE64_URL_SAFE_CHARACTER_CLASS{2}==)?")
+private val APP_DIRECTORY_REGEX =
+    Regex("($PACKAGE_NAME_PATTERN)(?:-$BASE64_URL_SAFE_PATTERN)?")
+
+val FileItem.appDirectoryPackageName: String?
+    get() {
+        if (!attributes.isDirectory) {
+            return null
+        }
+        return APP_DIRECTORY_REGEX.matchEntire(name)?.groupValues?.get(1)
+    }
 
 fun FileItem.createDummyArchiveRoot(): FileItem =
     FileItem(

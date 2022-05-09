@@ -18,7 +18,6 @@ import me.zhanghai.android.files.util.hash
 import me.zhanghai.android.files.util.readParcelableListCompat
 import me.zhanghai.android.files.util.startsWith
 import java.net.URI
-import java.util.NoSuchElementException
 import kotlin.math.min
 
 abstract class ByteStringListPath<T : ByteStringListPath<T>> : AbstractPath<T>, Parcelable {
@@ -194,8 +193,7 @@ abstract class ByteStringListPath<T : ByteStringListPath<T>> : AbstractPath<T>, 
         return createPath(false, relativeSegments)
     }
 
-    override fun toUri(): URI =
-        URI::class.create(fileSystem.provider().scheme, uriSchemeSpecificPart, uriFragment)
+    override fun toUri(): URI = URI::class.create(uriScheme, uriAuthority, uriPath, uriQuery)
 
     override fun toAbsolutePath(): T {
         if (isAbsolute) {
@@ -280,10 +278,16 @@ abstract class ByteStringListPath<T : ByteStringListPath<T>> : AbstractPath<T>, 
 
     private fun createEmptyPath(): T = createPath(false, listOf(ByteString.EMPTY))
 
-    protected open val uriSchemeSpecificPart: ByteString?
+    protected open val uriScheme: String
+        get() = fileSystem.provider().scheme
+
+    protected open val uriAuthority: UriAuthority
+        get() = UriAuthority.EMPTY
+
+    protected open val uriPath: ByteString
         get() = toAbsolutePath().toByteString()
 
-    protected open val uriFragment: ByteString?
+    protected open val uriQuery: ByteString?
         get() = null
 
     protected abstract val defaultDirectory: T

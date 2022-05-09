@@ -16,6 +16,7 @@ import coil.loadAny
 import java8.nio.file.Path
 import me.zhanghai.android.fastscroll.PopupTextProvider
 import me.zhanghai.android.files.R
+import me.zhanghai.android.files.coil.AppIconPackageName
 import me.zhanghai.android.files.databinding.FileItemBinding
 import me.zhanghai.android.files.file.FileItem
 import me.zhanghai.android.files.file.fileSize
@@ -27,7 +28,6 @@ import me.zhanghai.android.files.ui.AnimatedListAdapter
 import me.zhanghai.android.files.ui.CheckableItemBackground
 import me.zhanghai.android.files.util.layoutInflater
 import me.zhanghai.android.files.util.valueCompat
-import java.util.Comparator
 import java.util.Locale
 
 class FileListAdapter(
@@ -209,6 +209,14 @@ class FileListAdapter(
                 listener { _, _ -> binding.iconImage.isVisible = false }
             }
         }
+        binding.appIconBadgeImage.clear()
+        binding.appIconBadgeImage.setImageDrawable(null)
+        val appDirectoryPackageName = file.appDirectoryPackageName
+        val hasAppIconBadge = appDirectoryPackageName != null
+        binding.appIconBadgeImage.isVisible = hasAppIconBadge
+        if (hasAppIconBadge) {
+            binding.appIconBadgeImage.loadAny(AppIconPackageName(appDirectoryPackageName!!))
+        }
         val badgeIconRes = if (file.attributesNoFollowLinks.isSymbolicLink) {
             if (file.isSymbolicLinkBroken) {
                 R.drawable.error_badge_icon_18dp
@@ -240,6 +248,7 @@ class FileListAdapter(
         menu.findItem(R.id.action_delete).isVisible = !isReadOnly
         menu.findItem(R.id.action_rename).isVisible = !isReadOnly
         menu.findItem(R.id.action_extract).isVisible = file.isArchiveFile
+        menu.findItem(R.id.action_archive).isVisible = !isArchivePath
         menu.findItem(R.id.action_add_bookmark).isVisible = isDirectory
         holder.popupMenu.setOnMenuItemClickListener {
             when (it.itemId) {

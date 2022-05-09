@@ -41,6 +41,17 @@
             android:scaleType="centerCrop" />
 
         <me.zhanghai.android.files.ui.DisabledAlphaImageView
+            android:id="@+id/appIconBadgeImage"
+            android:layout_width="@dimen/badge_size_plus_1dp"
+            android:layout_height="@dimen/badge_size_plus_1dp"
+            android:layout_gravity="end|bottom"
+            android:layout_marginStart="-0.5dp"
+            android:layout_marginEnd="-0.5dp"
+            android:layout_marginTop="-0.5dp"
+            android:layout_marginBottom="-0.5dp"
+            android:duplicateParentState="true" />
+
+        <me.zhanghai.android.files.ui.DisabledAlphaImageView
             android:id="@+id/badgeImage"
             android:layout_width="@dimen/badge_size"
             android:layout_height="@dimen/badge_size"
@@ -71,7 +82,7 @@
             android:duplicateParentState="true"
             android:marqueeRepeatLimit="marquee_forever"
             android:singleLine="true"
-            android:textAppearance="@style/TextAppearance.AppCompat.Subhead" />
+            android:textAppearance="?textAppearanceListItem" />
 
         <me.zhanghai.android.files.ui.AutoGoneTextView
             android:id="@+id/descriptionText"
@@ -80,7 +91,7 @@
             android:duplicateParentState="true"
             android:ellipsize="end"
             android:maxLines="1"
-            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            android:textAppearance="?textAppearanceListItemSecondary"
             android:textColor="?android:textColorSecondary" />
     </LinearLayout>
 

@@ -41,7 +41,6 @@ import me.zhanghai.android.files.provider.sftp.client.Client
 import me.zhanghai.android.files.provider.sftp.client.ClientException
 import me.zhanghai.android.files.provider.sftp.client.SecurityProviderHelper
 import me.zhanghai.android.files.util.enumSetOf
-import net.schmizz.sshj.sftp.FileAttributes
 import net.schmizz.sshj.sftp.OpenMode
 import java.io.IOException
 import java.net.URI
@@ -63,7 +62,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
 
     override fun newFileSystem(uri: URI, env: Map<String, *>): FileSystem {
         uri.requireSameScheme()
-        val authority = Authority(uri.host, uri.portOrDefaultPort)
+        val authority = uri.sftpAuthority
         synchronized(lock) {
             if (fileSystems[authority] != null) {
                 throw FileSystemAlreadyExistsException(authority.toString())
@@ -83,7 +82,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
 
     override fun getFileSystem(uri: URI): FileSystem {
         uri.requireSameScheme()
-        val authority = Authority(uri.host, uri.portOrDefaultPort)
+        val authority = uri.sftpAuthority
         return synchronized(lock) { fileSystems[authority] }
             ?: throw FileSystemNotFoundException(authority.toString())
     }
@@ -95,7 +94,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
 
     override fun getPath(uri: URI): Path {
         uri.requireSameScheme()
-        val authority = Authority(uri.host, uri.portOrDefaultPort)
+        val authority = uri.sftpAuthority
         val path = uri.decodedPathByteString
             ?: throw IllegalArgumentException("URI must have a path")
         return getOrNewFileSystem(authority).getPath(path)
@@ -106,8 +105,12 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
         require(scheme == SCHEME) { "URI scheme $scheme must be $SCHEME" }
     }
 
-    private val URI.portOrDefaultPort: Int
-        get() = if (port != -1) port else Authority.DEFAULT_PORT
+    private val URI.sftpAuthority: Authority
+        get() {
+            val port = if (port != -1) port else Authority.DEFAULT_PORT
+            val username = userInfo ?: ""
+            return Authority(host, port, username)
+        }
 
     @Throws(IOException::class)
     override fun newFileChannel(
@@ -254,13 +257,8 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
                 this += OpenMode.WRITE
             }
         }
-        val file = try {
-            Client.open(path, flags, FileAttributes.EMPTY)
-        } catch (e: ClientException) {
-            throw e.toFileSystemException(path.toString())
-        }
         try {
-            Client.close(file)
+            Client.access(path, flags)
         } catch (e: ClientException) {
             throw e.toFileSystemException(path.toString())
         }
@@ -275,7 +273,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
             return null
         }
         @Suppress("UNCHECKED_CAST")
-        return getFileAttributeView(path) as V
+        return getFileAttributeView(path, *options) as V
     }
 
     internal fun supportsFileAttributeView(type: Class<out FileAttributeView>): Boolean =
@@ -291,7 +289,7 @@ object SftpFileSystemProvider : FileSystemProvider(), PathObservableProvider, Se
             throw UnsupportedOperationException(type.toString())
         }
         @Suppress("UNCHECKED_CAST")
-        return getFileAttributeView(path).readAttributes() as A
+        return getFileAttributeView(path, *options).readAttributes() as A
     }
 
     private fun getFileAttributeView(path: Path, vararg options: LinkOption): SftpFileAttributeView {

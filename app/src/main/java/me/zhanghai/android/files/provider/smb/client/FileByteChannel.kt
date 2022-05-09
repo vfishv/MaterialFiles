@@ -18,6 +18,7 @@ import com.hierynomus.smbj.share.FileAccessor
 import java8.nio.channels.SeekableByteChannel
 import me.zhanghai.android.files.provider.common.ForceableChannel
 import me.zhanghai.android.files.util.closeSafe
+import me.zhanghai.android.files.util.findCauseByClass
 import java.io.Closeable
 import java.io.IOException
 import java.io.InterruptedIOException
@@ -34,9 +35,8 @@ class FileByteChannel(
     private val isAppend: Boolean
 ) : ForceableChannel, SeekableByteChannel {
     private var position = 0L
-    private val ioLock = Any()
-
     private val readBuffer = ReadBuffer()
+    private val ioLock = Any()
 
     private var isOpen = true
     private val closeLock = Any()
@@ -158,11 +158,12 @@ class FileByteChannel(
 
     private fun SMBRuntimeException.toIOException(): IOException =
         when {
-            this is SMBApiException && status == NtStatus.STATUS_FILE_CLOSED -> {
+            findCauseByClass<SMBApiException>()
+                .let { it != null && it.status == NtStatus.STATUS_FILE_CLOSED } -> {
                 synchronized(closeLock) { isOpen = false }
                 AsynchronousCloseException().apply { initCause(this@toIOException) }
             }
-            cause?.cause is InterruptedException -> {
+            findCauseByClass<InterruptedException>() != null -> {
                 closeSafe()
                 ClosedByInterruptException().apply { initCause(this@toIOException) }
             }
@@ -177,13 +178,14 @@ class FileByteChannel(
             if (!isOpen) {
                 return
             }
+            isOpen = false
             readBuffer.closeSafe()
             try {
                 file.close()
             } catch (e: SMBRuntimeException) {
                 throw when {
-                    e.cause?.cause is InterruptedException -> InterruptedIOException()
-                        .apply { initCause(e) }
+                    e.findCauseByClass<InterruptedException>() != null ->
+                        InterruptedIOException().apply { initCause(e) }
                     else -> IOException(e)
                 }
             }
@@ -211,7 +213,8 @@ class FileByteChannel(
         @Throws(IOException::class)
         fun read(destination: ByteBuffer): Int {
             if (!buffer.hasRemaining()) {
-                if (!readIntoBuffer()) {
+                readIntoBuffer()
+                if (!buffer.hasRemaining()) {
                     return -1
                 }
             }
@@ -224,24 +227,28 @@ class FileByteChannel(
         }
 
         @Throws(IOException::class)
-        private fun readIntoBuffer(): Boolean {
+        private fun readIntoBuffer() {
             val future = synchronized(pendingFutureLock) {
                 pendingFuture?.also { pendingFuture = null }
             } ?: readIntoBufferAsync()
             val response = try {
-                Futures.get(future, timeout, TimeUnit.MILLISECONDS, TransportException.Wrapper)
+                receive(future, timeout)
             } catch (e: SMBRuntimeException) {
                 throw e.toIOException()
             }
             when (response.header.statusCode) {
-                NtStatus.STATUS_END_OF_FILE.value -> return false
+                NtStatus.STATUS_END_OF_FILE.value -> {
+                    buffer.limit(0)
+                    return
+                }
                 NtStatus.STATUS_SUCCESS.value -> {}
                 else -> throw SMBApiException(response.header, "Read failed for $this")
                     .toIOException()
             }
             val data = response.data
             if (data.isEmpty()) {
-                return false
+                buffer.limit(0)
+                return
             }
             buffer.clear()
             val length = data.size.coerceAtMost(buffer.remaining())
@@ -249,15 +256,22 @@ class FileByteChannel(
             buffer.flip()
             bufferedPosition += length
             synchronized(pendingFutureLock) {
-                pendingFuture = try {
-                    readIntoBufferAsync()
+                try {
+                    pendingFuture = readIntoBufferAsync()
                 } catch (e: IOException) {
                     e.printStackTrace()
-                    null
                 }
             }
-            return true
         }
+
+        // @see com.hierynomus.smbj.share.Share.receive
+        @Throws(SMBRuntimeException::class)
+        private fun <T> receive(future: Future<T>, timeout: Long): T =
+            try {
+                Futures.get(future, timeout, TimeUnit.MILLISECONDS, TransportException.Wrapper)
+            } catch (e: TransportException) {
+                throw SMBRuntimeException(e)
+            }
 
         @Throws(IOException::class)
         private fun readIntoBufferAsync(): Future<SMB2ReadResponse> =
@@ -306,6 +320,8 @@ private class ByteBufferChunkProvider(
     override fun isAvailable(): Boolean = buffer.hasRemaining()
 
     override fun bytesLeft(): Int = buffer.remaining()
+
+    override fun prepareWrite(maxBytesToPrepare: Int) {}
 
     override fun getChunk(chunk: ByteArray): Int {
         val length = chunk.size.coerceAtMost(buffer.remaining())

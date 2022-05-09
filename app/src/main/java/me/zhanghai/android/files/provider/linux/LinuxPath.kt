@@ -5,7 +5,7 @@
 
 package me.zhanghai.android.files.provider.linux
 
-import android.Manifest
+import android.os.Build
 import android.os.Parcel
 import android.os.Parcelable
 import java8.nio.file.LinkOption
@@ -14,17 +14,15 @@ import java8.nio.file.ProviderMismatchException
 import java8.nio.file.WatchEvent
 import java8.nio.file.WatchKey
 import java8.nio.file.WatchService
-import me.zhanghai.android.effortlesspermissions.EffortlessPermissions
 import me.zhanghai.android.files.app.application
-import me.zhanghai.android.files.compat.readBooleanCompat
-import me.zhanghai.android.files.compat.writeBooleanCompat
+import me.zhanghai.android.files.compat.isPrimaryCompat
+import me.zhanghai.android.files.compat.pathFileCompat
 import me.zhanghai.android.files.provider.common.ByteString
-import me.zhanghai.android.files.provider.common.ByteStringBuilder
 import me.zhanghai.android.files.provider.common.ByteStringListPath
-import me.zhanghai.android.files.provider.common.toByteString
-import me.zhanghai.android.files.provider.root.RootStrategy
 import me.zhanghai.android.files.provider.root.RootablePath
+import me.zhanghai.android.files.storage.StorageVolumeListLiveData
 import me.zhanghai.android.files.util.readParcelable
+import me.zhanghai.android.files.util.valueCompat
 import java.io.File
 import java.io.IOException
 
@@ -53,12 +51,6 @@ internal class LinuxPath : ByteStringListPath<LinuxPath>, RootablePath {
     override fun createPath(absolute: Boolean, segments: List<ByteString>): LinuxPath =
         LinuxPath(fileSystem, absolute, segments)
 
-    override val uriSchemeSpecificPart: ByteString?
-        get() =
-            ByteStringBuilder(BYTE_STRING_TWO_SLASHES)
-                .append(super.uriSchemeSpecificPart!!)
-                .toByteString()
-
     override val defaultDirectory: LinuxPath
         get() = fileSystem.defaultDirectory
 
@@ -85,32 +77,64 @@ internal class LinuxPath : ByteStringListPath<LinuxPath>, RootablePath {
         return watcher.register(this, events, *modifiers)
     }
 
-    @Volatile
-    override var isRootPreferred: Boolean = false
-
-    override val rootStrategy: RootStrategy
-        get() {
-            val strategy = super.rootStrategy
-            if (strategy == RootStrategy.PREFER_NO && !isStoragePermissionGranted) {
-                return RootStrategy.NEVER
+    override fun isRootRequired(isAttributeAccess: Boolean): Boolean {
+        val file = toFile()
+        return StorageVolumeListLiveData.valueCompat.none {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R && !it.isPrimaryCompat) {
+                return@none false
             }
-            return strategy
+            val storageVolumeDirectory = it.pathFileCompat
+            if (!file.startsWith(storageVolumeDirectory)) {
+                return@none false
+            }
+            return@none file.isAccessibleInStorageVolume(storageVolumeDirectory, isAttributeAccess)
         }
+    }
+
+    private fun File.isAccessibleInStorageVolume(
+        storageVolumeDirectory: File,
+        isAttributeAccess: Boolean
+    ): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val parentDirectory = parentFile
+            val androidDataDirectory = storageVolumeDirectory.resolve(FILE_ANDROID_DATA)
+            val isInAndroidDataDirectory = if (isAttributeAccess && parentDirectory != null) {
+                parentDirectory.startsWith(androidDataDirectory)
+            } else {
+                startsWith(androidDataDirectory)
+            }
+            val appPackageName = application.packageName
+            if (isInAndroidDataDirectory) {
+                val appDataDirectory = androidDataDirectory.resolve(appPackageName)
+                return startsWith(appDataDirectory)
+            }
+            val androidObbDirectory = storageVolumeDirectory.resolve(FILE_ANDROID_OBB)
+            val isInAndroidObbDirectory = if (isAttributeAccess && parentDirectory != null) {
+                parentDirectory.startsWith(androidObbDirectory)
+            } else {
+                startsWith(androidObbDirectory)
+            }
+            if (isInAndroidObbDirectory) {
+                val appObbDirectory = androidObbDirectory.resolve(appPackageName)
+                return startsWith(appObbDirectory)
+            }
+        }
+        return true
+    }
 
     private constructor(source: Parcel) : super(source) {
         fileSystem = source.readParcelable()!!
-        isRootPreferred = source.readBooleanCompat()
     }
 
     override fun writeToParcel(dest: Parcel, flags: Int) {
         super.writeToParcel(dest, flags)
 
         dest.writeParcelable(fileSystem, flags)
-        dest.writeBooleanCompat(isRootPreferred)
     }
 
     companion object {
-        private val BYTE_STRING_TWO_SLASHES = "//".toByteString()
+        private val FILE_ANDROID_DATA = File("Android/data")
+        private val FILE_ANDROID_OBB = File("Android/obb")
 
         @JvmField
         val CREATOR = object : Parcelable.Creator<LinuxPath> {
@@ -123,18 +147,3 @@ internal class LinuxPath : ByteStringListPath<LinuxPath>, RootablePath {
 
 val Path.isLinuxPath: Boolean
     get() = this is LinuxPath
-
-// IPC for checking the storage permission is expensive if we do it on every file system access, so
-// cache its result here.
-@Volatile
-private var wasStoragePermissionGranted: Boolean = false
-private val isStoragePermissionGranted: Boolean
-    get() {
-        // Android kills an app if the user revokes any of its runtime permissions.
-        if (wasStoragePermissionGranted) {
-            return true
-        }
-        return EffortlessPermissions.hasPermissions(
-            application, Manifest.permission.WRITE_EXTERNAL_STORAGE
-        ).also { wasStoragePermissionGranted = it }
-    }

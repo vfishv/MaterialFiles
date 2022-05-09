@@ -8,6 +8,7 @@ package me.zhanghai.android.files.provider.sftp.client
 import java8.nio.channels.SeekableByteChannel
 import me.zhanghai.android.files.provider.common.ForceableChannel
 import me.zhanghai.android.files.util.closeSafe
+import me.zhanghai.android.files.util.findCauseByClass
 import net.schmizz.concurrent.Promise
 import net.schmizz.sshj.sftp.PacketType
 import net.schmizz.sshj.sftp.RemoteFile
@@ -15,7 +16,6 @@ import net.schmizz.sshj.sftp.RemoteFileAccessor
 import net.schmizz.sshj.sftp.Response
 import net.schmizz.sshj.sftp.SFTPException
 import java.io.IOException
-import java.io.InterruptedIOException
 import java.nio.ByteBuffer
 import java.nio.channels.AsynchronousCloseException
 import java.nio.channels.ClosedByInterruptException
@@ -28,9 +28,8 @@ class FileByteChannel(
     private val isAppend: Boolean
 ) : ForceableChannel, SeekableByteChannel {
     private var position = 0L
-    private val ioLock = Any()
-
     private val readBuffer = ReadBuffer()
+    private val ioLock = Any()
 
     private var isOpen = true
     private val closeLock = Any()
@@ -155,7 +154,7 @@ class FileByteChannel(
                 synchronized(closeLock) { isOpen = false }
                 AsynchronousCloseException().apply { initCause(this@maybeToSpecificException) }
             }
-            this is InterruptedIOException || cause is InterruptedException -> {
+            findCauseByClass<InterruptedException>() != null -> {
                 closeSafe()
                 ClosedByInterruptException().apply { initCause(this@maybeToSpecificException) }
             }
@@ -170,6 +169,7 @@ class FileByteChannel(
             if (!isOpen) {
                 return
             }
+            isOpen = false
             try {
                 file.close()
             } catch (e: SFTPException) {
@@ -182,12 +182,11 @@ class FileByteChannel(
     }
 
     private inner class ReadBuffer {
-        private val bufferSize: Int
+        private val bufferSize: Int = DEFAULT_BUFFER_SIZE
         private val timeout: Long
 
         init {
             val engine = RemoteFileAccessor.getRequester(file)
-            bufferSize = DEFAULT_BUFFER_SIZE
             timeout = engine.timeoutMs.toLong()
         }
 
@@ -200,7 +199,8 @@ class FileByteChannel(
         @Throws(IOException::class)
         fun read(destination: ByteBuffer): Int {
             if (!buffer.hasRemaining()) {
-                if (!readIntoBuffer()) {
+                readIntoBuffer()
+                if (!buffer.hasRemaining()) {
                     return -1
                 }
             }
@@ -213,7 +213,7 @@ class FileByteChannel(
         }
 
         @Throws(IOException::class)
-        private fun readIntoBuffer(): Boolean {
+        private fun readIntoBuffer() {
             val promise = synchronized(pendingPromiseLock) {
                 pendingPromise?.also { pendingPromise = null }
             } ?: readIntoBufferAsync()
@@ -226,7 +226,8 @@ class FileByteChannel(
             when (response.type) {
                 PacketType.STATUS -> {
                     response.ensureStatusIs(Response.StatusCode.EOF)
-                    return false
+                    buffer.limit(0)
+                    return
                 }
                 PacketType.DATA -> {
                     dataLength = response.readUInt32AsInt()
@@ -234,7 +235,8 @@ class FileByteChannel(
                 else -> throw SFTPException("Unexpected packet type ${response.type}")
             }
             if (dataLength == 0) {
-                return false
+                buffer.limit(0)
+                return
             }
             buffer.clear()
             val length = dataLength.coerceAtMost(buffer.remaining())
@@ -242,14 +244,12 @@ class FileByteChannel(
             buffer.flip()
             bufferedPosition += length
             synchronized(pendingPromiseLock) {
-                pendingPromise = try {
-                    readIntoBufferAsync()
+                try {
+                    pendingPromise = readIntoBufferAsync()
                 } catch (e: IOException) {
                     e.printStackTrace()
-                    null
                 }
             }
-            return true
         }
 
         @Throws(IOException::class)
@@ -268,9 +268,7 @@ class FileByteChannel(
             if (newBufferPosition in 0..buffer.limit()) {
                 buffer.position(newBufferPosition.toInt())
             } else {
-                synchronized(pendingPromiseLock) {
-                    pendingPromise = null
-                }
+                synchronized(pendingPromiseLock) { pendingPromise = null }
                 buffer.limit(0)
                 bufferedPosition = newPosition
             }

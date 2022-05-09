@@ -16,9 +16,17 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission
+        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="30" />
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
 
     <!-- Shizuku requires API 23. -->
@@ -36,6 +44,7 @@
         android:icon="@mipmap/launcher_icon"
         android:label="@string/app_name"
         android:requestLegacyExternalStorage="true"
+        android:requestRawExternalStorageAccess="true"
         android:resizeableActivity="true"
         android:roundIcon="@mipmap/launcher_icon"
         android:supportsRtl="true"
@@ -44,6 +53,7 @@
 
         <activity
             android:name="me.zhanghai.android.files.filelist.FileListActivity"
+            android:exported="true"
             android:visibleToInstantApps="true"
             tools:ignore="UnusedAttribute">
             <intent-filter>
@@ -58,11 +68,9 @@
                 <data android:mimeType="vnd.android.document/directory" />
             </intent-filter>
             <!-- @see me.zhanghai.android.files.file.isSupportedArchive -->
-            <!--
-              ~ We don't really support content URI archives.
-              ~ TODO: Figure out a good way to allow choosing this activity only in our app, or
-              ~ support content URI archives.
-            <intent-filter tools:ignore="AppLinkUrlError">
+            <intent-filter
+                android:label="@string/archive_viewer_title"
+                tools:ignore="AppLinkUrlError">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/gzip" />
@@ -71,7 +79,6 @@
                 <data android:mimeType="application/zip" />
                 <data android:mimeType="application/vnd.android.package-archive" />
                 <data android:mimeType="application/vnd.debian.binary-package" />
-                <data android:mimeType="application/x-7z-compressed" />
                 <data android:mimeType="application/x-bzip2" />
                 <data android:mimeType="application/x-compress" />
                 <data android:mimeType="application/x-cpio" />
@@ -83,8 +90,8 @@
                 <data android:mimeType="application/x-lzma" />
                 <data android:mimeType="application/x-tar" />
                 <data android:mimeType="application/x-xz" />
+                <data android:mimeType="@string/intent_filter_data_seven_z_mime_type" />
             </intent-filter>
-            -->
             <!-- @see https://android.googlesource.com/platform/packages/apps/DocumentsUI/+/master/AndroidManifest.xml -->
             <intent-filter>
                 <action android:name="android.intent.action.OPEN_DOCUMENT" />
@@ -131,6 +138,7 @@
             android:name="me.zhanghai.android.files.filelist.OpenFileActivity"
             android:documentLaunchMode="always"
             android:excludeFromRecents="true"
+            android:exported="true"
             android:theme="@style/Theme.MaterialFiles.Translucent">
             <intent-filter>
                 <action android:name="me.zhanghai.android.files.intent.action.OPEN_FILE" />
@@ -174,6 +182,11 @@
             android:theme="@style/Theme.MaterialFiles.Translucent" />
 
         <activity
+            android:name="me.zhanghai.android.files.storage.EditFtpServerActivity"
+            android:label="@string/storage_edit_ftp_server_title_edit"
+            android:theme="@style/Theme.MaterialFiles" />
+
+        <activity
             android:name="me.zhanghai.android.files.storage.EditSftpServerActivity"
             android:label="@string/storage_edit_sftp_server_title_edit"
             android:theme="@style/Theme.MaterialFiles" />
@@ -195,6 +208,7 @@
 
         <activity
             android:name="me.zhanghai.android.files.ftpserver.FtpServerActivity"
+            android:exported="true"
             android:label="@string/ftp_server_title"
             android:launchMode="singleTop"
             android:theme="@style/Theme.MaterialFiles">
@@ -210,6 +224,7 @@
 
         <activity
             android:name="me.zhanghai.android.files.settings.SettingsActivity"
+            android:exported="true"
             android:label="@string/settings_title"
             android:launchMode="singleTop"
             android:theme="@style/Theme.MaterialFiles">
@@ -255,6 +270,7 @@
 
         <activity
             android:name="me.zhanghai.android.files.viewer.text.TextEditorActivity"
+            android:exported="true"
             android:label="@string/text_editor_title"
             android:theme="@style/Theme.MaterialFiles">
             <intent-filter tools:ignore="AppLinkUrlError">
@@ -273,6 +289,7 @@
 
         <activity
             android:name="me.zhanghai.android.files.viewer.image.ImageViewerActivity"
+            android:exported="true"
             android:label="@string/image_viewer_title"
             android:theme="@style/Theme.MaterialFiles.Immersive">
             <intent-filter tools:ignore="AppLinkUrlError">
@@ -288,12 +305,16 @@
 
         <service
             android:name="me.zhanghai.android.files.ftpserver.FtpServerTileService"
+            android:exported="true"
             android:icon="@drawable/shared_directory_icon_white_24dp"
             android:label="@string/ftp_server_title"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE"/>
             </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
         </service>
 
         <provider
@@ -314,11 +335,5 @@
         <meta-data
             android:name="firebase_crashlytics_collection_enabled"
             android:value="false" />
-
-        <!-- We need to reference the MD3 theme in XML for R8 to keep relevant resources. -->
-        <activity
-            android:name=".KeepMd3Resources"
-            android:theme="@style/Theme.MaterialFiles.Md3"
-            tools:ignore="MissingClass" />
     </application>
 </manifest>

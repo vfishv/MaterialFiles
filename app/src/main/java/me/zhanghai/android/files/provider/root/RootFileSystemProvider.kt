@@ -8,7 +8,6 @@ package me.zhanghai.android.files.provider.root
 import java8.nio.file.FileSystem
 import java8.nio.file.LinkOption
 import java8.nio.file.Path
-import java8.nio.file.attribute.BasicFileAttributes
 import java8.nio.file.attribute.FileAttributeView
 import me.zhanghai.android.files.provider.remote.RemoteFileSystemProvider
 import me.zhanghai.android.files.provider.remote.RemoteInterface
@@ -38,14 +37,6 @@ open class RootFileSystemProvider(scheme: String) : RemoteFileSystemProvider(
         type: Class<V>,
         vararg options: LinkOption
     ): V? {
-        throw AssertionError()
-    }
-
-    override fun <A : BasicFileAttributes> readAttributes(
-        path: Path,
-        type: Class<A>,
-        vararg options: LinkOption
-    ): A {
         throw AssertionError()
     }
 }

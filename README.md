@@ -10,7 +10,7 @@ An open source Material Design file manager, for Android 5.0+.
 
 [Get it on Coolapk](https://www.coolapk.com/apk/me.zhanghai.android.files) [Get the APK](https://github.com/zhanghai/MaterialFiles/releases/latest/download/app-release.apk)
 
-[Help translation on Transifex](https://www.transifex.com/zhanghai/MaterialFiles/)
+[Help translation on Transifex](https://www.transifex.com/zhanghai/MaterialFiles/) ([Search Android & GNOME translations](https://translations.zhanghai.me/), [Search Microsoft translations](https://www.microsoft.com/en-us/language), [MIME type translations](https://github.com/freedesktop/xdg-shared-mime-info/tree/master/po))
 
 ## Preview
 
@@ -24,7 +24,7 @@ An open source Material Design file manager, for Android 5.0+.
 - Breadcrumbs: Navigate in the filesystem with ease.
 - Root support: View and manage files with root access.
 - Archive support: View, extract and create common compressed files.
-- NAS support: View and manage files on SFTP and SMB servers.
+- NAS support: View and manage files on FTP, SFTP and SMB servers.
 - Themes: Customizable UI colors, plus night mode with optional true black.
 - Linux-aware: Like [Nautilus](https://wiki.gnome.org/action/show/Apps/Files), knows symbolic links, file permissions and SELinux context.
 - Robust: Uses Linux system calls under the hood, not yet another [`ls` parser](https://news.ycombinator.com/item?id=7994720).
@@ -64,7 +64,7 @@ Thank you if you choose to include Material Files in your custom ROM! However si
 
 - Please make sure this app can be uninstalled or at least disabled. Some users may not want this app for a variety of reasons, and get very upset when they can't remove it.
 
-- Please avoid conflict with the Play/F-Droid version of this app. App stores cannot update apps signed with a different signature, so you can either ship an APK that's signed by me (or F-Droid) so that users will be able to update it on Play/F-Droid, or fork this project and rename the package name when you need to sign the APK with a different certificate and potentially making other changes.
+- Please avoid conflict with the Play/F-Droid version of this app. App stores cannot update apps signed with a different certificate, so you can either ship an APK that's signed by me (or F-Droid) so that users will be able to update it on Play/F-Droid, or fork this project and rename the package name when you need to sign the APK with a different certificate and potentially making other changes.
 
 ## License
 

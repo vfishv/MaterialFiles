@@ -18,14 +18,11 @@ import net.schmizz.sshj.userauth.password.PasswordUtils
 import java.io.IOException
 
 sealed class Authentication : Parcelable {
-    abstract val username: String
-
     abstract fun toAuthMethod(): AuthMethod
 }
 
 @Parcelize
 data class PasswordAuthentication(
-    override val username: String,
     val password: String
 ) : Authentication() {
     override fun toAuthMethod(): AuthMethod =
@@ -34,33 +31,38 @@ data class PasswordAuthentication(
 
 @Parcelize
 data class PublicKeyAuthentication(
-    override val username: String,
-    val privateKey: String
+    val privateKey: String,
+    val privateKeyPassword: String?
 ) : Authentication() {
     override fun toAuthMethod(): AuthMethod =
-        AuthPublickey(privateKey.toKeyProvider())
+        AuthPublickey(createKeyProvider(privateKey, privateKeyPassword))
 
     companion object {
         private val KEY_PROVIDER_FACTORIES = DefaultConfig().fileKeyProviderFactories
 
-        fun validatePrivateKey(privateKey: String): Boolean =
+        fun validate(privateKey: String, privateKeyPassword: String?): IOException? =
             try {
-                privateKey.toKeyProvider().private
-                true
+                createKeyProvider(privateKey, privateKeyPassword).private
+                null
             } catch (e: IOException) {
-                e.printStackTrace()
-                false
+                e
             }
 
         /**
          * @see net.schmizz.sshj.SSHClient.loadKeys
          */
         @Throws(IOException::class)
-        private fun String.toKeyProvider(): KeyProvider {
-            val format = KeyProviderUtil.detectKeyFileFormat(this, false)
+        private fun createKeyProvider(
+            privateKey: String,
+            privateKeyPassword: String?
+        ): KeyProvider {
+            val format = KeyProviderUtil.detectKeyFileFormat(privateKey, false)
             val keyProvider = Factory.Named.Util.create(KEY_PROVIDER_FACTORIES, format.toString())
                 ?: throw IOException("No key provider factory found for $format")
-            keyProvider.init(this, null)
+            keyProvider.init(
+                privateKey, null,
+                privateKeyPassword?.let { PasswordUtils.createOneOff(it.toCharArray()) }
+            )
             return keyProvider
         }
     }

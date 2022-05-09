@@ -28,8 +28,8 @@ import me.zhanghai.android.files.provider.common.PathListDirectoryStream
 import me.zhanghai.android.files.provider.common.ReadOnlyFileSystemException
 import me.zhanghai.android.files.provider.common.Searchable
 import me.zhanghai.android.files.provider.common.WalkFileTreeSearchable
-import me.zhanghai.android.files.provider.common.decodedFragmentByteString
-import me.zhanghai.android.files.provider.common.decodedSchemeSpecificPartByteString
+import me.zhanghai.android.files.provider.common.decodedPathByteString
+import me.zhanghai.android.files.provider.common.decodedQueryByteString
 import me.zhanghai.android.files.provider.common.isSameFile
 import me.zhanghai.android.files.provider.common.toAccessModes
 import me.zhanghai.android.files.provider.common.toByteString
@@ -72,9 +72,9 @@ class LocalArchiveFileSystemProvider(
     override fun getPath(uri: URI): Path {
         uri.requireSameScheme()
         val archiveFile = uri.archiveFile
-        val fragment = uri.decodedFragmentByteString
-            ?: throw IllegalArgumentException("URI must have a fragment")
-        return getOrNewFileSystem(archiveFile).getPath(fragment)
+        val path = uri.decodedQueryByteString
+            ?: throw IllegalArgumentException("URI must have a query")
+        return getOrNewFileSystem(archiveFile).getPath(path)
     }
 
     private fun URI.requireSameScheme() {
@@ -84,9 +84,10 @@ class LocalArchiveFileSystemProvider(
 
     private val URI.archiveFile: Path
         get() {
-            val schemeSpecificPart = decodedSchemeSpecificPartByteString
-                ?: throw IllegalArgumentException("URI must have a scheme specific part")
-            val archiveUri = URI.create(schemeSpecificPart.toString())
+            val path = decodedPathByteString
+                ?: throw IllegalArgumentException("URI must have a path")
+            // Drop the first character which is always a slash.
+            val archiveUri = URI.create(path.toString().drop(1))
             return Paths.get(archiveUri)
         }
 

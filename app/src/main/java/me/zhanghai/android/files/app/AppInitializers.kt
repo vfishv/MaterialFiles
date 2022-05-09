@@ -13,24 +13,27 @@ import com.jakewharton.threetenabp.AndroidThreeTen
 import jcifs.context.SingletonContext
 import me.zhanghai.android.files.BuildConfig
 import me.zhanghai.android.files.coil.initializeCoil
-import me.zhanghai.android.files.compat.RestrictedHiddenApiAccess
 import me.zhanghai.android.files.filejob.fileJobNotificationTemplate
 import me.zhanghai.android.files.ftpserver.ftpServerServiceNotificationTemplate
+import me.zhanghai.android.files.hiddenapi.HiddenApi
 import me.zhanghai.android.files.provider.FileSystemProviders
 import me.zhanghai.android.files.settings.Settings
+import me.zhanghai.android.files.storage.FtpServerAuthenticator
 import me.zhanghai.android.files.storage.SftpServerAuthenticator
 import me.zhanghai.android.files.storage.SmbServerAuthenticator
+import me.zhanghai.android.files.storage.StorageVolumeListLiveData
 import me.zhanghai.android.files.theme.custom.CustomThemeHelper
 import me.zhanghai.android.files.theme.night.NightModeHelper
 import java.util.Properties
+import me.zhanghai.android.files.provider.ftp.client.Client as FtpClient
 import me.zhanghai.android.files.provider.sftp.client.Client as SftpClient
 import me.zhanghai.android.files.provider.smb.client.Client as SmbClient
 
 val appInitializers = listOf(
-    ::initializeCrashlytics, ::allowRestrictedHiddenApiAccess, ::initializeThreeTen,
+    ::initializeCrashlytics, ::disableHiddenApiChecks, ::initializeThreeTen,
     ::initializeWebViewDebugging, ::initializeStetho, ::initializeCoil,
-    ::initializeFileSystemProviders, ::upgradeApp, ::initializeSettings, ::initializeCustomTheme,
-    ::initializeNightMode, ::createNotificationChannels
+    ::initializeFileSystemProviders, ::upgradeApp, ::initializeLiveDataObjects,
+    ::initializeCustomTheme, ::initializeNightMode, ::createNotificationChannels
 )
 
 private fun initializeCrashlytics() {
@@ -39,8 +42,8 @@ private fun initializeCrashlytics() {
 //#endif
 }
 
-private fun allowRestrictedHiddenApiAccess() {
-    RestrictedHiddenApiAccess.allow()
+private fun disableHiddenApiChecks() {
+    HiddenApi.disableHiddenApiChecks()
 }
 
 private fun initializeThreeTen() {
@@ -69,12 +72,14 @@ private fun initializeFileSystemProviders() {
             }
         )
     }
+    FtpClient.authenticator = FtpServerAuthenticator
     SftpClient.authenticator = SftpServerAuthenticator
     SmbClient.authenticator = SmbServerAuthenticator
 }
 
-private fun initializeSettings() {
-    // Force initialization of Settings so that it won't happen on a background thread.
+private fun initializeLiveDataObjects() {
+    // Force initialization of LiveData objects so that it won't happen on a background thread.
+    StorageVolumeListLiveData.value
     Settings.FILE_LIST_DEFAULT_DIRECTORY.value
 }
 

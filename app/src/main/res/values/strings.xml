@@ -26,8 +26,9 @@
     <string name="maybe_later">Maybe later</string>
     <string name="merge">Merge</string>
     <string name="none">None</string>
+    <string name="open_navigation_drawer">Open navigation drawer</string>
     <string name="paste">Paste</string>
-    <string name="pick">@string/select</string>
+    <string name="pick" translatable="false">@string/select</string>
     <string name="refresh">Refresh</string>
     <string name="reload">Reload</string>
     <string name="remove">Remove</string>
@@ -49,7 +50,7 @@
 
     <!-- android.R.string.app_not_found -->
     <string name="activity_not_found">No application found to handle this action</string>
-    <string name="copied_to_clipboard_format">@string/preference_copied</string>
+    <string name="copied_to_clipboard_format" translatable="false">@string/preference_copied</string>
     <string name="open_settings">Open settings</string>
     <string name="shortcut_created">Shortcut created</string>
 
@@ -58,8 +59,9 @@
         <item quantity="other">%1$,d bytes</item>
     </plurals>
 
-    <string name="storage_permission_request_message">App needs permission to access files. Please click “ALLOW” in the upcoming system dialog.</string>
+    <string name="storage_permission_rationale_message">App needs permission to access files. Please click “ALLOW” in the upcoming system dialog.</string>
     <string name="storage_permission_permanently_denied_message">App needs permission to access files. Please grant the “Storage” permission in system settings.</string>
+    <string name="all_files_access_rationale_message">App needs access to manage all files. Please allow the access in the upcoming system setting.</string>
 
     <string name="notification_channel_background_activity_start_name">Actions while background</string>
     <string name="notification_channel_background_activity_start_description">Take actions while app is in the background</string>
@@ -215,7 +217,7 @@
     <string name="file_job_action_all">Apply this action to all files</string>
 
     <string name="file_open_apk_message">This file is an Android package. Do you want to install it, or view its contents?</string>
-    <string name="file_edit_title">@string/edit</string>
+    <string name="file_edit_title" translatable="false">@string/edit</string>
     <string name="file_open_as_title">Open as…</string>
     <string name="file_open_as_title_format">Open “%1$s” as</string>
     <string name="file_open_as_type_text">Text</string>
@@ -233,9 +235,18 @@
     <string name="file_name_error_already_exists">A file with this name already exists</string>
     <string name="file_delete_message_file_format">Delete “%1$s”?</string>
     <string name="file_delete_message_directory_format">Delete folder “%1$s” and its contents?</string>
-    <string name="file_delete_message_multiple_files_format">Delete %1$,d files?</string>
-    <string name="file_delete_message_multiple_directories_format">Delete %1$,d folders and their contents?</string>
-    <string name="file_delete_message_multiple_mixed_format">Delete %1$,d items?</string>
+    <plurals name="file_delete_message_multiple_files_format">
+        <item quantity="one">Delete %1$,d file?</item>
+        <item quantity="other">Delete %1$,d files?</item>
+    </plurals>
+    <plurals name="file_delete_message_multiple_directories_format">
+        <item quantity="one">Delete %1$,d folder and its content?</item>
+        <item quantity="other">Delete %1$,d folders and their contents?</item>
+    </plurals>
+    <plurals name="file_delete_message_multiple_mixed_format">
+        <item quantity="one">Delete %1$,d item?</item>
+        <item quantity="other">Delete %1$,d items?</item>
+    </plurals>
     <string name="file_create_archive_title">Create archive</string>
     <string name="file_create_archive_type_zip">.zip</string>
     <string name="file_create_archive_type_tar_xz">.tar.xz</string>
@@ -262,6 +273,8 @@
         <item quantity="other">%1$,d files</item>
     </plurals>
     <string name="file_list_subtitle_separator">,\u0020</string>
+    <string name="file_list_path_error_empty">Path cannot be empty</string>
+    <string name="file_list_path_error_invalid">Invalid path</string>
     <string name="file_list_action_sort_by_name">Name</string>
     <string name="file_list_action_sort_by_type">Type</string>
     <string name="file_list_action_sort_by_size">Size</string>
@@ -271,16 +284,18 @@
     <string name="file_list_action_sort_path_specific">Only for this folder</string>
     <string name="file_list_action_new_task">New window</string>
     <string name="file_list_action_navigate_up">Go up</string>
+    <string name="file_list_action_navigate_to">Go to</string>
+    <string name="file_list_navigate_to_title" translatable="false">@string/file_list_action_navigate_to</string>
     <string name="file_list_action_show_hidden_files">Show hidden files</string>
     <string name="file_list_action_copy_path">Copy path</string>
     <string name="file_list_action_open_in_terminal">Open in terminal</string>
     <string name="file_list_action_add_bookmark">Add bookmark</string>
     <string name="file_list_action_create_shortcut">Create shortcut</string>
-    <string name="file_list_breadcrumb_action_copy_path">@string/file_list_action_copy_path</string>
+    <string name="file_list_breadcrumb_action_copy_path" translatable="false">@string/file_list_action_copy_path</string>
     <string name="file_list_breadcrumb_action_open_in_new_task">Open in new window</string>
     <string name="file_list_select_title_format">%1$,d selected</string>
-    <string name="file_list_select_action_extract">@string/file_item_action_extract</string>
-    <string name="file_list_select_action_archive">@string/file_item_action_archive</string>
+    <string name="file_list_select_action_extract" translatable="false">@string/file_item_action_extract</string>
+    <string name="file_list_select_action_archive" translatable="false">@string/file_item_action_archive</string>
     <string name="file_list_select_current_directory_format">Select “%1$s”</string>
     <string name="file_list_paste_move_title_format">Moving %1$,d</string>
     <string name="file_list_paste_copy_title_format">Copying %1$,d</string>
@@ -294,9 +309,9 @@
     <string name="file_item_action_open_with">Open with</string>
     <string name="file_item_action_extract">Extract</string>
     <string name="file_item_action_archive">Compress</string>
-    <string name="file_item_action_copy_path">@string/file_list_action_copy_path</string>
-    <string name="file_item_action_add_bookmark">@string/file_list_action_add_bookmark</string>
-    <string name="file_item_action_create_shortcut">@string/file_list_action_create_shortcut</string>
+    <string name="file_item_action_copy_path" translatable="false">@string/file_list_action_copy_path</string>
+    <string name="file_item_action_add_bookmark" translatable="false">@string/file_list_action_add_bookmark</string>
+    <string name="file_item_action_create_shortcut" translatable="false">@string/file_list_action_create_shortcut</string>
     <string name="file_item_action_properties">Properties</string>
 
     <string name="file_properties_title_format">“%1$s” properties</string>
@@ -430,6 +445,9 @@
         <item>Android 9</item>
         <item>Android 10</item>
         <item>Android 11</item>
+        <item>Android 12</item>
+        <item>Android 12L</item>
+        <item>Android 13</item>
         <item>Android ?</item>
     </string-array>
     <string-array name="file_properites_apk_sdk_version_codenames" translatable="false">
@@ -464,6 +482,9 @@
         <item>P</item>
         <item>Q</item>
         <item>R</item>
+        <item>S</item>
+        <item>S_V2</item>
+        <item>T</item>
         <item>\?</item>
     </string-array>
     <string name="file_properties_apk_requested_permissions">Permissions</string>
@@ -480,7 +501,10 @@
     <string name="storage_list_title">Storage</string>
     <string name="storage_list_empty">No storage</string>
     <string name="storage_add_storage_title">Add storage</string>
+    <string name="storage_add_storage_android_data" translatable="false">Android/data</string>
+    <string name="storage_add_storage_android_obb" translatable="false">Android/obb</string>
     <string name="storage_add_storage_document_tree">External storage</string>
+    <string name="storage_add_storage_ftp_server">FTP server</string>
     <string name="storage_add_storage_sftp_server">SFTP server</string>
     <string name="storage_add_storage_smb_server">SMB server</string>
     <string name="storage_edit_device_storage_title">Edit device storage</string>
@@ -491,10 +515,45 @@
     <string name="storage_edit_document_tree_name">Name</string>
     <string name="storage_edit_document_tree_uri">URI</string>
     <string name="storage_edit_document_tree_path">Path</string>
+    <string name="storage_edit_ftp_server_title_edit">Edit FTP server</string>
+    <string name="storage_edit_ftp_server_title_add">Add FTP server</string>
+    <string name="storage_edit_ftp_server_host">Hostname</string>
+    <string name="storage_edit_ftp_server_host_error_empty">Enter a hostname</string>
+    <string name="storage_edit_ftp_server_host_error_invalid">Invalid hostname</string>
+    <string name="storage_edit_ftp_server_port">Port</string>
+    <string name="storage_edit_ftp_server_port_placeholder" translatable="false">21</string>
+    <string name="storage_edit_ftp_server_port_error_invalid">Invalid port</string>
+    <string name="storage_edit_ftp_server_path">Path</string>
+    <string name="storage_edit_ftp_server_path_placeholder">Can be left empty</string>
+    <string name="storage_edit_ftp_server_name">Name</string>
+    <string name="storage_edit_ftp_server_name_placeholder">Use hostname</string>
+    <string name="storage_edit_ftp_server_protocol">Protocol</string>
+    <string-array name="storage_edit_ftp_server_protocol_entries" translatable="false">
+        <item>FTP</item>
+        <item>FTPS</item>
+        <item>FTPES</item>
+    </string-array>
+    <string name="storage_edit_ftp_server_authentication_type">Authentication</string>
+    <string-array name="storage_edit_ftp_server_authentication_type_entries">
+        <item>Password</item>
+        <item>Anonymous</item>
+    </string-array>
+    <string name="storage_edit_ftp_server_username">Username</string>
+    <string name="storage_edit_ftp_server_username_error_empty">Enter a username</string>
+    <string name="storage_edit_ftp_server_password">Password</string>
+    <string name="storage_edit_ftp_server_mode">Mode</string>
+    <string-array name="storage_edit_ftp_server_mode_entries">
+        <item>Active</item>
+        <item>Passive</item>
+    </string-array>
+    <string name="storage_edit_ftp_server_encoding">Encoding</string>
+    <string name="storage_edit_ftp_server_connect_and_add">Connect and add</string>
+    <string name="storage_edit_ftp_server_add">Add</string>
     <string name="storage_edit_sftp_server_title_edit">Edit SFTP server</string>
     <string name="storage_edit_sftp_server_title_add">Add SFTP server</string>
     <string name="storage_edit_sftp_server_host">Hostname</string>
     <string name="storage_edit_sftp_server_host_error_empty">Enter a hostname</string>
+    <string name="storage_edit_sftp_server_host_error_invalid">Invalid hostname</string>
     <string name="storage_edit_sftp_server_port">Port</string>
     <string name="storage_edit_sftp_server_port_placeholder" translatable="false">22</string>
     <string name="storage_edit_sftp_server_port_error_invalid">Invalid port</string>
@@ -514,15 +573,19 @@
     <string name="storage_edit_sftp_server_private_key_open_file">Open file</string>
     <string name="storage_edit_sftp_server_private_key_error_empty">Enter a private key</string>
     <string name="storage_edit_sftp_server_private_key_error_invalid">Invalid private key</string>
+    <string name="storage_edit_sftp_server_private_key_password">Private key password</string>
+    <string name="storage_edit_sftp_server_private_key_password_placeholder">Can be left empty</string>
+    <string name="storage_edit_sftp_server_private_key_password_error_invalid">Invalid private key password</string>
     <string name="storage_edit_sftp_server_connect_and_add">Connect and add</string>
     <string name="storage_edit_sftp_server_add">Add</string>
-    <string name="storage_add_lan_smb_server_title">@string/storage_edit_smb_server_title_add</string>
+    <string name="storage_add_lan_smb_server_title" translatable="false">@string/storage_edit_smb_server_title_add</string>
     <string name="storage_add_lan_smb_server_loading">Searching for SMB servers…</string>
     <string name="storage_add_lan_smb_server_add">Add manually</string>
     <string name="storage_edit_smb_server_title_edit">Edit SMB server</string>
     <string name="storage_edit_smb_server_title_add">Add SMB server</string>
     <string name="storage_edit_smb_server_host">Hostname</string>
     <string name="storage_edit_smb_server_host_error_empty">Enter a hostname</string>
+    <string name="storage_edit_smb_server_host_error_invalid">Invalid hostname</string>
     <string name="storage_edit_smb_server_port">Port</string>
     <string name="storage_edit_smb_server_port_placeholder" translatable="false">445</string>
     <string name="storage_edit_smb_server_port_error_invalid">Invalid port</string>
@@ -561,13 +624,14 @@
     <string name="navigation_edit_bookmark_directory_title">Bookmark folder</string>
     <string name="navigation_edit_bookmark_directory_name">Name</string>
     <string name="navigation_edit_bookmark_directory_path">Path</string>
-    <string name="navigation_ftp_server">@string/ftp_server_title</string>
-    <string name="navigation_settings">@string/settings_title</string>
-    <string name="navigation_about">@string/about_title</string>
+    <string name="navigation_ftp_server" translatable="false">@string/ftp_server_title</string>
+    <string name="navigation_settings" translatable="false">@string/settings_title</string>
+    <string name="navigation_about" translatable="false">@string/about_title</string>
 
+    <string name="archive_viewer_title">Archive viewer</string>
     <string name="image_viewer_title">Image viewer</string>
     <string name="image_viewer_subtitle_format">%1$,d/%2$,d</string>
-    <string name="image_viewer_delete_message_format">@string/file_delete_message_file_format</string>
+    <string name="image_viewer_delete_message_format" translatable="false">@string/file_delete_message_file_format</string>
     <string name="text_editor_title">Text editor</string>
     <string name="text_editor_title_format">%1$s</string>
     <string name="text_editor_title_changed_format">*%1$s</string>
@@ -593,14 +657,14 @@
     <string name="ftp_server_port_title">Port</string>
     <string name="ftp_server_home_directory_title">Root folder</string>
     <string name="ftp_server_writable_title">Allow writing</string>
-    <string name="ftp_server_notification_title">@string/ftp_server_title</string>
+    <string name="ftp_server_notification_title" translatable="false">@string/ftp_server_title</string>
     <string name="ftp_server_notification_text">FTP server is running</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_interface_title">Interface</string>
     <string name="settings_theme_color_title">Theme color</string>
     <string name="settings_theme_color_summary">Color that appears most frequently in the app</string>
-    <string name="settings_material_design_3_title">Material You</string>
+    <string name="settings_material_design_3_title">Material Design 3</string>
     <string name="settings_night_mode_title">Night mode</string>
     <string-array name="settings_night_mode_entries">
         <item>Follow system</item>
@@ -620,16 +684,16 @@
     </string-array>
     <string name="settings_behavior_title">Behavior</string>
     <string name="settings_default_directory_title">Default folder</string>
-    <string name="settings_storages_title">@string/storage_list_title</string>
-    <string name="settings_storages_summary_empty">@string/storage_list_empty</string>
+    <string name="settings_storages_title" translatable="false">@string/storage_list_title</string>
+    <string name="settings_storages_summary_empty" translatable="false">@string/storage_list_empty</string>
     <string name="settings_standard_directories_title">Standard folders</string>
     <string name="settings_standard_directories_summary_empty">No standard folders enabled</string>
-    <string name="settings_standard_directory_list_title">@string/settings_standard_directories_title</string>
+    <string name="settings_standard_directory_list_title" translatable="false">@string/settings_standard_directories_title</string>
     <string name="settings_bookmark_directory_screenshots">Screenshots</string>
     <string name="settings_bookmark_directories_title">Bookmark folders</string>
     <string name="settings_bookmark_directories_summary_empty">No bookmark folders</string>
-    <string name="settings_bookmark_directory_list_title">@string/settings_bookmark_directories_title</string>
-    <string name="settings_bookmark_directory_list_empty">@string/settings_bookmark_directories_summary_empty</string>
+    <string name="settings_bookmark_directory_list_title" translatable="false">@string/settings_bookmark_directories_title</string>
+    <string name="settings_bookmark_directory_list_empty" translatable="false">@string/settings_bookmark_directories_summary_empty</string>
     <string name="settings_root_strategy_title">Root access mode</string>
     <plurals name="settings_root_strategy_message_format">
         <item quantity="one">You have %1$,d file operation running and changing root access mode now may result in unexpected error. Are you sure you want to change it now?</item>
@@ -637,8 +701,7 @@
     </plurals>
     <string-array name="settings_root_strategy_entries">
         <item>Normal access only</item>
-        <item>Prefer normal access</item>
-        <item>Prefer root access</item>
+        <item>Automatic</item>
         <item>Root access only</item>
     </string-array>
     <string name="settings_archive_file_name_encoding_title">Archive file name encoding</string>
@@ -663,6 +726,6 @@
     <string name="about_author_google_plus_title">Add to Google+ circles</string>
     <string name="about_author_twitter_title">Follow on Twitter</string>
 
-    <string name="shortcut_downloads_title">@string/navigation_standard_directory_downloads</string>
-    <string name="shortcut_ftp_server_title">@string/ftp_server_title</string>
+    <string name="shortcut_downloads_title" translatable="false">@string/navigation_standard_directory_downloads</string>
+    <string name="shortcut_ftp_server_title" translatable="false">@string/ftp_server_title</string>
 </resources>

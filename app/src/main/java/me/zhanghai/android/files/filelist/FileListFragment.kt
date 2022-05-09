@@ -5,10 +5,11 @@
 
 package me.zhanghai.android.files.filelist
 
-import android.Manifest
 import android.app.Activity
 import android.content.ClipData
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -24,6 +25,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.Toolbar
@@ -41,15 +45,13 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.appbar.AppBarLayout.OnOffsetChangedListener
 import com.leinardi.android.speeddial.SpeedDialView
-import java8.nio.file.AccessDeniedException
 import java8.nio.file.Path
 import java8.nio.file.Paths
 import kotlinx.parcelize.Parcelize
-import me.zhanghai.android.effortlesspermissions.AfterPermissionDenied
-import me.zhanghai.android.effortlesspermissions.EffortlessPermissions
-import me.zhanghai.android.effortlesspermissions.OpenAppDetailsDialogFragment
 import me.zhanghai.android.files.R
+import me.zhanghai.android.files.app.application
 import me.zhanghai.android.files.app.clipboardManager
+import me.zhanghai.android.files.compat.checkSelfPermissionCompat
 import me.zhanghai.android.files.databinding.FileListFragmentAppBarIncludeBinding
 import me.zhanghai.android.files.databinding.FileListFragmentBinding
 import me.zhanghai.android.files.databinding.FileListFragmentBottomBarIncludeBinding
@@ -75,6 +77,7 @@ import me.zhanghai.android.files.provider.archive.isArchivePath
 import me.zhanghai.android.files.provider.linux.isLinuxPath
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.terminal.Terminal
+import me.zhanghai.android.files.ui.AppBarLayoutExpandHackListener
 import me.zhanghai.android.files.ui.CoordinatorAppBarLayout
 import me.zhanghai.android.files.ui.FixQueryChangeSearchView
 import me.zhanghai.android.files.ui.OverlayToolbarActionMode
@@ -91,6 +94,7 @@ import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.Stateful
 import me.zhanghai.android.files.util.Success
 import me.zhanghai.android.files.util.args
+import me.zhanghai.android.files.util.checkSelfPermission
 import me.zhanghai.android.files.util.copyText
 import me.zhanghai.android.files.util.create
 import me.zhanghai.android.files.util.createInstallPackageIntent
@@ -111,14 +115,26 @@ import me.zhanghai.android.files.util.valueCompat
 import me.zhanghai.android.files.util.viewModels
 import me.zhanghai.android.files.util.withChooser
 import me.zhanghai.android.files.viewer.image.ImageViewerActivity
-import pub.devrel.easypermissions.AfterPermissionGranted
-import java.util.LinkedHashSet
 
 class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.Listener,
     OpenApkDialogFragment.Listener, ConfirmDeleteFilesDialogFragment.Listener,
     CreateArchiveDialogFragment.Listener, RenameFileDialogFragment.Listener,
     CreateFileDialogFragment.Listener, CreateDirectoryDialogFragment.Listener,
-    NavigationFragment.Listener {
+    NavigateToPathDialogFragment.Listener, NavigationFragment.Listener,
+    ShowRequestAllFilesAccessRationaleDialogFragment.Listener,
+    ShowRequestStoragePermissionRationaleDialogFragment.Listener,
+    ShowRequestStoragePermissionInSettingsRationaleDialogFragment.Listener {
+    private val requestAllFilesAccessLauncher = registerForActivityResult(
+        RequestAllFilesAccessContract(), this::onRequestAllFilesAccessResult
+    )
+    private val requestStoragePermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(), this::onRequestStoragePermissionResult
+    )
+    private val requestStoragePermissionInSettingsLauncher = registerForActivityResult(
+        RequestStoragePermissionInSettingsContract(),
+        this::onRequestStoragePermissionInSettingsResult
+    )
+
     private val args by args<Args>()
     private val argsPath by lazy { args.intent.extraPath }
 
@@ -294,6 +310,12 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+
+        ensureStorageAccess()
+    }
+
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         super.onCreateOptionsMenu(menu, inflater)
 
@@ -408,6 +430,10 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
                 navigateUp()
                 true
             }
+            R.id.action_navigate_to -> {
+                showNavigateToPathDialog()
+                true
+            }
             R.id.action_refresh -> {
                 refresh()
                 true
@@ -458,7 +484,14 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
             overlayActionMode.finish()
             return true
         }
-        return viewModel.navigateUp(false)
+        if (viewModel.navigateUp(false)) {
+            return true
+        }
+        // See also https://developer.android.com/about/versions/12/behavior-changes-all#back-press
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && requireActivity().isTaskRoot) {
+            viewModel.isStorageAccessRequested = false
+        }
+        return false
     }
 
     private fun onPersistentDrawerOpenChanged(open: Boolean) {
@@ -513,7 +546,6 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
             viewModel.pendingState
                 ?.let { binding.recyclerView.layoutManager!!.onRestoreInstanceState(it) }
         }
-        throwable?.let { onFileListFailure(it) }
     }
 
     private fun getSubtitle(files: List<FileItem>): String {
@@ -540,45 +572,6 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
             !directoryCountText.isNullOrEmpty() -> directoryCountText
             !fileCountText.isNullOrEmpty() -> fileCountText
             else -> getString(R.string.empty)
-        }
-    }
-
-    private fun onFileListFailure(throwable: Throwable) {
-        if (throwable is AccessDeniedException) {
-            val path = viewModel.currentPath
-            if (path.isLinuxPath
-                && !EffortlessPermissions.hasPermissions(this, *STORAGE_PERMISSIONS)) {
-                EffortlessPermissions.requestPermissions(
-                    this, R.string.storage_permission_request_message,
-                    REQUEST_CODE_STORAGE_PERMISSIONS, *STORAGE_PERMISSIONS
-                )
-            }
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-        EffortlessPermissions.onRequestPermissionsResult(
-            requestCode, permissions, grantResults, this
-        )
-    }
-
-    @AfterPermissionGranted(REQUEST_CODE_STORAGE_PERMISSIONS)
-    private fun onStoragePermissionGranted() {
-        refresh()
-    }
-
-    @AfterPermissionDenied(REQUEST_CODE_STORAGE_PERMISSIONS)
-    private fun onStoragePermissionDenied() {
-        if (EffortlessPermissions.somePermissionPermanentlyDenied(this, *STORAGE_PERMISSIONS)) {
-            OpenAppDetailsDialogFragment.show(
-                R.string.storage_permission_permanently_denied_message, R.string.open_settings, this
-            )
         }
     }
 
@@ -616,6 +609,10 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
     private fun navigateUp() {
         collapseSearchView()
         viewModel.navigateUp(true)
+    }
+
+    private fun showNavigateToPathDialog() {
+        NavigateToPathDialogFragment.show(currentPath, this)
     }
 
     private fun newTask() {
@@ -675,7 +672,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
     }
 
     override fun copyPath(path: Path) {
-        clipboardManager.copyText(path.userFriendlyString, requireContext())
+        clipboardManager.copyText(path.toUserFriendlyString(), requireContext())
     }
 
     override fun openInNewTask(path: Path) {
@@ -767,24 +764,29 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
             overlayActionMode.title = getString(R.string.file_list_select_title_format, files.size)
             overlayActionMode.setMenuResource(R.menu.file_list_select)
             val menu = overlayActionMode.menu
-            val hasReadOnly = files.any { it.path.fileSystem.isReadOnly }
-            menu.findItem(R.id.action_cut).isVisible = !hasReadOnly
-            val isExtract = files.all { it.path.isArchivePath }
+            val isAnyFileReadOnly = files.any { it.path.fileSystem.isReadOnly }
+            menu.findItem(R.id.action_cut).isVisible = !isAnyFileReadOnly
+            val areAllFilesArchivePaths = files.all { it.path.isArchivePath }
             menu.findItem(R.id.action_copy)
                 .setIcon(
-                    if (isExtract) {
+                    if (areAllFilesArchivePaths) {
                         R.drawable.extract_icon_control_normal_24dp
                     } else {
                         R.drawable.copy_icon_control_normal_24dp
                     }
                 )
                 .setTitle(
-                    if (isExtract) R.string.file_list_select_action_extract else R.string.copy
+                    if (areAllFilesArchivePaths) R.string.file_list_select_action_extract else R.string.copy
                 )
-            menu.findItem(R.id.action_delete).isVisible = !hasReadOnly
+            menu.findItem(R.id.action_delete).isVisible = !isAnyFileReadOnly
+            val isCurrentPathReadOnly = viewModel.currentPath.fileSystem.isReadOnly
+            menu.findItem(R.id.action_archive).isVisible = !isCurrentPathReadOnly
         }
         if (!overlayActionMode.isActive) {
             binding.appBarLayout.setExpanded(true)
+            binding.appBarLayout.addOnOffsetChangedListener(
+                AppBarLayoutExpandHackListener(binding.recyclerView)
+            )
             overlayActionMode.start(object : ToolbarActionMode.Callback {
                 override fun onToolbarActionModeStarted(toolbarActionMode: ToolbarActionMode) {}
 
@@ -914,10 +916,10 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
                 return
             }
             bottomActionMode.setNavigationIcon(R.drawable.close_icon_control_normal_24dp)
-            val isExtract = files.all { it.path.isArchivePath }
+            val areAllFilesArchivePaths = files.all { it.path.isArchivePath }
             bottomActionMode.title = getString(
                 if (pasteState.copy) {
-                    if (isExtract) {
+                    if (areAllFilesArchivePaths) {
                         R.string.file_list_paste_extract_title_format
                     } else {
                         R.string.file_list_paste_copy_title_format
@@ -927,12 +929,12 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
                 }, files.size
             )
             bottomActionMode.setMenuResource(R.menu.file_list_paste)
-            val isReadOnly = viewModel.currentPath.fileSystem.isReadOnly
+            val isCurrentPathReadOnly = viewModel.currentPath.fileSystem.isReadOnly
             bottomActionMode.menu.findItem(R.id.action_paste)
                 .setTitle(
-                    if (isExtract) R.string.file_list_paste_action_extract_here else R.string.paste
+                    if (areAllFilesArchivePaths) R.string.file_list_paste_action_extract_here else R.string.paste
                 )
-                .isEnabled = !isReadOnly
+                .isEnabled = !isCurrentPathReadOnly
         }
         if (!bottomActionMode.isActive) {
             bottomActionMode.start(object : ToolbarActionMode.Callback {
@@ -1262,15 +1264,99 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         binding.drawerLayout?.closeDrawer(GravityCompat.START)
     }
 
+    private fun ensureStorageAccess() {
+        if (viewModel.isStorageAccessRequested) {
+            return
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
+                ShowRequestAllFilesAccessRationaleDialogFragment.show(this)
+                viewModel.isStorageAccessRequested = true
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+                if (shouldShowRequestPermissionRationale(
+                        android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    )) {
+                    ShowRequestStoragePermissionRationaleDialogFragment.show(this)
+                } else {
+                    requestStoragePermission()
+                }
+                viewModel.isStorageAccessRequested = true
+            }
+        }
+    }
+
+    override fun requestAllFilesAccess() {
+        requestAllFilesAccessLauncher.launch(Unit)
+    }
+
+    private fun onRequestAllFilesAccessResult(isGranted: Boolean) {
+        if (isGranted) {
+            viewModel.isStorageAccessRequested = false
+            refresh()
+        }
+    }
+
+    override fun requestStoragePermission() {
+        requestStoragePermissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    }
+
+    private fun onRequestStoragePermissionResult(isGranted: Boolean) {
+        if (isGranted) {
+            viewModel.isStorageAccessRequested = false
+            refresh()
+        } else if (!shouldShowRequestPermissionRationale(
+                android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+            )) {
+            ShowRequestStoragePermissionInSettingsRationaleDialogFragment.show(this)
+        }
+    }
+
+    override fun requestStoragePermissionInSettings() {
+        requestStoragePermissionInSettingsLauncher.launch(Unit)
+    }
+
+    private fun onRequestStoragePermissionInSettingsResult(isGranted: Boolean) {
+        if (isGranted) {
+            viewModel.isStorageAccessRequested = false
+            refresh()
+        }
+    }
+
     companion object {
         private const val ACTION_VIEW_DOWNLOADS =
             "me.zhanghai.android.files.intent.action.VIEW_DOWNLOADS"
 
-        private const val REQUEST_CODE_STORAGE_PERMISSIONS = 1
-
-        private val STORAGE_PERMISSIONS = arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-
         private const val IMAGE_VIEWER_ACTIVITY_PATH_LIST_SIZE_MAX = 1000
+    }
+
+    private class RequestAllFilesAccessContract : ActivityResultContract<Unit, Boolean>() {
+        @RequiresApi(Build.VERSION_CODES.R)
+        override fun createIntent(context: Context, input: Unit): Intent =
+            Intent(
+                android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                Uri.fromParts("package", context.packageName, null)
+            )
+
+        @RequiresApi(Build.VERSION_CODES.R)
+        override fun parseResult(resultCode: Int, intent: Intent?): Boolean =
+            Environment.isExternalStorageManager()
+    }
+
+    private class RequestStoragePermissionInSettingsContract
+        : ActivityResultContract<Unit, Boolean>() {
+        override fun createIntent(context: Context, input: Unit): Intent =
+            Intent(
+                android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", context.packageName, null)
+            )
+
+        override fun parseResult(resultCode: Int, intent: Intent?): Boolean =
+            application.checkSelfPermissionCompat(
+                android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED
     }
 
     @Parcelize

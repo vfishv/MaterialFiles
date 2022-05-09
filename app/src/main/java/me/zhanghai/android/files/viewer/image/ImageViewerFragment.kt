@@ -33,8 +33,8 @@ import me.zhanghai.android.files.util.ParcelableState
 import me.zhanghai.android.files.util.args
 import me.zhanghai.android.files.util.createSendImageIntent
 import me.zhanghai.android.files.util.extraPath
+import me.zhanghai.android.files.util.extraPathList
 import me.zhanghai.android.files.util.finish
-import me.zhanghai.android.files.util.getExtraPathList
 import me.zhanghai.android.files.util.getState
 import me.zhanghai.android.files.util.mediumAnimTime
 import me.zhanghai.android.files.util.putState
@@ -46,7 +46,7 @@ import java.io.IOException
 
 class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
     private val args by args<Args>()
-    private val argsPaths by lazy { args.intent.getExtraPathList(true) }
+    private val argsPaths by lazy { args.intent.extraPathList }
 
     private lateinit var paths: MutableList<Path>
 
@@ -115,6 +115,12 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
 
     override fun onViewStateRestored(savedInstanceState: Bundle?) {
         super.onViewStateRestored(savedInstanceState)
+
+        if (paths.isEmpty()) {
+            // We did finish the activity in onActivityCreated(), however we will still be called
+            // here before the activity is actually finished.
+            return
+        }
 
         updateTitle()
     }

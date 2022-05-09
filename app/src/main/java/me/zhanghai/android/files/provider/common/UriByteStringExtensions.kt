@@ -10,49 +10,42 @@ import kotlin.experimental.and
 import kotlin.experimental.or
 import kotlin.reflect.KClass
 
+// Note: The URI must have an authority, otherwise the Java URI class recognizes the rest of the URI
+// as scheme specific part and refuses to parse our query. As a result, our path must also either be
+// empty or absolute (beginning with a slash character).
+// @see https://datatracker.ietf.org/doc/html/rfc3986
 fun KClass<URI>.create(
-    scheme: String?,
-    schemeSpecificPart: ByteString?,
-    fragment: ByteString?
+    scheme: String,
+    authority: UriAuthority,
+    path: ByteString,
+    query: ByteString?
 ): URI {
     val builder = StringBuilder()
-    if (scheme != null) {
-        builder.append(scheme).append(':')
+    builder.append(scheme).append(':')
+    builder.append("//").append(authority.encode())
+    require(path.isEmpty() || path.startsWith("/".toByteString())) {
+        "Path $path must either be empty or begin with a slash character"
     }
-    if (schemeSpecificPart != null) {
-        builder.append(encodeSchemeSpecificPart(schemeSpecificPart))
-    }
-    if (fragment != null) {
-        builder.append('#').append(encodeFragment(fragment))
+    builder.append(encodePath(path))
+    if (query != null) {
+        builder.append('?').append(encodeQuery(query))
     }
     val uriString = builder.toString()
     return URI.create(uriString)
 }
 
+// @see java.net.URI
 private const val CHARSET_ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 private const val CHARSET_DIGIT = "0123456789"
 private const val CHARSET_UNRESERVED = "$CHARSET_ALPHA$CHARSET_DIGIT-._~"
 private const val CHARSET_SUB_DELIMS = "!$&'()*+,;="
 private const val CHARSET_PCHAR = "$CHARSET_UNRESERVED$CHARSET_SUB_DELIMS:@"
 private const val CHARSET_PATH = "$CHARSET_PCHAR/"
-private const val CHARSET_FRAGMENT = "$CHARSET_PCHAR/?"
+private const val CHARSET_QUERY = "$CHARSET_PCHAR/?"
 
-/*
- * @see java.net.URI#appendSchemeSpecificPart
- */
-private fun encodeSchemeSpecificPart(decoded: ByteString): String =
-    if (decoded.length >= 3 && decoded[0] == '/'.code.toByte() && decoded[1] == '/'.code.toByte()
-        && decoded[2] == '['.code.toByte()) {
-        val ipLiteralLastCharacterIndex = decoded.indexOf(']'.code.toByte(), 3)
-        require(ipLiteralLastCharacterIndex != -1) { "Incomplete IP literal in URI" }
-        val ipLiteralEnd = ipLiteralLastCharacterIndex + 1
-        (decoded.substring(0, ipLiteralEnd).toString()
-            + encode(decoded.substring(ipLiteralEnd), CHARSET_PATH))
-    } else {
-        encode(decoded, CHARSET_PATH)
-    }
+private fun encodePath(decoded: ByteString): String = encode(decoded, CHARSET_PATH)
 
-private fun encodeFragment(decoded: ByteString): String = encode(decoded, CHARSET_FRAGMENT)
+private fun encodeQuery(decoded: ByteString): String = encode(decoded, CHARSET_QUERY)
 
 private fun encode(decoded: ByteString, charset: String): String {
     val builder = StringBuilder()
@@ -77,14 +70,11 @@ private fun encodeHexCharacter(halfByte: Byte): Char =
             throw IllegalArgumentException("Non-half-byte $halfByte for percent-encoding in URI")
     }
 
-val URI.decodedSchemeSpecificPartByteString: ByteString?
-    get() = rawSchemeSpecificPart?.let { decode(it) }
-
 val URI.decodedPathByteString: ByteString?
     get() = rawPath?.let { decode(it) }
 
-val URI.decodedFragmentByteString: ByteString?
-    get() = rawFragment?.let { decode(it) }
+val URI.decodedQueryByteString: ByteString?
+    get() = rawQuery?.let { decode(it) }
 
 private fun decode(encoded: String): ByteString {
     val builder = ByteStringBuilder()
