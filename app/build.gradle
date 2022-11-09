@@ -105,8 +105,8 @@ dependencies {
 
     implementation 'androidx.appcompat:appcompat:1.5.1'
     implementation 'androidx.core:core-ktx:1.9.0'
-    implementation 'androidx.exifinterface:exifinterface:1.3.3'
-    implementation 'androidx.fragment:fragment-ktx:1.5.3'
+    implementation 'androidx.exifinterface:exifinterface:1.3.5'
+    implementation 'androidx.fragment:fragment-ktx:1.5.4'
     def androidx_lifecycle_version = '2.5.1'
     implementation "androidx.lifecycle:lifecycle-common-java8:$androidx_lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:$androidx_lifecycle_version"
@@ -159,7 +159,7 @@ dependencies {
     // dev.chrisbanesinsetter:insetter:0.6.0 makes inset unstable when entering immersive.
     implementation 'dev.chrisbanes:insetter-ktx:0.3.1'
     implementation 'dev.rikka.rikkax.preference:simplemenu-preference:1.0.3'
-    implementation 'dev.rikka.shizuku:api:12.0.0'
+    implementation 'dev.rikka.shizuku:api:12.2.0'
     implementation 'eu.agno3.jcifs:jcifs-ng:2.1.6'
     def coil_version = '2.2.2'
     implementation "io.coil-kt:coil:$coil_version"
