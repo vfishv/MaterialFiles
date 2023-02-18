@@ -32,7 +32,7 @@ android {
     namespace 'me.zhanghai.android.files'
     compileSdkVersion 33
     ndkVersion '25.1.8937393'
-    buildToolsVersion '33.0.1'
+    buildToolsVersion '33.0.2'
     defaultConfig {
         applicationId 'me.zhanghai.android.files'
         minSdkVersion 21
@@ -136,7 +136,7 @@ dependencies {
         // org.bouncycastle:bcprov-jdk15to18 instead.
         exclude group: 'org.bouncycastle', module: 'bcprov-jdk15on'
     }
-    implementation 'com.jakewharton.threetenabp:threetenabp:1.4.0'
+    implementation 'com.jakewharton.threetenabp:threetenabp:1.4.3'
     // FloatingActionButtonSpeedDial 3.2.0 forces the user out of touch mode upon open and leaves a
     // strange focus effect on the first mini FAB.
     //noinspection GradleDependency
