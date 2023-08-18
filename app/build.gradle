@@ -165,13 +165,20 @@ dependencies {
     // dev.chrisbanesinsetter:insetter:0.6.0 makes inset unstable when entering immersive.
     implementation 'dev.chrisbanes:insetter-ktx:0.3.1'
     implementation 'dev.rikka.rikkax.preference:simplemenu-preference:1.0.3'
-    implementation 'dev.rikka.shizuku:api:13.1.0'
-    implementation 'eu.agno3.jcifs:jcifs-ng:2.1.6'
-    def coil_version = '2.2.2'
-    implementation "io.coil-kt:coil:$coil_version"
-    implementation "io.coil-kt:coil-gif:$coil_version"
-    implementation "io.coil-kt:coil-svg:$coil_version"
-    implementation "io.coil-kt:coil-video:$coil_version"
+    // Shizuku-API 13.1.0 requires core library desugaring.
+    //noinspection GradleDependency
+    implementation 'dev.rikka.shizuku:api:12.2.0'
+    implementation ('eu.agno3.jcifs:jcifs-ng:2.1.9') {
+        // org.bouncycastle:bcprov-jdk15on uses bytecode version unsupported by Jetifier, so use
+        // org.bouncycastle:bcprov-jdk15to18 instead.
+        exclude group: 'org.bouncycastle', module: 'bcprov-jdk15on'
+    }
+    implementation 'org.bouncycastle:bcprov-jdk15to18:1.73'
+    implementation platform('io.coil-kt:coil-bom:2.4.0')
+    implementation "io.coil-kt:coil"
+    implementation "io.coil-kt:coil-gif"
+    implementation "io.coil-kt:coil-svg"
+    implementation "io.coil-kt:coil-video"
     implementation 'me.zhanghai.android.appiconloader:appiconloader:1.5.0'
     implementation 'me.zhanghai.android.fastscroll:library:1.3.0'
     implementation 'me.zhanghai.android.foregroundcompat:library:1.0.2'
