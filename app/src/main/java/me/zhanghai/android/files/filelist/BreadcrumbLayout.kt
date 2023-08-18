@@ -36,8 +36,9 @@ class BreadcrumbLayout : HorizontalScrollView {
                 context.getColorByAttr(android.R.attr.textColorSecondary)
             )
         )
-    private val popupContext =
-        context.withTheme(context.getResourceIdByAttr(R.attr.actionBarPopupTheme))
+    private val popupContext = context.withTheme(
+        context.getResourceIdByAttr(androidx.appcompat.R.attr.actionBarPopupTheme)
+    )
 
     private val itemsLayout: LinearLayout
 
@@ -87,15 +88,18 @@ class BreadcrumbLayout : HorizontalScrollView {
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val heightMode = MeasureSpec.getMode(heightMeasureSpec)
-        var heightMeasureSpec = heightMeasureSpec
-        if (heightMode == MeasureSpec.UNSPECIFIED || heightMode == MeasureSpec.AT_MOST) {
-            var height = tabLayoutHeight
-            if (heightMode == MeasureSpec.AT_MOST) {
-                height = height.coerceAtMost(MeasureSpec.getSize(heightMeasureSpec))
+        val newHeightMeasureSpec = if (heightMode != MeasureSpec.EXACTLY) {
+            val maximumHeight = if (heightMode == MeasureSpec.AT_MOST) {
+                MeasureSpec.getSize(heightMeasureSpec)
+            } else {
+                Int.MAX_VALUE
             }
-            heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
+            val height = tabLayoutHeight.coerceAtMost(maximumHeight)
+            MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
+        } else {
+            heightMeasureSpec
         }
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        super.onMeasure(widthMeasureSpec, newHeightMeasureSpec)
     }
 
     override fun requestLayout() {

@@ -15,10 +15,13 @@
     <bool name="pref_default_value_file_list_persistent_drawer_open">true</bool>
     <string name="pref_key_file_list_show_hidden_files">key_file_list_show_hidden_files</string>
     <bool name="pref_default_value_file_list_show_hidden_files">false</bool>
+    <string name="pref_key_file_list_view_type">key_file_list_view_type</string>
+    <string name="pref_default_value_file_list_view_type">0</string>
     <string name="pref_key_file_list_sort_options">key_file_list_sort_options</string>
     <string name="pref_key_create_archive_type">key_create_archive_type</string>
 
     <string name="pref_key_ftp_server_state">key_ftp_server_state</string>
+    <bool name="pref_visible_ftp_server_add_tile">false</bool>
     <string name="pref_key_ftp_server_anonymous_login">key_ftp_server_anonymous_login</string>
     <bool name="pref_default_value_ftp_server_anonymous_login">true</bool>
     <string name="pref_key_ftp_server_username">key_ftp_server_username</string>
@@ -30,6 +33,7 @@
     <string name="pref_key_ftp_server_writable">key_ftp_server_writable</string>
     <bool name="pref_default_value_ftp_server_writable">true</bool>
 
+    <string name="pref_key_locale">key_locale</string>
     <string name="pref_key_theme_color">key_theme_color</string>
     <string name="pref_default_value_theme_color">0</string>
     <string name="pref_key_material_design_3">key_material_design_3</string>

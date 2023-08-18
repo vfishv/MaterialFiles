@@ -5,10 +5,6 @@
 
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-kapt'
-kapt {
-    correctErrorTypes = true
-}
 apply plugin: 'kotlin-parcelize'
 
 apply from: '../signing.gradle'
@@ -20,8 +16,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.google.gms:google-services:4.3.14'
-        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.9.2'
+        classpath 'com.google.gms:google-services:4.3.15'
+        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.9.8'
     }
 }
 apply plugin: 'com.google.gms.google-services'
@@ -30,15 +26,15 @@ apply plugin: 'com.google.firebase.crashlytics'
 
 android {
     namespace 'me.zhanghai.android.files'
-    compileSdkVersion 33
-    ndkVersion '25.1.8937393'
-    buildToolsVersion '33.0.2'
+    compileSdk 34
+    ndkVersion '25.2.9519653'
+    buildToolsVersion = '34.0.0'
     defaultConfig {
         applicationId 'me.zhanghai.android.files'
-        minSdkVersion 21
+        minSdk 21
         // Not supporting notification runtime permission yet.
         //noinspection OldTargetApi
-        targetSdkVersion 32
+        targetSdk 32
         versionCode 31
         versionName '1.5.2'
         resValue 'string', 'app_version', versionName + ' (' + versionCode + ')'
@@ -47,11 +43,19 @@ android {
         resValue 'string', 'file_provider_authority', applicationId + '.file_provider'
     }
     buildFeatures {
+        aidl true
+        buildConfig true
         viewBinding true
+    }
+    androidResources {
+        generateLocaleConfig true
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
     externalNativeBuild {
         cmake {
@@ -72,6 +76,9 @@ android {
         }
     }
     packagingOptions {
+        jniLibs {
+            useLegacyPackaging true
+        }
         resources {
             excludes += ['META-INF/DEPENDENCIES']
         }
@@ -91,7 +98,7 @@ repositories {
 dependencies {
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
     releaseImplementation 'com.github.mypplication:stetho-noop:1.1'
-    implementation 'com.github.topjohnwu.libsu:service:5.0.4'
+    implementation 'com.github.topjohnwu.libsu:service:5.2.0'
 }
 
 dependencies {
@@ -99,27 +106,30 @@ dependencies {
 
     // kotlinx-coroutines-android depends on kotlin-stdlib-jdk8
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    def kotlinx_coroutines_version = '1.6.4'
+    def kotlinx_coroutines_version = '1.7.3'
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$kotlinx_coroutines_version"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinx_coroutines_version"
 
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'androidx.core:core-ktx:1.9.0'
+    implementation 'androidx.activity:activity-ktx:1.7.2'
+    // Appcompat 1.7.0-alpha01 is required for properly changing locale below API 24 (b/243119645).
+    implementation 'androidx.appcompat:appcompat:1.7.0-alpha03'
+    implementation 'androidx.core:core-ktx:1.10.1'
+    implementation 'androidx.drawerlayout:drawerlayout:1.2.0'
     implementation 'androidx.exifinterface:exifinterface:1.3.6'
-    implementation 'androidx.fragment:fragment-ktx:1.5.5'
-    def androidx_lifecycle_version = '2.5.1'
+    implementation 'androidx.fragment:fragment-ktx:1.6.1'
+    def androidx_lifecycle_version = '2.6.1'
     implementation "androidx.lifecycle:lifecycle-common-java8:$androidx_lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:$androidx_lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-process:$androidx_lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:$androidx_lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$androidx_lifecycle_version"
     implementation 'androidx.preference:preference-ktx:1.2.0'
-    implementation 'androidx.recyclerview:recyclerview:1.2.1'
+    implementation 'androidx.recyclerview:recyclerview:1.3.1'
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
-    implementation 'com.google.android.material:material:1.8.0'
+    implementation 'com.google.android.material:material:1.9.0'
 
     implementation 'com.caverock:androidsvg-aar:1.4'
-    implementation 'com.davemorrissey.labs:subsampling-scale-image-view:3.10.0'
+    implementation 'com.davemorrissey.labs:subsampling-scale-image-view-androidx:3.10.0'
     implementation 'com.drakeet.drawer:drawer:1.0.3'
     debugImplementation 'com.facebook.stetho:stetho:1.6.0'
     // If added along with okhttp3, remove the related dontwarn from proguard-rules.pro.
@@ -131,27 +141,23 @@ dependencies {
         // org.bouncycastle:bcprov-jdk15to18 instead.
         exclude group: 'org.bouncycastle', module: 'bcprov-jdk15on'
     }
-    implementation ('com.hierynomus:sshj:0.32.0') {
+    implementation ('com.hierynomus:sshj:0.35.0') {
         // org.bouncycastle:bcprov-jdk15on uses bytecode version unsupported by Jetifier, so use
         // org.bouncycastle:bcprov-jdk15to18 instead.
         exclude group: 'org.bouncycastle', module: 'bcprov-jdk15on'
     }
-    implementation 'com.jakewharton.threetenabp:threetenabp:1.4.4'
-    // FloatingActionButtonSpeedDial 3.2.0 forces the user out of touch mode upon open and leaves a
-    // strange focus effect on the first mini FAB.
-    //noinspection GradleDependency
-    implementation 'com.leinardi.android:speed-dial:3.1.1'
+    implementation 'com.jakewharton.threetenabp:threetenabp:1.4.6'
+    implementation 'com.leinardi.android:speed-dial:3.3.0'
     implementation ('com.rapid7.client:dcerpc:0.12.0') {
         // org.bouncycastle:bcprov-jdk15on uses bytecode version unsupported by Jetifier, so use
         // org.bouncycastle:bcprov-jdk15to18 instead.
         exclude group: 'org.bouncycastle', module: 'bcprov-jdk15on'
     }
-    implementation 'org.bouncycastle:bcprov-jdk15to18:1.70'
     // SMBJ-RPC depends on com.google.guava:guava:18.0, which conflicts with
     // com.google.guava:listenablefuture:1.0 pulled in by AndroidX Core
     implementation 'com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava'
     implementation 'com.takisoft.preferencex:preferencex:1.1.0'
-    implementation 'commons-net:commons-net:3.8.0'
+    implementation 'commons-net:commons-net:3.9.0'
     // LicensesDialog 2.2.0 pulls in androidx.webkit and uses setForceDark() instead of correctly
     // setting colors.
     //noinspection GradleDependency
@@ -167,7 +173,7 @@ dependencies {
     implementation "io.coil-kt:coil-svg:$coil_version"
     implementation "io.coil-kt:coil-video:$coil_version"
     implementation 'me.zhanghai.android.appiconloader:appiconloader:1.5.0'
-    implementation 'me.zhanghai.android.fastscroll:library:1.2.0'
+    implementation 'me.zhanghai.android.fastscroll:library:1.3.0'
     implementation 'me.zhanghai.android.foregroundcompat:library:1.0.2'
     implementation 'me.zhanghai.android.libselinux:library:2.1.0'
     implementation 'me.zhanghai.android.retrofile:library:1.1.1'
@@ -194,8 +200,8 @@ dependencies {
     implementation 'org.slf4j:slf4j-android:1.7.36'
 
 //#ifdef NONFREE
-    implementation 'com.github.junrar:junrar:7.4.1'
-    implementation platform('com.google.firebase:firebase-bom:30.4.0')
+    implementation 'com.github.junrar:junrar:7.5.4'
+    implementation platform('com.google.firebase:firebase-bom:32.2.2')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-crashlytics-ndk'
 //#endif

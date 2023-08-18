@@ -42,7 +42,6 @@
     <string name="share">Partajează</string>
     <string name="show">Arată</string>
     <string name="skip">Omite</string>
-    <string name="sort">Sortează</string>
     <string name="stop">Oprire</string>
     <string name="unknown">Necunoscut</string>
     <string name="view">Vizualizează</string>
@@ -306,7 +305,7 @@
     <string name="file_list_action_sort_by_last_modified">Ultima modificare</string>
     <string name="file_list_action_sort_order_ascending">Crescător</string>
     <string name="file_list_action_sort_directories_first">Mai întâi dosarele</string>
-    <string name="file_list_action_sort_path_specific">Doar pentru acest dosar</string>
+    <string name="file_list_action_view_sort_path_specific">Doar pentru acest dosar</string>
     <string name="file_list_action_new_task">Fereastră nouă</string>
     <string name="file_list_action_navigate_up">Dute sus</string>
     <string name="file_list_action_navigate_to">Sari la</string>
@@ -585,7 +584,6 @@
     <string name="ftp_server_port_title">Port</string>
     <string name="ftp_server_home_directory_title">Dosar rădăcină</string>
     <string name="ftp_server_writable_title">Permite scrierea</string>
-    <string name="ftp_server_notification_text">Serverul FTP funcționează</string>
 
     <string name="settings_title">Setări</string>
     <string name="settings_interface_title">Interfață</string>

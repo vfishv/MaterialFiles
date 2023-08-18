@@ -16,22 +16,30 @@
         <item name="android:popupBackground">@drawable/m3_popupmenu_background_overlay</item>
     </style>
 
+    <style name="Preference.MaterialFiles.Material3.SwitchPreferenceCompat" parent="Preference.SwitchPreferenceCompat.Material">
+        <item name="android:widgetLayout">@layout/switch_preference_compat_widget_material3</item>
+    </style>
+
+    <style name="ShapeAppearance.MaterialFiles.Material3.SmallComponent" parent="ShapeAppearance.Material3.SmallComponent">
+        <item name="cornerSize">8dp</item>
+    </style>
+
+    <style name="ShapeAppearance.MaterialFiles.Material3.MediumComponent" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerSize">12dp</item>
+    </style>
+
+    <style name="ShapeAppearance.MaterialFiles.Material3.LargeComponent" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerSize">16dp</item>
+    </style>
+
     <style name="TextAppearance.MaterialFiles.Material3.ListItem" parent="TextAppearance.Material3.TitleMedium">
-        <item name="fontFamily">@macro/m3_ref_typeface_plain_regular</item>
-        <item name="android:fontFamily">@macro/m3_ref_typeface_plain_regular</item>
+        <item name="fontFamily">@string/m3_ref_typeface_plain_regular</item>
+        <item name="android:fontFamily">@string/m3_ref_typeface_plain_regular</item>
     </style>
 
     <style name="TextAppearance.MaterialFiles.Material3.ListItemSmall" parent="TextAppearance.Material3.TitleSmall">
-        <item name="fontFamily">@macro/m3_ref_typeface_plain_regular</item>
-        <item name="android:fontFamily">@macro/m3_ref_typeface_plain_regular</item>
-    </style>
-
-    <style name="Widget.MaterialFiles.Material3.CompoundButton.Switch" parent="Widget.Material3.CompoundButton.Switch">
-        <item name="android:thumb">@drawable/switch_thumb_material3</item>
-        <item name="thumbTint">@color/switch_thumb_tint_material3</item>
-        <item name="thumbTintMode">src_in</item>
-        <item name="track">@drawable/switch_track_material3</item>
-        <item name="trackTint">@color/switch_track_tint_material3</item>
+        <item name="fontFamily">@string/m3_ref_typeface_plain_regular</item>
+        <item name="android:fontFamily">@string/m3_ref_typeface_plain_regular</item>
     </style>
 
     <style name="Widget.MaterialFiles.Material3.NavigationView" parent="Widget.Material3.NavigationView">

@@ -11,7 +11,6 @@ import android.media.MediaMetadataRetriever
 import android.os.ParcelFileDescriptor
 import androidx.core.graphics.drawable.toDrawable
 import coil.ImageLoader
-import coil.decode.DataSource
 import coil.decode.ImageSource
 import coil.fetch.DrawableResult
 import coil.fetch.FetchResult
@@ -32,6 +31,7 @@ import me.zhanghai.android.files.file.isMedia
 import me.zhanghai.android.files.file.isPdf
 import me.zhanghai.android.files.file.isVideo
 import me.zhanghai.android.files.file.lastModifiedInstant
+import me.zhanghai.android.files.filelist.isRemotePath
 import me.zhanghai.android.files.provider.common.AndroidFileTypeDetector
 import me.zhanghai.android.files.provider.common.newInputStream
 import me.zhanghai.android.files.provider.content.resolver.ResolverException
@@ -90,17 +90,17 @@ class PathAttributesFetcher(
                 }
                 if (thumbnail != null) {
                     return DrawableResult(
-                        thumbnail.toDrawable(options.context.resources), true, DataSource.DISK
+                        thumbnail.toDrawable(options.context.resources), true, path.dataSource
                     )
                 }
             }
-            val isLocalPath = path.isLinuxPath
-                || (path.isDocumentPath && DocumentResolver.isLocal(path as DocumentResolver.Path))
-            // FTP doesn't support random access and requires one connection per parallel read.
-            val shouldReadRemotePath = !path.isFtpPath
-                && Settings.READ_REMOTE_FILES_FOR_THUMBNAIL.valueCompat
-            if (!(isLocalPath || shouldReadRemotePath)) {
-                error("Cannot read $path for thumbnail")
+            if (path.isRemotePath) {
+                // FTP doesn't support random access and requires one connection per parallel read.
+                val shouldReadRemotePath = !path.isFtpPath
+                    && Settings.READ_REMOTE_FILES_FOR_THUMBNAIL.valueCompat
+                if (!shouldReadRemotePath) {
+                    error("Cannot read $path for thumbnail")
+                }
             }
         }
         val mimeType = AndroidFileTypeDetector.getMimeType(data.first, data.second).asMimeType()
@@ -116,7 +116,7 @@ class PathAttributesFetcher(
                 val inputStream = path.newInputStream()
                 return SourceResult(
                     ImageSource(inputStream.source().buffer(), options.context),
-                    if (mimeType != MimeType.GENERIC) mimeType.value else null, DataSource.DISK
+                    if (mimeType != MimeType.GENERIC) mimeType.value else null, path.dataSource
                 )
             }
             mimeType.isMedia && (path.isLinuxPath || path.isDocumentPath) -> {
@@ -133,7 +133,7 @@ class PathAttributesFetcher(
                     return SourceResult(
                         ImageSource(
                             embeddedPicture.inputStream().source().buffer(), options.context
-                        ), null, DataSource.DISK
+                        ), null, path.dataSource
                     )
                 }
                 if (mimeType.isVideo) {
