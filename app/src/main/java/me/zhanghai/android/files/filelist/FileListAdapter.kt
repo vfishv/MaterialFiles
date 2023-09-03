@@ -122,7 +122,7 @@ class FileListAdapter(
 
     fun selectAllFiles() {
         val files = fileItemSetOf()
-        for (index in 0 until itemCount) {
+        for (index in 0..<itemCount) {
             val file = getItem(index)
             if (isFileSelectable(file)) {
                 files.add(file)
@@ -161,7 +161,7 @@ class FileListAdapter(
 
     private fun rebuildFilePositionMap() {
         filePositionMap.clear()
-        for (index in 0 until itemCount) {
+        for (index in 0..<itemCount) {
             val file = getItem(index)
             filePositionMap[file.path] = index
         }
@@ -170,7 +170,7 @@ class FileListAdapter(
     override fun getItemViewType(position: Int): Int = viewType.ordinal
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val viewType = FileViewType.values()[viewType]
+        val viewType = FileViewType.entries[viewType]
         val inflater = parent.context.layoutInflater
         val holder = when (viewType) {
             FileViewType.LIST -> ViewHolder(FileItemListBinding.inflate(inflater, parent, false))

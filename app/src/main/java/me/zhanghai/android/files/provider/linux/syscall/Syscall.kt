@@ -20,9 +20,9 @@ import me.zhanghai.android.libselinux.SeLinux
 import java.io.FileDescriptor
 import java.io.InterruptedIOException
 
-object Syscalls {
+object Syscall {
     init {
-        System.loadLibrary("syscalls")
+        System.loadLibrary("syscall")
     }
 
     @Throws(SyscallException::class)
@@ -268,8 +268,8 @@ object Syscalls {
     external fun sendfile(
         outFd: FileDescriptor,
         inFd: FileDescriptor,
-        offset: Int64Ref?
-        , count: Long
+        offset: Int64Ref?,
+        count: Long
     ): Long
 
     @Throws(SyscallException::class)

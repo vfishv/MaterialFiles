@@ -285,11 +285,6 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
             }
         }
         val viewLifecycleOwner = viewLifecycleOwner
-        if (binding.persistentDrawerLayout != null) {
-            Settings.FILE_LIST_PERSISTENT_DRAWER_OPEN.observe(viewLifecycleOwner) {
-                onPersistentDrawerOpenChanged(it)
-            }
-        }
         viewModel.currentPathLiveData.observe(viewLifecycleOwner) { onCurrentPathChanged(it) }
         viewModel.searchViewExpandedLiveData.observe(viewLifecycleOwner) {
             onSearchViewExpandedChanged(it)
@@ -298,6 +293,14 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
             binding.breadcrumbLayout.setData(it)
         }
         viewModel.viewTypeLiveData.observe(viewLifecycleOwner) { onViewTypeChanged(it) }
+        // Live data only calls observeForever() on its sources when it is active, so we have to
+        // make view type live data active first (so that it can load its initial value) before we
+        // register another observer that needs to get the view type.
+        if (binding.persistentDrawerLayout != null) {
+            Settings.FILE_LIST_PERSISTENT_DRAWER_OPEN.observe(viewLifecycleOwner) {
+                onPersistentDrawerOpenChanged(it)
+            }
+        }
         viewModel.sortOptionsLiveData.observe(viewLifecycleOwner) { onSortOptionsChanged(it) }
         viewModel.viewSortPathSpecificLiveData.observe(viewLifecycleOwner) {
             onViewSortPathSpecificChanged(it)
@@ -513,6 +516,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
                 it.closeDrawer(GravityCompat.START)
             }
         }
+        updateSpanCount()
     }
 
     private fun onCurrentPathChanged(path: Path) {
@@ -586,12 +590,25 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
     }
 
     private fun onViewTypeChanged(viewType: FileViewType) {
-        layoutManager.spanCount = when (viewType) {
-            FileViewType.LIST -> 1
-            FileViewType.GRID -> (resources.configuration.screenWidthDp / 180).coerceAtLeast(2)
-        }
+        updateSpanCount()
         adapter.viewType = viewType
         updateViewSortMenuItems()
+    }
+
+    private fun updateSpanCount() {
+        layoutManager.spanCount = when (viewModel.viewType) {
+            FileViewType.LIST -> 1
+            FileViewType.GRID -> {
+                var width = resources.configuration.screenWidthDp
+                val persistentDrawerLayout = binding.persistentDrawerLayout
+                if (persistentDrawerLayout != null &&
+                    persistentDrawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    // R.dimen.navigation_max_width
+                    width -= 320
+                }
+                (width / 180).coerceAtLeast(2)
+            }
+        }
     }
 
     private fun onSortOptionsChanged(sortOptions: FileSortOptions) {
@@ -1015,7 +1032,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
     }
 
     private fun makePathListForJob(files: FileItemSet): List<Path> =
-        files.map { it.path }.sorted()
+        files.map { it.path }.sortedBy { it.toUri() }
 
     private fun onFileNameEllipsizeChanged(fileNameEllipsize: TextUtils.TruncateAt) {
         adapter.nameEllipsize = fileNameEllipsize
@@ -1123,7 +1140,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         }
         var paths = mutableListOf<Path>()
         // We need the ordered list from our adapter instead of the list from FileListLiveData.
-        for (index in 0 until adapter.itemCount) {
+        for (index in 0..<adapter.itemCount) {
             val file = adapter.getItem(index)
             val filePath = file.path
             if (file.mimeType.isImage || filePath == path) {
