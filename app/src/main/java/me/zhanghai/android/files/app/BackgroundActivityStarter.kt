@@ -5,7 +5,6 @@
 
 package me.zhanghai.android.files.app
 
-import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -19,7 +18,7 @@ import me.zhanghai.android.files.util.NotificationChannelTemplate
 import me.zhanghai.android.files.util.NotificationTemplate
 import me.zhanghai.android.files.util.startActivitySafe
 
-val backgroundActivityStartNotificationTemplate: NotificationTemplate =
+val backgroundActivityStartNotificationTemplate =
     NotificationTemplate(
         NotificationChannelTemplate(
             "background_activity_start",
@@ -52,8 +51,6 @@ object BackgroundActivityStarter {
             Lifecycle.State.STARTED
         )
 
-    // TODO: Add POST_NOTIFICATIONS permission when targeting API 33.
-    @SuppressLint("MissingPermission")
     private fun notifyStartActivity(
         intent: Intent,
         title: CharSequence,

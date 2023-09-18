@@ -17,7 +17,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.google.gms:google-services:4.3.15'
-        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.9.8'
+        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.9.9'
     }
 }
 apply plugin: 'com.google.gms.google-services'
@@ -26,15 +26,15 @@ apply plugin: 'com.google.firebase.crashlytics'
 
 android {
     namespace 'me.zhanghai.android.files'
+    buildToolsVersion = '34.0.0'
     compileSdk 34
     ndkVersion '25.2.9519653'
-    buildToolsVersion = '34.0.0'
     defaultConfig {
         applicationId 'me.zhanghai.android.files'
         minSdk 21
         // Not supporting notification runtime permission yet.
         //noinspection OldTargetApi
-        targetSdk 32
+        targetSdk 34
         versionCode 33
         versionName '1.6.1'
         resValue 'string', 'app_version', versionName + ' (' + versionCode + ')'
@@ -43,7 +43,7 @@ android {
         resValue 'string', 'file_provider_authority', applicationId + '.file_provider'
         externalNativeBuild {
             cmake {
-                arguments "-DANDROID_STL=none"
+                arguments '-DANDROID_STL=none'
             }
         }
     }
@@ -103,9 +103,7 @@ repositories {
 dependencies {
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
     releaseImplementation 'com.github.mypplication:stetho-noop:1.1'
-    // libsu 5.2.0 is buggy on OnePlus: https://github.com/topjohnwu/Magisk/issues/7214
-    //noinspection GradleDependency
-    implementation 'com.github.topjohnwu.libsu:service:5.1.0'
+    implementation 'com.github.topjohnwu.libsu:service:5.2.1'
 }
 
 dependencies {
@@ -120,11 +118,11 @@ dependencies {
     implementation 'androidx.activity:activity-ktx:1.7.2'
     // Appcompat 1.7.0-alpha01 is required for properly changing locale below API 24 (b/243119645).
     implementation 'androidx.appcompat:appcompat:1.7.0-alpha03'
-    implementation 'androidx.core:core-ktx:1.10.1'
+    implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.drawerlayout:drawerlayout:1.2.0'
     implementation 'androidx.exifinterface:exifinterface:1.3.6'
     implementation 'androidx.fragment:fragment-ktx:1.6.1'
-    def androidx_lifecycle_version = '2.6.1'
+    def androidx_lifecycle_version = '2.6.2'
     implementation "androidx.lifecycle:lifecycle-common-java8:$androidx_lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:$androidx_lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-process:$androidx_lifecycle_version"
@@ -182,25 +180,18 @@ dependencies {
     }
     implementation 'org.bouncycastle:bcprov-jdk15to18:1.73'
     implementation platform('io.coil-kt:coil-bom:2.4.0')
-    implementation "io.coil-kt:coil"
-    implementation "io.coil-kt:coil-gif"
-    implementation "io.coil-kt:coil-svg"
-    implementation "io.coil-kt:coil-video"
+    implementation 'io.coil-kt:coil'
+    implementation 'io.coil-kt:coil-gif'
+    implementation 'io.coil-kt:coil-svg'
+    implementation 'io.coil-kt:coil-video'
     implementation 'me.zhanghai.android.appiconloader:appiconloader:1.5.0'
     implementation 'me.zhanghai.android.fastscroll:library:1.3.0'
     implementation 'me.zhanghai.android.foregroundcompat:library:1.0.2'
+    implementation 'me.zhanghai.android.libarchive:library:1.0.2'
     implementation 'me.zhanghai.android.libselinux:library:2.1.0'
     implementation 'me.zhanghai.android.retrofile:library:1.1.1'
     implementation 'me.zhanghai.android.systemuihelper:library:1.0.0'
     implementation 'net.sourceforge.streamsupport:android-retrostreams:1.7.4'
-    // Commons Compress 1.21 requires Android 8.0.
-    // See also https://issues.apache.org/jira/browse/COMPRESS-611
-    // Run `git revert fb1628e` if we ever created a fork that supports Android 5.0, or we raised
-    // minimum SDK version to Android 8.0.
-    //noinspection GradleDependency
-    implementation 'org.apache.commons:commons-compress:1.20'
-    // Optional dependency of Commons Compress for 7Z LZMA.
-    implementation 'org.tukaani:xz:1.9'
     implementation 'org.apache.ftpserver:ftpserver-core:1.2.0'
     // This is a dependency of org.apache.ftpserver:ftpserver-core but org.apache.mina:mina-core
     // 2.1.3+ became incompatible before API 24 due to dependency on StandardSocketOptions
@@ -210,12 +201,11 @@ dependencies {
             strictly '2.1.3'
         }
     }
-    // Also a dependency of jCIFS-NG and Junrar.
+    // Also a dependency of jCIFS-NG.
     implementation 'org.slf4j:slf4j-android:1.7.36'
 
 //#ifdef NONFREE
-    implementation 'com.github.junrar:junrar:7.5.4'
-    implementation platform('com.google.firebase:firebase-bom:32.2.2')
+    implementation platform('com.google.firebase:firebase-bom:32.2.3')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-crashlytics-ndk'
 //#endif
