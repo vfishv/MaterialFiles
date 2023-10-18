@@ -11,10 +11,12 @@ import android.os.Parcelable
 import android.os.storage.StorageVolume
 import android.provider.DocumentsContract
 import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.WriteWith
 import me.zhanghai.android.files.app.contentResolver
 import me.zhanghai.android.files.compat.DocumentsContractCompat
 import me.zhanghai.android.files.compat.createOpenDocumentTreeIntentCompat
 import me.zhanghai.android.files.storage.StorageVolumeListLiveData
+import me.zhanghai.android.files.util.StableUriParceler
 import me.zhanghai.android.files.util.getParcelableExtraSafe
 import me.zhanghai.android.files.util.releasePersistablePermission
 import me.zhanghai.android.files.util.takePersistablePermission
@@ -22,7 +24,7 @@ import me.zhanghai.android.files.util.valueCompat
 
 @Parcelize
 @JvmInline
-value class DocumentTreeUri(val value: Uri) : Parcelable {
+value class DocumentTreeUri(val value: @WriteWith<StableUriParceler> Uri) : Parcelable {
     val documentId: String
         get() = DocumentsContract.getTreeDocumentId(value)
 

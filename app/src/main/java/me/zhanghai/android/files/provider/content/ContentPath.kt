@@ -21,6 +21,7 @@ import me.zhanghai.android.files.provider.common.UriAuthority
 import me.zhanghai.android.files.provider.common.toByteString
 import me.zhanghai.android.files.provider.content.resolver.Resolver
 import me.zhanghai.android.files.provider.content.resolver.ResolverException
+import me.zhanghai.android.files.util.StableUriParceler
 import me.zhanghai.android.files.util.readParcelable
 import java.io.File
 import java.net.URI
@@ -135,14 +136,16 @@ internal class ContentPath : ByteStringListPath<ContentPath> {
 
     private constructor(source: Parcel) : super(source) {
         fileSystem = source.readParcelable()!!
-        uri = source.readParcelable()
+        //uri = source.readParcelable()
+        uri = StableUriParceler.create(source)
     }
 
     override fun writeToParcel(dest: Parcel, flags: Int) {
         super.writeToParcel(dest, flags)
 
         dest.writeParcelable(fileSystem, flags)
-        dest.writeParcelable(uri, flags)
+        //dest.writeParcelable(uri, flags)
+        with(StableUriParceler) { uri.write(dest, flags) }
     }
 
     companion object {

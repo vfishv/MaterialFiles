@@ -8,15 +8,12 @@ package me.zhanghai.android.files.provider.archive.archiver
 import androidx.preference.PreferenceManager
 import java8.nio.channels.SeekableByteChannel
 import java8.nio.charset.StandardCharsets
-import java8.nio.file.NoSuchFileException
-import java8.nio.file.NotLinkException
 import java8.nio.file.Path
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.provider.common.DelegateForceableSeekableByteChannel
 import me.zhanghai.android.files.provider.common.DelegateInputStream
 import me.zhanghai.android.files.provider.common.DelegateNonForceableSeekableByteChannel
 import me.zhanghai.android.files.provider.common.ForceableChannel
-import me.zhanghai.android.files.provider.common.IsDirectoryException
 import me.zhanghai.android.files.provider.common.PosixFileMode
 import me.zhanghai.android.files.provider.common.PosixFileType
 import me.zhanghai.android.files.provider.common.newByteChannel
@@ -34,10 +31,11 @@ object ArchiveReader {
     @Throws(IOException::class)
     fun readEntries(
         file: Path,
+        passwords: List<String>,
         rootPath: Path
     ): Pair<Map<Path, ReadArchive.Entry>, Map<Path, List<Path>>> {
         val entries = mutableMapOf<Path, ReadArchive.Entry>()
-        val rawEntries = readEntries(file)
+        val rawEntries = readEntries(file, passwords)
         for (entry in rawEntries) {
             var path = rootPath.resolve(entry.name)
             // Normalize an absolute path to prevent path traversal attack.
@@ -91,9 +89,9 @@ object ArchiveReader {
     }
 
     @Throws(IOException::class)
-    private fun readEntries(file: Path): List<ReadArchive.Entry> {
+    private fun readEntries(file: Path, passwords: List<String>): List<ReadArchive.Entry> {
         val charset = archiveFileNameCharset
-        val (archive, closeable) = openArchive(file)
+        val (archive, closeable) = openArchive(file, passwords)
         return closeable.use {
             buildList {
                 while (true) {
@@ -104,17 +102,13 @@ object ArchiveReader {
     }
 
     @Throws(IOException::class)
-    fun newInputStream(file: Path, entry: ReadArchive.Entry): InputStream {
-        if (entry.isDirectory) {
-            throw IsDirectoryException(file.toString())
-        }
+    fun newInputStream(file: Path, passwords: List<String>, entry: ReadArchive.Entry): InputStream? {
         val charset = archiveFileNameCharset
-        val (archive, closeable) = openArchive(file)
+        val (archive, closeable) = openArchive(file, passwords)
         var successful = false
         return try {
-            var currentEntry: ReadArchive.Entry? = null
             while (true) {
-                currentEntry = archive.readEntry(charset) ?: break
+                val currentEntry = archive.readEntry(charset) ?: break
                 if (currentEntry.name != entry.name) {
                     continue
                 }
@@ -124,7 +118,7 @@ object ArchiveReader {
             if (successful) {
                 CloseableInputStream(archive.newDataInputStream(), closeable)
             } else {
-                throw NoSuchFileException(file.toString())
+                null
             }
         } finally {
             if (!successful) {
@@ -133,7 +127,11 @@ object ArchiveReader {
         }
     }
 
-    private fun openArchive(file: Path): Pair<ReadArchive, ArchiveCloseable> {
+    @Throws(IOException::class)
+    private fun openArchive(
+        file: Path,
+        passwords: List<String>
+    ): Pair<ReadArchive, ArchiveCloseable> {
         val channel = try {
             CacheSizeSeekableByteChannel(file.newByteChannel())
         } catch (e: Exception) {
@@ -143,7 +141,7 @@ object ArchiveReader {
         if (channel != null) {
             var successful = false
             try {
-                val archive = ReadArchive(channel)
+                val archive = ReadArchive(channel, passwords)
                 successful = true
                 return archive to ArchiveCloseable(archive, channel)
             } finally {
@@ -155,7 +153,7 @@ object ArchiveReader {
         val inputStream = file.newInputStream()
         var successful = false
         try {
-            val archive = ReadArchive(inputStream)
+            val archive = ReadArchive(inputStream, passwords)
             successful = true
             return archive to ArchiveCloseable(archive, inputStream)
         } finally {
@@ -232,13 +230,5 @@ object ArchiveReader {
 
             closeable.close()
         }
-    }
-
-    @Throws(IOException::class)
-    fun readSymbolicLink(file: Path, entry: ReadArchive.Entry): String {
-        if (entry.type != PosixFileType.SYMBOLIC_LINK) {
-            throw NotLinkException(file.toString())
-        }
-        return entry.symbolicLinkTarget ?: ""
     }
 }

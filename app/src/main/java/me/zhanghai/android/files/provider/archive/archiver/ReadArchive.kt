@@ -22,6 +22,7 @@ import org.threeten.bp.Instant
 import java.io.Closeable
 import java.io.IOException
 import java.io.InputStream
+import java.io.InterruptedIOException
 import java.nio.ByteBuffer
 import java.nio.charset.Charset
 
@@ -29,7 +30,7 @@ class ReadArchive : Closeable {
     private val archive = Archive.readNew()
 
     @Throws(ArchiveException::class)
-    constructor(inputStream: InputStream) {
+    constructor(inputStream: InputStream, passwords: List<String>) {
         var successful = false
         try {
             Archive.setCharset(archive, StandardCharsets.UTF_8.name().toByteArray())
@@ -42,7 +43,7 @@ class ReadArchive : Closeable {
                 val bytesRead = try {
                     inputStream.read(buffer.array())
                 } catch (e: IOException) {
-                    throw ArchiveException(Archive.ERRNO_FATAL, "InputStream.read", e)
+                    throw e.toArchiveException("InputStream.read")
                 }
                 if (bytesRead != -1) {
                     buffer.limit(bytesRead)
@@ -55,8 +56,11 @@ class ReadArchive : Closeable {
                 try {
                     inputStream.skip(request)
                 } catch (e: IOException) {
-                    throw ArchiveException(Archive.ERRNO_FATAL, "InputStream.skip", e)
+                    throw e.toArchiveException("InputStream.skip")
                 }
+            }
+            for (password in passwords) {
+                Archive.readAddPassphrase(archive, password.toByteArray())
             }
             Archive.readOpen1(archive)
             successful = true
@@ -68,7 +72,7 @@ class ReadArchive : Closeable {
     }
 
     @Throws(ArchiveException::class)
-    constructor(channel: SeekableByteChannel) {
+    constructor(channel: SeekableByteChannel, passwords: List<String>) {
         var successful = false
         try {
             Archive.setCharset(archive, StandardCharsets.UTF_8.name().toByteArray())
@@ -81,7 +85,7 @@ class ReadArchive : Closeable {
                 val bytesRead = try {
                     channel.read(buffer)
                 } catch (e: IOException) {
-                    throw ArchiveException(Archive.ERRNO_FATAL, "SeekableByteChannel.read", e)
+                    throw e.toArchiveException("SeekableByteChannel.read")
                 }
                 if (bytesRead != -1) {
                     buffer.flip()
@@ -94,7 +98,7 @@ class ReadArchive : Closeable {
                 try {
                     channel.position(channel.position() + request)
                 } catch (e: IOException) {
-                    throw ArchiveException(Archive.ERRNO_FATAL, "SeekableByteChannel.position", e)
+                    throw e.toArchiveException("SeekableByteChannel.position")
                 }
                 request
             }
@@ -112,9 +116,12 @@ class ReadArchive : Closeable {
                     }
                     channel.position(newPosition)
                 } catch (e: IOException) {
-                    throw ArchiveException(Archive.ERRNO_FATAL, "SeekableByteChannel.position", e)
+                    throw e.toArchiveException("SeekableByteChannel.position")
                 }
                 newPosition
+            }
+            for (password in passwords) {
+                Archive.readAddPassphrase(archive, password.toByteArray())
             }
             Archive.readOpen1(archive)
             successful = true
@@ -124,6 +131,12 @@ class ReadArchive : Closeable {
             }
         }
     }
+
+    private fun IOException.toArchiveException(message: String): ArchiveException =
+        when (this) {
+            is InterruptedIOException -> ArchiveException(OsConstants.EINTR, message, this)
+            else -> ArchiveException(Archive.ERRNO_FATAL, message, this)
+        }
 
     @Throws(ArchiveException::class)
     fun readEntry(charset: Charset): Entry? {
@@ -186,22 +199,8 @@ class ReadArchive : Closeable {
     private fun getEntryString(stringUtf8: String?, string: ByteArray?, charset: Charset): String? =
         stringUtf8 ?: string?.toString(charset)
 
-    fun hasEncryptedEntries(): Boolean? {
-        val hasEncryptedEntries = Archive.readHasEncryptedEntries(archive)
-        return when {
-            hasEncryptedEntries > 0 -> true
-            hasEncryptedEntries == 0 -> false
-            else -> null
-        }
-    }
-
     @Throws(ArchiveException::class)
     fun newDataInputStream(): InputStream = DataInputStream()
-
-    @Throws(ArchiveException::class)
-    fun addPassword(password: String) {
-        Archive.readAddPassphrase(archive, password.toByteArray())
-    }
 
     @Throws(ArchiveException::class)
     override fun close() {
@@ -223,6 +222,9 @@ class ReadArchive : Closeable {
     ) {
         val isDirectory: Boolean
             get() = type == PosixFileType.DIRECTORY
+
+        val isSymbolicLink: Boolean
+            get() = type == PosixFileType.SYMBOLIC_LINK
     }
 
     private inner class DataInputStream : InputStream() {

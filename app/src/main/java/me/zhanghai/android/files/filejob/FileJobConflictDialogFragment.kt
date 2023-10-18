@@ -38,6 +38,7 @@ import me.zhanghai.android.files.file.iconRes
 import me.zhanghai.android.files.file.lastModifiedInstant
 import me.zhanghai.android.files.filelist.appDirectoryPackageName
 import me.zhanghai.android.files.filelist.supportsThumbnail
+import me.zhanghai.android.files.provider.common.isEncrypted
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.ParcelableState
 import me.zhanghai.android.files.util.RemoteCallback
@@ -138,7 +139,10 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
             .setNegativeButton(R.string.skip, ::onDialogButtonClick)
             .setNeutralButton(android.R.string.cancel, ::onDialogButtonClick)
             .create()
-            .apply { setCanceledOnTouchOutside(false) }
+            .apply {
+                setCanceledOnTouchOutside(false)
+                window!!.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            }
     }
 
     /** @see me.zhanghai.android.files.filelist.FileListAdapter.onBindViewHolder */
@@ -151,37 +155,51 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
         descriptionText: TextView
     ) {
         val path = file.path
-        iconImage.setImageResource(file.mimeType.iconRes)
-        iconImage.isVisible = true
-        thumbnailImage.dispose()
-        thumbnailImage.setImageDrawable(null)
+        iconImage.apply {
+            isVisible = true
+            setImageResource(file.mimeType.iconRes)
+        }
         val attributes = file.attributes
-        if (file.supportsThumbnail) {
-            thumbnailImage.load(path to attributes) {
-                listener { _, _ -> iconImage.isVisible = false }
+        thumbnailImage.apply {
+            dispose()
+            setImageDrawable(null)
+            val supportsThumbnail = file.supportsThumbnail
+            isVisible = supportsThumbnail
+            if (supportsThumbnail) {
+                load(path to attributes) {
+                    listener { _, _ -> iconImage.isVisible = false }
+                }
             }
         }
-        appIconBadgeImage.dispose()
-        appIconBadgeImage.setImageDrawable(null)
-        val appDirectoryPackageName = file.appDirectoryPackageName
-        val hasAppIconBadge = appDirectoryPackageName != null
-        appIconBadgeImage.isVisible = hasAppIconBadge
-        if (hasAppIconBadge) {
-            appIconBadgeImage.load(AppIconPackageName(appDirectoryPackageName!!))
+        appIconBadgeImage.apply {
+            dispose()
+            setImageDrawable(null)
+            val appDirectoryPackageName = file.appDirectoryPackageName
+            val hasAppIconBadge = appDirectoryPackageName != null
+            isVisible = hasAppIconBadge
+            if (hasAppIconBadge) {
+                load(AppIconPackageName(appDirectoryPackageName!!))
+            }
         }
-        val badgeIconRes = if (file.attributesNoFollowLinks.isSymbolicLink) {
-            if (file.isSymbolicLinkBroken) {
-                R.drawable.error_badge_icon_18dp
+        badgeImage.apply {
+            val badgeIconRes = if (file.attributesNoFollowLinks.isSymbolicLink) {
+                if (file.isSymbolicLinkBroken) {
+                    R.drawable.error_badge_icon_18dp
+                } else {
+                    R.drawable.symbolic_link_badge_icon_18dp
+                }
+            } else if (file.attributesNoFollowLinks.isEncrypted()) {
+                R.drawable.encrypted_badge_icon_18dp
             } else {
-                R.drawable.symbolic_link_badge_icon_18dp
+                null
             }
-        } else {
-            null
-        }
-        val hasBadge = badgeIconRes != null
-        badgeImage.isVisible = hasBadge
-        if (hasBadge) {
-            badgeImage.setImageResource(badgeIconRes!!)
+            val hasBadge = badgeIconRes != null
+            isVisible = hasBadge
+            if (hasBadge) {
+                setImageResource(badgeIconRes!!)
+            } else {
+                setImageDrawable(null)
+            }
         }
         val lastModificationTime = attributes.lastModifiedInstant
             .formatShort(descriptionText.context)
@@ -235,10 +253,10 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
 
         if (binding.root.parent == null) {
             val dialog = requireDialog() as AlertDialog
+            dialog.window!!.clearFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
             val scrollView = dialog.requireViewByIdCompat<NestedScrollView>(R.id.scrollView)
             val linearLayout = scrollView.getChildAt(0) as LinearLayout
             linearLayout.addView(binding.root)
-            dialog.window!!.clearFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM)
         }
     }
 
@@ -334,5 +352,7 @@ class FileJobConflictDialogFragment : AppCompatDialogFragment() {
     }
 
     @Parcelize
-    private class State(val isAllChecked: Boolean) : ParcelableState
+    private class State(
+        val isAllChecked: Boolean
+    ) : ParcelableState
 }
