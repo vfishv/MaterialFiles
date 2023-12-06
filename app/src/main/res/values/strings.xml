@@ -460,6 +460,7 @@
         <item>Android 12</item>
         <item>Android 12L</item>
         <item>Android 13</item>
+        <item>Android 14</item>
         <item>Android ?</item>
     </string-array>
     <string-array name="file_properites_apk_sdk_version_codenames" translatable="false">
@@ -497,6 +498,7 @@
         <item>S</item>
         <item>S_V2</item>
         <item>T</item>
+        <item>U</item>
         <item>\?</item>
     </string-array>
     <string name="file_properties_apk_requested_permissions">Permissions</string>
@@ -667,9 +669,9 @@
     <string name="ftp_server_url_menu_copy_url">Copy URL</string>
     <string name="ftp_server_url_menu_copy_password">Copy password</string>
     <string name="ftp_server_add_tile_title">Add to Quick Settings</string>
-    <string name="ftp_server_add_tile_result_added">\"FTP server\" has been added to Quick Settings</string>
-    <string name="ftp_server_add_tile_result_already_added">\"FTP server\" is already added to Quick Settings</string>
-    <string name="ftp_server_add_tile_result_error">Error while adding \"FTP server\" to Quick Settings</string>
+    <string name="ftp_server_add_tile_result_added">“FTP server” has been added to Quick Settings</string>
+    <string name="ftp_server_add_tile_result_already_added">“FTP server” is already added to Quick Settings</string>
+    <string name="ftp_server_add_tile_result_error">Error while adding “FTP server” to Quick Settings</string>
     <string name="ftp_server_configuration_title">Configuration</string>
     <string name="ftp_server_anonymous_login_title">Anonymous login</string>
     <string name="ftp_server_username_title">Username</string>
