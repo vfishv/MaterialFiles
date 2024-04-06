@@ -17,6 +17,8 @@ import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.text.TextUtils
+import android.view.KeyCharacterMap
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
@@ -25,6 +27,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
@@ -79,12 +82,14 @@ import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.terminal.Terminal
 import me.zhanghai.android.files.ui.AppBarLayoutExpandHackListener
 import me.zhanghai.android.files.ui.CoordinatorAppBarLayout
+import me.zhanghai.android.files.ui.DrawerLayoutOnBackPressedCallback
 import me.zhanghai.android.files.ui.FixQueryChangeSearchView
 import me.zhanghai.android.files.ui.OverlayToolbarActionMode
 import me.zhanghai.android.files.ui.PersistentBarLayout
 import me.zhanghai.android.files.ui.PersistentBarLayoutToolbarActionMode
 import me.zhanghai.android.files.ui.PersistentDrawerLayout
 import me.zhanghai.android.files.ui.ScrollingViewOnApplyWindowInsetsListener
+import me.zhanghai.android.files.ui.SpeedDialViewOnBackPressedCallback
 import me.zhanghai.android.files.ui.ThemedFastScroller
 import me.zhanghai.android.files.ui.ToolbarActionMode
 import me.zhanghai.android.files.util.DebouncedRunnable
@@ -93,12 +98,14 @@ import me.zhanghai.android.files.util.Loading
 import me.zhanghai.android.files.util.ParcelableArgs
 import me.zhanghai.android.files.util.Stateful
 import me.zhanghai.android.files.util.Success
+import me.zhanghai.android.files.util.addOnBackPressedCallback
 import me.zhanghai.android.files.util.args
 import me.zhanghai.android.files.util.checkSelfPermission
 import me.zhanghai.android.files.util.copyText
 import me.zhanghai.android.files.util.create
 import me.zhanghai.android.files.util.createInstallPackageIntent
 import me.zhanghai.android.files.util.createIntent
+import me.zhanghai.android.files.util.createManageAppAllFilesAccessPermissionIntent
 import me.zhanghai.android.files.util.createSendStreamIntent
 import me.zhanghai.android.files.util.createViewIntent
 import me.zhanghai.android.files.util.extraPath
@@ -111,6 +118,7 @@ import me.zhanghai.android.files.util.isOrientationLandscape
 import me.zhanghai.android.files.util.putArgs
 import me.zhanghai.android.files.util.showToast
 import me.zhanghai.android.files.util.startActivitySafe
+import me.zhanghai.android.files.util.supportsExternalStorageManager
 import me.zhanghai.android.files.util.takeIfNotEmpty
 import me.zhanghai.android.files.util.valueCompat
 import me.zhanghai.android.files.util.viewModels
@@ -246,6 +254,25 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
             true
         }
 
+        val viewLifecycleOwner = viewLifecycleOwner
+        addOnBackPressedCallback(
+            object : OnBackPressedCallback(false) {
+                override fun handleOnBackPressed() {
+                    viewModel.navigateUp()
+                }
+            }
+                .also { callback ->
+                    viewModel.breadcrumbLiveData.observe(viewLifecycleOwner) {
+                        callback.isEnabled = viewModel.canNavigateUpBreadcrumb
+                    }
+                }
+        )
+        addOnBackPressedCallback(overlayActionMode.onBackPressedCallback)
+        addOnBackPressedCallback(SpeedDialViewOnBackPressedCallback(binding.speedDialView))
+        binding.drawerLayout?.let {
+            addOnBackPressedCallback(DrawerLayoutOnBackPressedCallback(it))
+        }
+
         if (!viewModel.hasTrail) {
             var path = argsPath
             val intent = args.intent
@@ -297,7 +324,6 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
                 viewModel.pickOptions = pickOptions
             }
         }
-        val viewLifecycleOwner = viewLifecycleOwner
         viewModel.currentPathLiveData.observe(viewLifecycleOwner) { onCurrentPathChanged(it) }
         viewModel.searchViewExpandedLiveData.observe(viewLifecycleOwner) {
             onSearchViewExpandedChanged(it)
@@ -502,22 +528,24 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         }
     }
 
-    fun onBackPressed(): Boolean {
-        val drawerLayout = binding.drawerLayout
-        if (drawerLayout != null && drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            drawerLayout.closeDrawer(GravityCompat.START)
-            return true
-        }
-        if (binding.speedDialView.isOpen) {
-            binding.speedDialView.close()
-            return true
+    fun onKeyShortcut(keyCode: Int, event: KeyEvent): Boolean {
+        if (bottomActionMode.isActive) {
+            val menu = bottomActionMode.menu
+            menu.setQwertyMode(
+                KeyCharacterMap.load(event.deviceId).keyboardType != KeyCharacterMap.NUMERIC
+            )
+            if (menu.performShortcut(keyCode, event, 0)) {
+                return true
+            }
         }
         if (overlayActionMode.isActive) {
-            overlayActionMode.finish()
-            return true
-        }
-        if (viewModel.navigateUp(false)) {
-            return true
+            val menu = overlayActionMode.menu
+            menu.setQwertyMode(
+                KeyCharacterMap.load(event.deviceId).keyboardType != KeyCharacterMap.NUMERIC
+            )
+            if (menu.performShortcut(keyCode, event, 0)) {
+                return true
+            }
         }
         return false
     }
@@ -663,7 +691,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
 
     private fun navigateUp() {
         collapseSearchView()
-        viewModel.navigateUp(true)
+        viewModel.navigateUp()
     }
 
     private fun showNavigateToPathDialog() {
@@ -1324,7 +1352,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         if (viewModel.isStorageAccessRequested) {
             return
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        if (Environment::class.supportsExternalStorageManager()) {
             if (!Environment.isExternalStorageManager()) {
                 ShowRequestAllFilesAccessRationaleDialogFragment.show(this)
                 viewModel.isStorageAccessRequested = true
@@ -1490,10 +1518,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
     private class RequestAllFilesAccessContract : ActivityResultContract<Unit, Boolean>() {
         @RequiresApi(Build.VERSION_CODES.R)
         override fun createIntent(context: Context, input: Unit): Intent =
-            Intent(
-                android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-                Uri.fromParts("package", context.packageName, null)
-            )
+            Environment::class.createManageAppAllFilesAccessPermissionIntent(context.packageName)
 
         @RequiresApi(Build.VERSION_CODES.R)
         override fun parseResult(resultCode: Int, intent: Intent?): Boolean =

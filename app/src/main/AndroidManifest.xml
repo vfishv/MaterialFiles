@@ -11,8 +11,7 @@
 
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <uses-feature android:name="android.hardware.wifi" android:required="false" />
-    <!-- TODO: Google Play requires TV apps to be published with AAB. -->
-    <!--<uses-feature android:name="android.software.leanback" android:required="false" />-->
+    <uses-feature android:name="android.software.leanback" android:required="false" />
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
@@ -30,7 +29,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="30" />
+        android:maxSdkVersion="32" />
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
 
     <!-- Shizuku requires API 23. -->
@@ -44,6 +43,7 @@
     <application
         android:allowBackup="true"
         android:banner="@drawable/banner"
+        android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="true"
         android:icon="@mipmap/launcher_icon"
         android:label="@string/app_name"
@@ -53,6 +53,7 @@
         android:roundIcon="@mipmap/launcher_icon"
         android:supportsRtl="true"
         android:theme="@style/Theme.MaterialFiles"
+        android:usesCleartextTraffic="true"
         tools:ignore="GoogleAppIndexingWarning,UnusedAttribute">
 
         <activity
@@ -63,8 +64,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
-                <!-- TODO: Google Play requires TV apps to be published with AAB. -->
-                <!--<category android:name="android.intent.category.LEANBACK_LAUNCHER" />-->
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
             <intent-filter tools:ignore="AppLinkUrlError">
                 <action android:name="android.intent.action.VIEW" />
@@ -215,6 +215,11 @@
         <activity
             android:name="me.zhanghai.android.files.storage.EditSmbServerActivity"
             android:label="@string/storage_edit_smb_server_title_edit"
+            android:theme="@style/Theme.MaterialFiles" />
+
+        <activity
+            android:name="me.zhanghai.android.files.storage.EditWebDavServerActivity"
+            android:label="@string/storage_edit_webdav_server_title_edit"
             android:theme="@style/Theme.MaterialFiles" />
 
         <activity

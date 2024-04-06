@@ -8,6 +8,7 @@ package me.zhanghai.android.files.filelist
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.fragment.app.commit
@@ -35,11 +36,11 @@ class FileListActivity : AppActivity() {
         }
     }
 
-    override fun onBackPressed() {
-        if (fragment.onBackPressed()) {
-            return
+    override fun onKeyShortcut(keyCode: Int, event: KeyEvent): Boolean {
+        if (fragment.onKeyShortcut(keyCode, event)) {
+            return true
         }
-        super.onBackPressed()
+        return super.onKeyUp(keyCode, event)
     }
 
     companion object {
