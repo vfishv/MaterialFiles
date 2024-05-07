@@ -160,7 +160,7 @@ dependencies {
     implementation ('com.hierynomus:sshj:0.35.0') {
         exclude group: 'org.bouncycastle', module: 'bcprov-jdk15on'
     }
-    implementation 'com.jakewharton.threetenabp:threetenabp:1.4.6'
+    implementation 'com.jakewharton.threetenabp:threetenabp:1.4.7'
     implementation 'com.leinardi.android:speed-dial:3.3.0'
     implementation ('com.rapid7.client:dcerpc:0.12.1') {
         // SMBJ-RPC depends on the JRE flavor of Guava which targets Java 8.
@@ -214,7 +214,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-android:1.7.36'
 
 //#ifdef NONFREE
-    implementation platform('com.google.firebase:firebase-bom:32.7.4')
+    implementation platform('com.google.firebase:firebase-bom:33.0.0')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-crashlytics-ndk'
 //#endif
